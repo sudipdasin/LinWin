@@ -4,6 +4,8 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Replaced the tab strip with a responsive shell workspace, persistent in-window bottom panel, Home/Clipboard navigation, live date/clock, and a floating searchable Start menu.
+- Added keyboard-friendly Start search focus on opening and a clear Escape dismissal path when the main window has focus.
 - Added a searchable Start-style application launcher that discovers registered apps, launches them through GIO, and stores pinned favorites.
 - Defined the core audience as Windows switchers and Linux beginners who should be able to install and use LinWin without terminal or Bash knowledge.
 - Specified a unified, familiar shell experience with automatic distro, kernel, hardware, and package detection in the GUI installer.
