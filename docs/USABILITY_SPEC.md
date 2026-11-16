@@ -103,6 +103,7 @@ The installer must identify the host distribution, kernel, package manager, and 
 - Implemented preview: searchable and sortable process list with per-process CPU share, resident memory, PID, user, and state, refreshed every two seconds.
 - Implemented preview: confirmed normal close and force stop for processes owned by the current user, with process-identity checks and no elevation.
 - Implemented preview: user-triggered local JSON export with an explicit warning about command lines and file paths.
+- Implemented preview: read-only process details via a Details action or row double-click, including parent, executable, working directory, and command line where `/proc` permissions allow.
 - Remaining: recognizable application grouping, window-aware app close, history graphs, services/startup views, and narrowly authorized system-process controls.
 - Present applications and processes with CPU and memory use, sort/search, and a clear close-app action.
 - Make force-quit available for unresponsive apps, with an explicit confirmation when data loss is possible.
