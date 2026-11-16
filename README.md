@@ -6,7 +6,7 @@ LinWin brings the taskbar, Start-style application menu, Alt+Tab window switchin
 
 ## Project status
 
-**Early development.** The current build is a prototype dashboard, searchable Start-style application launcher, and opt-in clipboard component; it is not yet the complete shell or graphical installer. The planned installer will detect the distribution, desktop session, kernel, package manager, and available hardware, then select compatible packages and configure LinWin without asking users to use a terminal. The finished shell aims to handle normal setup and daily tasks entirely through a clear graphical interface. The prototype clipboard keeps up to 50 text clips while open; capture is off by default and saved text is unencrypted. See [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
+**Early development.** The current build is a shell-interface preview with a persistent in-window bottom panel, a searchable Start popup, system overview, and opt-in clipboard component; it is not yet the complete login-session shell or graphical installer. The planned installer will detect the distribution, desktop session, kernel, package manager, and available hardware, then select compatible packages and configure LinWin without asking users to use a terminal. The finished shell aims to handle normal setup and daily tasks entirely through a clear graphical interface. The prototype clipboard keeps up to 50 text clips while open; capture is off by default and saved text is unencrypted. Actual desktop-panel replacement, Alt+Tab/window tracking, and session integration are still future work. See [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
 
 ## Intended compatibility
 
@@ -37,7 +37,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-Run from the build directory with `./linwin`. Open **Start** to search installed applications, pin favorites, and launch apps through the host desktop registry. Open **Clipboard**, enable history if desired, and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. Package formats can be generated with CPack where the corresponding packaging tools are installed:
+Run from the build directory with `./linwin`. Open **Start** on the bottom panel to search installed applications, pin favorites, and launch apps through the host desktop registry. Use **Home** and **Clipboard** to switch pages. In Clipboard, enable history if desired and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. Package formats can be generated with CPack where the corresponding packaging tools are installed:
 
 ```sh
 cd build
