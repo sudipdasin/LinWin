@@ -40,6 +40,7 @@ if(BUILD_TESTING)
         src/task_manager_widget.cpp
         src/task_manager_widget.h
     )
+    target_include_directories(linwin-task-manager-tests PRIVATE src)
     target_link_libraries(linwin-task-manager-tests PRIVATE Qt6::Widgets)
     add_test(NAME task-manager-tabs COMMAND linwin-task-manager-tests)
     set_tests_properties(task-manager-tabs PROPERTIES
