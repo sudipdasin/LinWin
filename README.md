@@ -2,11 +2,11 @@
 
 LinWin is an open-source, lightweight, all-in-one Linux desktop shell for people moving from Windows. Its goal is to make Linux feel familiar and easy from the first login, including for people who do not know Linux, terminals, or Bash.
 
-LinWin brings the taskbar, Start-style application menu, Alt+Tab window switching, file workflows, clipboard, Bluetooth, accessibility, task manager, and system settings into one coherent shell. It replaces the desktop-shell layer while retaining the host distribution, kernel, drivers, and applications. The shared shell is being developed in C++20 and Qt 6; supported components are enabled by default and can be turned off individually.
+LinWin brings the taskbar, Start-style application menu, Alt+Tab window switching, file workflows, clipboard, Bluetooth, accessibility, task manager, and system settings into one coherent shell. It replaces the desktop-shell layer while retaining the host distribution, kernel, drivers, and applications. The shared shell is being developed in C++20 and Qt 6; supported components are enabled by default and can be turned off individually. The launcher reads the Linux desktop application registry and remembers pinned apps.
 
 ## Project status
 
-**Early development.** The current build is only a prototype dashboard plus an opt-in clipboard component; it is not yet the complete shell or graphical installer. The planned installer will detect the distribution, desktop session, kernel, package manager, and available hardware, then select compatible packages and configure LinWin without asking users to use a terminal. The finished shell aims to handle normal setup and daily tasks entirely through a clear graphical interface. The prototype clipboard keeps up to 50 text clips while open; capture is off by default and saved text is unencrypted. See [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
+**Early development.** The current build is a prototype dashboard, searchable Start-style application launcher, and opt-in clipboard component; it is not yet the complete shell or graphical installer. The planned installer will detect the distribution, desktop session, kernel, package manager, and available hardware, then select compatible packages and configure LinWin without asking users to use a terminal. The finished shell aims to handle normal setup and daily tasks entirely through a clear graphical interface. The prototype clipboard keeps up to 50 text clips while open; capture is off by default and saved text is unencrypted. See [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
 
 ## Intended compatibility
 
@@ -28,6 +28,7 @@ Requirements:
 - CMake 3.21 or newer
 - A C++20 compiler
 - Qt 6.4 or newer, Widgets module
+- GLib/GIO Unix development files (`gio-unix-2.0`)
 
 On Debian/Ubuntu/Mint, install the compiler, CMake, and Qt 6 development packages, then run:
 
@@ -36,7 +37,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-Run from the build directory with `./linwin`. Open **Clipboard**, enable history if desired, and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. Package formats can be generated with CPack where the corresponding packaging tools are installed:
+Run from the build directory with `./linwin`. Open **Start** to search installed applications, pin favorites, and launch apps through the host desktop registry. Open **Clipboard**, enable history if desired, and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. Package formats can be generated with CPack where the corresponding packaging tools are installed:
 
 ```sh
 cd build

@@ -4,6 +4,7 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Added a searchable Start-style application launcher that discovers registered apps, launches them through GIO, and stores pinned favorites.
 - Defined the core audience as Windows switchers and Linux beginners who should be able to install and use LinWin without terminal or Bash knowledge.
 - Specified a unified, familiar shell experience with automatic distro, kernel, hardware, and package detection in the GUI installer.
 - Clarified the modular component defaults, performance direction, system-access boundary, recovery path, and graphical setup flow.

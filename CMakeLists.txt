@@ -9,18 +9,22 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GIO_UNIX REQUIRED IMPORTED_TARGET gio-unix-2.0)
 
 qt_add_executable(linwin
     src/main.cpp
     src/main_window.cpp
     src/main_window.h
+    src/app_launcher_widget.cpp
+    src/app_launcher_widget.h
     src/clipboard_history_widget.cpp
     src/clipboard_history_widget.h
     src/system_profile.cpp
     src/system_profile.h
 )
 
-target_link_libraries(linwin PRIVATE Qt6::Widgets)
+target_link_libraries(linwin PRIVATE Qt6::Widgets PkgConfig::GIO_UNIX)
 target_compile_options(linwin PRIVATE
     "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>"
 )

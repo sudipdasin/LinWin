@@ -2,6 +2,7 @@
 #include "main_window.h"
 #include "system_profile.h"
 #include "clipboard_history_widget.h"
+#include "app_launcher_widget.h"
 
 #include <QFrame>
 #include <QGridLayout>
@@ -81,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *status = new QLabel(QStringLiteral("Early development — shell prototype"), content);
     status->setObjectName(QStringLiteral("statusBadge"));
     auto *statusDescription = new QLabel(
-        QStringLiteral("This is an early prototype, not the finished shell. The installer, taskbar, Start-style launcher, window switching, file workflows, and hardware controls are still in development."), content);
+        QStringLiteral("This is an early prototype, not the finished shell. App search and clipboard history are previews; the installer, taskbar, window switching, file workflows, and hardware controls are still in development."), content);
     statusDescription->setObjectName(QStringLiteral("intro"));
     statusDescription->setWordWrap(true);
     layout->addWidget(statusHeading);
@@ -100,6 +101,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     scroll->setWidget(content);
     pages_->addTab(scroll, tr("Overview"));
+    pages_->addTab(new AppLauncherWidget(pages_), tr("Start"));
     pages_->addTab(new ClipboardHistoryWidget(pages_), tr("Clipboard"));
     setCentralWidget(pages_);
 
@@ -118,5 +120,6 @@ MainWindow::MainWindow(QWidget *parent)
         "#statusBadge { color: #714c06; background: #fff0c2; border-radius: 8px; padding: 8px 12px; font-weight: 600; }"
         "#privacyNote { color: #654d17; background: #fff7dc; border: 1px solid #f0dda1; border-radius: 8px; padding: 10px 12px; }"
         "#clipboardEntries { background: white; border: 1px solid #e0e6ef; border-radius: 8px; padding: 4px; }"
+        "#applicationList { background: white; border: 1px solid #e0e6ef; border-radius: 8px; padding: 4px; }"
         "#primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }"));
 }

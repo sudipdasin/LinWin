@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#pragma once
+
+#include <QHash>
+#include <QStringList>
+#include <QWidget>
+
+#include <gio/gio.h>
+
+class QLabel;
+class QLineEdit;
+class QListWidget;
+class QListWidgetItem;
+class QPushButton;
+
+class AppLauncherWidget final : public QWidget {
+    Q_OBJECT
+public:
+    explicit AppLauncherWidget(QWidget *parent = nullptr);
+    ~AppLauncherWidget() override;
+
+private slots:
+    void filterApplications(const QString &query);
+    void launchSelectedApplication();
+    void togglePinnedApplication();
+    void updatePinButton();
+
+private:
+    void loadApplications();
+    void refreshList();
+    void savePinnedApplications() const;
+
+    QLineEdit *searchField_ = nullptr;
+    QListWidget *applicationList_ = nullptr;
+    QLabel *statusLabel_ = nullptr;
+    QPushButton *pinButton_ = nullptr;
+    QHash<QString, GAppInfo *> applications_;
+    QStringList pinnedApplicationIds_;
+};

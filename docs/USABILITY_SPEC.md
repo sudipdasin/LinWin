@@ -5,9 +5,10 @@ This document turns the project goal into observable user behaviour. LinWin is i
 ## Current implementation
 
 - The Overview page displays detected distribution, desktop environment, session type, and kernel.
+- The Start page searches launchable desktop applications, opens them through GIO, and stores pinned app IDs in local Qt application settings.
 - The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, and clear actions, and a 50-item history stored in local Qt application settings.
 - Clipboard capture defaults to off. Saved clipboard text is not encrypted. Image/file clips and background capture are not supported yet; desktop compositor permissions may limit access.
-- LinWin does not yet launch as a login-session shell, manage hardware, provide the installation wizard, or replace the panel/launcher.
+- LinWin does not yet launch as a login-session shell, manage hardware, provide the installation wizard, replace the taskbar, or control window switching.
 
 ## Product goals
 
@@ -42,7 +43,8 @@ The installer must identify the host distribution, kernel, package manager, and 
 
 ### Taskbar and application launcher
 
-- Show pinned and running apps distinctly; group related windows and provide window previews.
+- Launcher preview: search installed apps, open them using the host application registry, and pin/unpin favorites.
+- Remaining: show pinned and running apps distinctly; group related windows and provide window previews.
 - Right-click exposes useful app actions where the desktop or app supports them.
 - The launcher searches installed applications and exposes pinned apps, recent items, settings, and power actions.
 - Pinned and running apps are distinct; related windows can be grouped and previewed.

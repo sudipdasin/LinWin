@@ -13,13 +13,13 @@ jobs:
       matrix:
         include:
           - image: ubuntu:24.04
-            install: apt-get update && apt-get install -y cmake g++ qt6-base-dev
+            install: apt-get update && apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev
           - image: debian:13
-            install: apt-get update && apt-get install -y cmake g++ qt6-base-dev
+            install: apt-get update && apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev
           - image: fedora:latest
-            install: dnf install -y cmake gcc-c++ qt6-qtbase-devel
+            install: dnf install -y cmake gcc-c++ pkgconf-pkg-config glib2-devel qt6-qtbase-devel
           - image: archlinux:latest
-            install: pacman -Syu --noconfirm --needed cmake gcc make qt6-base
+            install: pacman -Syu --noconfirm --needed cmake gcc make pkgconf glib2 qt6-base
     steps:
       - uses: actions/checkout@v4
       - name: Build in ${{ matrix.image }}
