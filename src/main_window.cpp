@@ -225,6 +225,8 @@ MainWindow::MainWindow(QWidget *parent)
         "#processTable { background: white; border: 1px solid #e0e6ef; border-radius: 8px; alternate-background-color: #f8faff; }"
         "#dangerAction { background: #fff1f0; color: #9b2020; border: 1px solid #f0c6c2; border-radius: 6px; padding: 8px 12px; font-weight: 600; }"
         "#dangerAction:hover { background: #ffe1df; }"
+        "#secondaryAction { background: white; color: #263853; border: 1px solid #d5deeb; border-radius: 6px; padding: 8px 12px; }"
+        "#secondaryAction:hover { background: #edf3ff; }"
         "#taskbar { background: #17243a; border-top: 1px solid #263853; }"
         "#taskbar QPushButton { background: transparent; color: #e5ecf7; border: 0; border-radius: 7px; padding: 9px 13px; font-size: 13px; }"
         "#taskbar QPushButton:hover { background: #263853; }"
