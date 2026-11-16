@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add Task Manager tabs for performance, app session history, users, process details, network, disks, Bluetooth, startup apps, and services.
+- Add per-user startup toggles and confirmed systemd service controls with Polkit for system-wide actions.
+
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
 ## Unreleased
