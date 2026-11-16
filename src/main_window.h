@@ -3,12 +3,12 @@
 
 #include <QHash>
 #include <QMainWindow>
+#include <QString>
 #include <QStringList>
 
 class AppLauncherWidget;
 class FileManagerWidget;
 class TaskManagerWidget;
-#include <QString>
 
 class QHBoxLayout;
 class QLabel;

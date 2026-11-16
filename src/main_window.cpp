@@ -309,7 +309,7 @@ void MainWindow::updateExternalWindows(const QString &output)
     static const QRegularExpression rowPattern(QStringLiteral("^\\s*(0x[0-9a-fA-F]+)\\s+(-?\\d+)\\s+(\\d+)\\s+\\S+\\s+(.*)$"));
     QStringList currentOrder;
     const qint64 ownPid = QCoreApplication::applicationPid();
-    const QStringList lines = output.split(QLatin1Char('\\n'), Qt::SkipEmptyParts);
+    const QStringList lines = output.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     for (const QString &line : lines) {
         const auto match = rowPattern.match(line);
         if (!match.hasMatch() || match.captured(3).toLongLong() == ownPid) continue;
@@ -343,7 +343,7 @@ void MainWindow::updateExternalWindows(const QString &output)
         windowSwitcherStatus_->setVisible(windowOrder_.isEmpty());
         if (windowOrder_.isEmpty()) windowSwitcherStatus_->setText(tr("No other open windows."));
     }
-    if (windowCursor_ >= windowOrder_.size()) windowCursor_ = -1;
+    if (windowCursor_ >= static_cast<int>(windowOrder_.size())) windowCursor_ = -1;
 }
 
 void MainWindow::activateExternalWindow(const QString &id)
@@ -355,7 +355,7 @@ void MainWindow::activateExternalWindow(const QString &id)
 void MainWindow::cycleExternalWindow()
 {
     if (windowOrder_.isEmpty()) return;
-    windowCursor_ = (windowCursor_ + 1) % windowOrder_.size();
+    windowCursor_ = (windowCursor_ + 1) % static_cast<int>(windowOrder_.size());
     activateExternalWindow(windowOrder_.at(windowCursor_));
 }
 
