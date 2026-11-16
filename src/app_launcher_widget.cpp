@@ -146,6 +146,12 @@ AppLauncherWidget::~AppLauncherWidget()
     }
 }
 
+void AppLauncherWidget::focusSearch()
+{
+    searchField_->clear();
+    searchField_->setFocus(Qt::OtherFocusReason);
+}
+
 void AppLauncherWidget::loadApplications()
 {
     GList *registeredApps = g_app_info_get_all();
