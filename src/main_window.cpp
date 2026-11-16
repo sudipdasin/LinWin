@@ -8,6 +8,12 @@
 #include "task_manager_widget.h"
 
 #include <QDateTime>
+#include <QCoreApplication>
+#include <QKeySequence>
+#include <QProcess>
+#include <QRegularExpression>
+#include <QShortcut>
+#include <QStandardPaths>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -155,6 +161,22 @@ MainWindow::MainWindow(QWidget *parent)
     clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
     homeButton_->setChecked(true);
 
+    auto *windowScroll = new QScrollArea(taskbar);
+    windowScroll->setObjectName(QStringLiteral("windowSwitcher"));
+    windowScroll->setWidgetResizable(true);
+    windowScroll->setFrameShape(QFrame::NoFrame);
+    windowScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    windowScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    windowScroll->setFixedHeight(44);
+    auto *windowList = new QWidget(windowScroll);
+    windowButtonsLayout_ = new QHBoxLayout(windowList);
+    windowButtonsLayout_->setContentsMargins(2, 0, 2, 0);
+    windowButtonsLayout_->setSpacing(4);
+    windowSwitcherStatus_ = new QLabel(tr("Checking open windows…"), windowList);
+    windowSwitcherStatus_->setObjectName(QStringLiteral("windowSwitcherStatus"));
+    windowButtonsLayout_->addWidget(windowSwitcherStatus_);
+    windowScroll->setWidget(windowList);
+
     auto *systemStatus = new QLabel(
         QStringLiteral("%1  ·  %2").arg(profile.distribution, profile.sessionType), taskbar);
     systemStatus->setObjectName(QStringLiteral("panelStatus"));
@@ -178,7 +200,7 @@ MainWindow::MainWindow(QWidget *parent)
     taskbarLayout->addWidget(filesButton_);
     taskbarLayout->addWidget(tasksButton_);
     taskbarLayout->addWidget(clipboardButton_);
-    taskbarLayout->addStretch(1);
+    taskbarLayout->addWidget(windowScroll, 1);
     taskbarLayout->addWidget(systemStatus);
     taskbarLayout->addSpacing(14);
     taskbarLayout->addWidget(clock);
@@ -233,6 +255,9 @@ MainWindow::MainWindow(QWidget *parent)
         "#taskbar QPushButton:checked { background: #2d4770; color: white; }"
         "#taskbar #startButton { background: #315fc0; color: white; font-weight: 700; padding-left: 16px; padding-right: 16px; }"
         "#taskbar #startButton:hover { background: #3b6dd5; }"
+        "#windowSwitcherStatus { color: #9dabc2; font-size: 11px; padding: 0 8px; }"
+        "#windowSwitcher QPushButton { background: #243550; color: #e5ecf7; border: 1px solid #354966; border-radius: 6px; padding: 6px 9px; }"
+        "#windowSwitcher QPushButton:hover { background: #31496c; }"
         "#panelStatus { color: #b8c5d9; font-size: 12px; }"
         "#panelClock { color: #f3f6fb; font-size: 12px; font-weight: 600; min-width: 72px; }"
         "#startMenuPanel { background: #ffffff; border: 1px solid #d8e0ec; border-radius: 14px; }"
@@ -240,7 +265,98 @@ MainWindow::MainWindow(QWidget *parent)
         "#startMenuPanel #applicationSearch { background: #f8faff; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
         "#startMenuPanel #primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }"));
 
+    const bool waylandSession = !qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")
+        || qEnvironmentVariable("XDG_SESSION_TYPE").compare(QStringLiteral("wayland"), Qt::CaseInsensitive) == 0;
+    wmctrlPath_ = QStandardPaths::findExecutable(QStringLiteral("wmctrl"));
+    if (waylandSession) {
+        windowSwitcherStatus_->setText(tr("Open windows are managed by your Wayland desktop."));
+        windowSwitcherStatus_->setToolTip(tr("Global window listing and activation require a compositor-specific adapter."));
+    } else if (wmctrlPath_.isEmpty()) {
+        windowSwitcherStatus_->setText(tr("Install wmctrl to enable X11 app switching."));
+    } else {
+        windowSwitcherStatus_->hide();
+        windowListProcess_ = new QProcess(this);
+        connect(windowListProcess_, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+                [this](int code, QProcess::ExitStatus status) {
+            if (status == QProcess::NormalExit && code == 0)
+                updateExternalWindows(QString::fromLocal8Bit(windowListProcess_->readAllStandardOutput()));
+            else if (windowSwitcherStatus_ != nullptr)
+                windowSwitcherStatus_->setText(tr("Could not read the X11 window list."));
+        });
+        windowRefreshTimer_ = new QTimer(this);
+        windowRefreshTimer_->setInterval(1500);
+        connect(windowRefreshTimer_, &QTimer::timeout, this, &MainWindow::refreshExternalWindows);
+        windowRefreshTimer_->start();
+        refreshExternalWindows();
+
+        auto *switchShortcut = new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Tab), this);
+        switchShortcut->setContext(Qt::ApplicationShortcut);
+        connect(switchShortcut, &QShortcut::activated, this, &MainWindow::cycleExternalWindow);
+    }
+
     updateShellGeometry();
+}
+}
+
+void MainWindow::refreshExternalWindows()
+{
+    if (windowListProcess_ == nullptr || windowListProcess_->state() != QProcess::NotRunning) return;
+    windowListProcess_->start(wmctrlPath_, {QStringLiteral("-lp")});
+}
+
+void MainWindow::updateExternalWindows(const QString &output)
+{
+    static const QRegularExpression rowPattern(QStringLiteral("^\\s*(0x[0-9a-fA-F]+)\\s+(-?\\d+)\\s+(\\d+)\\s+\\S+\\s+(.*)$"));
+    QStringList currentOrder;
+    const qint64 ownPid = QCoreApplication::applicationPid();
+    const QStringList lines = output.split(QLatin1Char('\\n'), Qt::SkipEmptyParts);
+    for (const QString &line : lines) {
+        const auto match = rowPattern.match(line);
+        if (!match.hasMatch() || match.captured(3).toLongLong() == ownPid) continue;
+        const QString id = match.captured(1);
+        const QString title = match.captured(4).trimmed();
+        if (title.isEmpty()) continue;
+        currentOrder.append(id);
+        QPushButton *button = windowButtons_.value(id, nullptr);
+        if (button == nullptr) {
+            button = new QPushButton(windowButtonsLayout_->parentWidget());
+            button->setMaximumWidth(180);
+            connect(button, &QPushButton::clicked, this, [this, id]() { activateExternalWindow(id); });
+            windowButtons_.insert(id, button);
+            windowButtonsLayout_->addWidget(button);
+        }
+        button->setText(title.size() > 20 ? title.left(19) + QChar(0x2026) : title);
+        button->setToolTip(title);
+    }
+
+    for (auto it = windowButtons_.begin(); it != windowButtons_.end();) {
+        if (!currentOrder.contains(it.key())) {
+            windowButtonsLayout_->removeWidget(it.value());
+            it.value()->deleteLater();
+            it = windowButtons_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    windowOrder_ = currentOrder;
+    if (windowSwitcherStatus_ != nullptr) {
+        windowSwitcherStatus_->setVisible(windowOrder_.isEmpty());
+        if (windowOrder_.isEmpty()) windowSwitcherStatus_->setText(tr("No other open windows."));
+    }
+    if (windowCursor_ >= windowOrder_.size()) windowCursor_ = -1;
+}
+
+void MainWindow::activateExternalWindow(const QString &id)
+{
+    if (!QRegularExpression(QStringLiteral("^0x[0-9a-fA-F]+$")).match(id).hasMatch()) return;
+    QProcess::startDetached(wmctrlPath_, {QStringLiteral("-ia"), id});
+}
+
+void MainWindow::cycleExternalWindow()
+{
+    if (windowOrder_.isEmpty()) return;
+    windowCursor_ = (windowCursor_ + 1) % windowOrder_.size();
+    activateExternalWindow(windowOrder_.at(windowCursor_));
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
