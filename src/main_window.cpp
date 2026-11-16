@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
-#include "system_profile.h"
-#include "clipboard_history_widget.h"
-#include "app_launcher_widget.h"
 
+#include "app_launcher_widget.h"
+#include "clipboard_history_widget.h"
+#include "system_profile.h"
+
+#include <QDateTime>
 #include <QFrame>
 #include <QGridLayout>
+#include <QHBoxLayout>
+#include <QKeyEvent>
 #include <QLabel>
+#include <QPushButton>
+#include <QResizeEvent>
 #include <QScrollArea>
-#include <QTabWidget>
+#include <QStackedWidget>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -31,21 +38,38 @@ QFrame *makeCard(const QString &title, const QString &body, QWidget *parent)
     return card;
 }
 
+QPushButton *makePanelButton(const QString &text, const QString &name, QWidget *parent)
+{
+    auto *button = new QPushButton(text, parent);
+    button->setObjectName(name);
+    button->setCheckable(true);
+    button->setFocusPolicy(Qt::StrongFocus);
+    return button;
+}
 }
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle(QStringLiteral("LinWin — Linux desktop shell"));
-    setMinimumSize(380, 420);
-    resize(1040, 700);
+    setWindowTitle(QStringLiteral("LinWin — shell preview"));
+    setMinimumSize(480, 420);
+    resize(1180, 760);
 
     const SystemProfile profile = SystemProfile::detect();
-    pages_ = new QTabWidget(this);
-    pages_->setDocumentMode(true);
-    pages_->setObjectName(QStringLiteral("mainPages"));
+    auto *root = new QWidget(this);
+    root->setObjectName(QStringLiteral("shellRoot"));
+    auto *rootLayout = new QVBoxLayout(root);
+    rootLayout->setContentsMargins(0, 0, 0, 0);
+    rootLayout->setSpacing(0);
 
-    auto *scroll = new QScrollArea(pages_);
+    desktopArea_ = new QWidget(root);
+    desktopArea_->setObjectName(QStringLiteral("desktopArea"));
+    rootLayout->addWidget(desktopArea_, 1);
+
+    pages_ = new QStackedWidget(desktopArea_);
+    pages_->setObjectName(QStringLiteral("shellPages"));
+
+    auto *scroll = new QScrollArea;
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     auto *content = new QWidget(scroll);
@@ -75,6 +99,8 @@ MainWindow::MainWindow(QWidget *parent)
     systemGrid->addWidget(makeCard(QStringLiteral("Desktop"), profile.desktopEnvironment, content), 0, 1);
     systemGrid->addWidget(makeCard(QStringLiteral("Session"), profile.sessionType, content), 1, 0);
     systemGrid->addWidget(makeCard(QStringLiteral("Kernel"), profile.kernel, content), 1, 1);
+    systemGrid->setColumnStretch(0, 1);
+    systemGrid->setColumnStretch(1, 1);
     layout->addLayout(systemGrid);
 
     auto *statusHeading = new QLabel(QStringLiteral("Project status"), content);
@@ -82,7 +108,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *status = new QLabel(QStringLiteral("Early development — shell prototype"), content);
     status->setObjectName(QStringLiteral("statusBadge"));
     auto *statusDescription = new QLabel(
-        QStringLiteral("This is an early prototype, not the finished shell. App search and clipboard history are previews; the installer, taskbar, window switching, file workflows, and hardware controls are still in development."), content);
+        QStringLiteral("The bottom panel and searchable Start menu are interface previews. Login-session integration, live window switching, the installer, full file workflows, and hardware controls are still in development."), content);
     statusDescription->setObjectName(QStringLiteral("intro"));
     statusDescription->setWordWrap(true);
     layout->addWidget(statusHeading);
@@ -98,18 +124,75 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addWidget(compatibilityHeading);
     layout->addWidget(compatibility);
     layout->addStretch();
-
     scroll->setWidget(content);
-    pages_->addTab(scroll, tr("Overview"));
-    pages_->addTab(new AppLauncherWidget(pages_), tr("Start"));
-    pages_->addTab(new ClipboardHistoryWidget(pages_), tr("Clipboard"));
-    setCentralWidget(pages_);
+
+    pages_->addWidget(scroll);
+    pages_->addWidget(new ClipboardHistoryWidget(pages_));
+
+    startMenu_ = new AppLauncherWidget(desktopArea_);
+    startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
+    startMenu_->setWindowFlags(Qt::Widget);
+    startMenu_->hide();
+
+    auto *taskbar = new QFrame(root);
+    taskbar->setObjectName(QStringLiteral("taskbar"));
+    taskbar->setFixedHeight(62);
+    auto *taskbarLayout = new QHBoxLayout(taskbar);
+    taskbarLayout->setContentsMargins(12, 7, 12, 7);
+    taskbarLayout->setSpacing(8);
+
+    startButton_ = makePanelButton(QStringLiteral("⊞  Start"), QStringLiteral("startButton"), taskbar);
+    startButton_->setToolTip(tr("Open the app menu (Super key integration is planned)"));
+    homeButton_ = makePanelButton(QStringLiteral("Home"), QStringLiteral("navigationButton"), taskbar);
+    clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
+    homeButton_->setChecked(true);
+
+    auto *systemStatus = new QLabel(
+        QStringLiteral("%1  ·  %2").arg(profile.distribution, profile.sessionType), taskbar);
+    systemStatus->setObjectName(QStringLiteral("panelStatus"));
+    systemStatus->setToolTip(tr("Detected Linux distribution and session type"));
+    systemStatus->setTextInteractionFlags(Qt::TextSelectableByMouse);
+
+    auto *clock = new QLabel(taskbar);
+    clock->setObjectName(QStringLiteral("panelClock"));
+    clock->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    const auto refreshClock = [clock]() {
+        clock->setText(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm\nddd, d MMM")));
+    };
+    refreshClock();
+    auto *clockTimer = new QTimer(this);
+    clockTimer->setInterval(30 * 1000);
+    connect(clockTimer, &QTimer::timeout, this, refreshClock);
+    clockTimer->start();
+
+    taskbarLayout->addWidget(startButton_);
+    taskbarLayout->addWidget(homeButton_);
+    taskbarLayout->addWidget(clipboardButton_);
+    taskbarLayout->addStretch(1);
+    taskbarLayout->addWidget(systemStatus);
+    taskbarLayout->addSpacing(14);
+    taskbarLayout->addWidget(clock);
+    rootLayout->addWidget(taskbar);
+    setCentralWidget(root);
+
+    connect(startButton_, &QPushButton::toggled, this, [this](bool visible) {
+        startMenu_->setVisible(visible);
+        if (visible) {
+            updateShellGeometry();
+            startMenu_->raise();
+            startMenu_->focusSearch();
+        }
+    });
+    connect(homeButton_, &QPushButton::clicked, this, [this]() { showPage(0); });
+    connect(clipboardButton_, &QPushButton::clicked, this, [this]() { showPage(1); });
+    connect(pages_, &QStackedWidget::currentChanged, this, [this](int index) {
+        homeButton_->setChecked(index == 0);
+        clipboardButton_->setChecked(index == 1);
+    });
 
     setStyleSheet(QStringLiteral(
-        "QMainWindow, QWidget { background: #f5f7fb; color: #172033; font-family: 'Sans Serif'; }"
-        "QTabWidget::pane { border: 0; }"
-        "QTabBar::tab { padding: 10px 18px; color: #526078; }"
-        "QTabBar::tab:selected { color: #2456bd; border-bottom: 2px solid #3568d4; font-weight: 700; }"
+        "QMainWindow, QWidget { background: #f4f6fa; color: #172033; font-family: 'Sans Serif'; }"
+        "#desktopArea { background: #f4f6fa; }"
         "#eyebrow { color: #3568d4; font-size: 11px; font-weight: 700; letter-spacing: 1px; }"
         "#pageTitle { color: #111a2b; font-size: 30px; font-weight: 700; }"
         "#sectionTitle { color: #172033; font-size: 18px; font-weight: 650; margin-top: 6px; }"
@@ -119,7 +202,57 @@ MainWindow::MainWindow(QWidget *parent)
         "#cardBody { color: #172033; font-size: 16px; font-weight: 600; }"
         "#statusBadge { color: #714c06; background: #fff0c2; border-radius: 8px; padding: 8px 12px; font-weight: 600; }"
         "#privacyNote { color: #654d17; background: #fff7dc; border: 1px solid #f0dda1; border-radius: 8px; padding: 10px 12px; }"
-        "#clipboardEntries { background: white; border: 1px solid #e0e6ef; border-radius: 8px; padding: 4px; }"
-        "#applicationList { background: white; border: 1px solid #e0e6ef; border-radius: 8px; padding: 4px; }"
-        "#primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }"));
+        "#clipboardEntries, #applicationList { background: white; border: 1px solid #e0e6ef; border-radius: 8px; padding: 4px; }"
+        "#taskbar { background: #17243a; border-top: 1px solid #263853; }"
+        "#taskbar QPushButton { background: transparent; color: #e5ecf7; border: 0; border-radius: 7px; padding: 9px 13px; font-size: 13px; }"
+        "#taskbar QPushButton:hover { background: #263853; }"
+        "#taskbar QPushButton:checked { background: #2d4770; color: white; }"
+        "#taskbar #startButton { background: #315fc0; color: white; font-weight: 700; padding-left: 16px; padding-right: 16px; }"
+        "#taskbar #startButton:hover { background: #3b6dd5; }"
+        "#panelStatus { color: #b8c5d9; font-size: 12px; }"
+        "#panelClock { color: #f3f6fb; font-size: 12px; font-weight: 600; min-width: 72px; }"
+        "#startMenuPanel { background: #ffffff; border: 1px solid #d8e0ec; border-radius: 14px; }"
+        "#startMenuPanel #pageTitle { font-size: 24px; }"
+        "#startMenuPanel #applicationSearch { background: #f8faff; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
+        "#startMenuPanel #primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }"));
+
+    updateShellGeometry();
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    updateShellGeometry();
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Escape && startMenu_->isVisible()) {
+        startMenu_->hide();
+        startButton_->setChecked(false);
+        event->accept();
+        return;
+    }
+    QMainWindow::keyPressEvent(event);
+}
+
+void MainWindow::showPage(int index)
+{
+    pages_->setCurrentIndex(index);
+    startMenu_->hide();
+    startButton_->setChecked(false);
+}
+
+void MainWindow::updateShellGeometry()
+{
+    if (desktopArea_ == nullptr || pages_ == nullptr || startMenu_ == nullptr) {
+        return;
+    }
+
+    pages_->setGeometry(desktopArea_->rect());
+    const int areaWidth = desktopArea_->width();
+    const int areaHeight = desktopArea_->height();
+    const int menuWidth = qMin(440, qMax(300, areaWidth - 24));
+    const int menuHeight = qMin(570, qMax(280, areaHeight - 24));
+    startMenu_->setGeometry(12, qMax(12, areaHeight - menuHeight - 12), menuWidth, menuHeight);
 }
