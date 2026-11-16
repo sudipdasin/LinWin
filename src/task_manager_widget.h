@@ -25,6 +25,7 @@ protected:
 private:
     void stopSelectedProcess(bool force);
     void refreshProcesses();
+    void exportProcessReport();
     qint64 selectedPid() const;
 
     ProcessTableModel *model_ = nullptr;
@@ -34,5 +35,6 @@ private:
     QLabel *status_ = nullptr;
     QPushButton *endTaskButton_ = nullptr;
     QPushButton *forceStopButton_ = nullptr;
+    QPushButton *exportButton_ = nullptr;
     QTimer *timer_ = nullptr;
 };
