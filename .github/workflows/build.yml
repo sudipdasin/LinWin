@@ -19,13 +19,13 @@ jobs:
           - image: fedora:latest
             install: dnf install -y cmake gcc-c++ qt6-qtbase-devel
           - image: archlinux:latest
-            install: pacman -Syu --noconfirm --needed cmake gcc qt6-base
+            install: pacman -Syu --noconfirm --needed cmake gcc make qt6-base
     steps:
       - uses: actions/checkout@v4
       - name: Build in ${{ matrix.image }}
         run: |
-          docker run --rm \
-            -v "$PWD:/src" \
-            -w /src \
-            "${{ matrix.image }}" \
+          docker run --rm \\
+            -v "$PWD:/src" \\
+            -w /src \\
+            "${{ matrix.image }}" \\
             sh -lc '${{ matrix.install }} && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2'
