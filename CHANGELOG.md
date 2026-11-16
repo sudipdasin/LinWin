@@ -1,15 +1,10 @@
 # Changelog
 
-## Unreleased
-
-- Add live CPU, memory, disk, and network performance charts with two-second sampling.
-- Add Task Manager tabs for performance, app session history, users, process details, network, disks, Bluetooth, startup apps, and services.
-- Add per-user startup toggles and confirmed systemd service controls with Polkit for system-wide actions.
-
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
 ## Unreleased
 
+- Added direct BlueZ Bluetooth scanning and device actions (pair, connect, disconnect, trust, forget), with pairing prompts, bounded scan duration, and a desktop-settings fallback.
 - Added a lightweight task manager preview with live `/proc` process data, CPU and resident-memory usage, search, sorting, two-second refresh, confirmed same-user End task, and separately confirmed Force stop.
 - Added a privacy-reviewed local JSON process report with atomic file saving; command-line details are disclosed before export.
 - Added a read-only process details dialog with parent PID/name, executable, working directory, and command line; open it from Details or by double-clicking a row.
