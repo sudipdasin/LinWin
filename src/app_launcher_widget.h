@@ -18,6 +18,7 @@ class AppLauncherWidget final : public QWidget {
 public:
     explicit AppLauncherWidget(QWidget *parent = nullptr);
     ~AppLauncherWidget() override;
+    void focusSearch();
 
 private slots:
     void filterApplications(const QString &query);
