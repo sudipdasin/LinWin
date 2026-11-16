@@ -5,6 +5,7 @@ All notable LinWin changes will be recorded here. This project is in early devel
 ## Unreleased
 
 - Added direct BlueZ Bluetooth scanning and device actions (pair, connect, disconnect, trust, forget), with pairing prompts, bounded scan duration, and a desktop-settings fallback.
+- Added a GPU tab that reads DRM/sysfs device identity, utilization, and video-memory counters when the active driver exposes them.
 - Added a lightweight task manager preview with live `/proc` process data, CPU and resident-memory usage, search, sorting, two-second refresh, confirmed same-user End task, and separately confirmed Force stop.
 - Added a privacy-reviewed local JSON process report with atomic file saving; command-line details are disclosed before export.
 - Added a read-only process details dialog with parent PID/name, executable, working directory, and command line; open it from Details or by double-clicking a row.
