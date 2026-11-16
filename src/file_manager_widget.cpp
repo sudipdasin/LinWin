@@ -118,7 +118,7 @@ FileManagerWidget::FileManagerWidget(QWidget *parent)
     backButton_ = actionButton(tr("Back"), this);
     auto *upButton = actionButton(tr("Up"), this);
     auto *homeButton = actionButton(tr("Home"), this);
-    backButton->setObjectName(QStringLiteral("fileAction"));
+    backButton_->setObjectName(QStringLiteral("fileAction"));
     upButton->setObjectName(QStringLiteral("fileAction"));
     homeButton->setObjectName(QStringLiteral("fileAction"));
     location_ = new QLineEdit(this);
@@ -346,10 +346,10 @@ void FileManagerWidget::renameSelected()
     layout->addLayout(buttons);
     connect(cancel, &QPushButton::clicked, dialog, &QDialog::reject);
     connect(rename, &QPushButton::clicked, dialog, &QDialog::accept);
-    const int extensionIndex = source.suffix().isEmpty()
+    const qsizetype extensionIndex = source.suffix().isEmpty()
         ? nameField->text().size()
-        : qMax(0, nameField->text().size() - source.suffix().size() - 1);
-    nameField->setSelection(0, extensionIndex);
+        : qMax(qsizetype{0}, nameField->text().size() - source.suffix().size() - 1);
+    nameField->setSelection(0, static_cast<int>(extensionIndex));
     nameField->setFocus();
     if (dialog->exec() != QDialog::Accepted) {
         dialog->deleteLater();

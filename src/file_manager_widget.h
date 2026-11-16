@@ -35,5 +35,5 @@ private:
     QPushButton *backButton_ = nullptr;
     QString currentPath_;
     QStringList visitedPaths_;
-    int visitedPathIndex_ = -1;
+    qsizetype visitedPathIndex_ = -1;
 };
