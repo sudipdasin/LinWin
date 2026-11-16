@@ -33,6 +33,21 @@ target_compile_options(linwin PRIVATE
     "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>"
 )
 
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(linwin-task-manager-tests
+        tests/test_task_manager.cpp
+        src/task_manager_widget.cpp
+        src/task_manager_widget.h
+    )
+    target_link_libraries(linwin-task-manager-tests PRIVATE Qt6::Widgets)
+    add_test(NAME task-manager-tabs COMMAND linwin-task-manager-tests)
+    set_tests_properties(task-manager-tabs PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        TIMEOUT 20
+    )
+endif()
+
 install(TARGETS linwin RUNTIME DESTINATION bin)
 install(FILES data/linwin.desktop DESTINATION share/applications)
 install(FILES data/linwin.svg DESTINATION share/icons/hicolor/scalable/apps)
