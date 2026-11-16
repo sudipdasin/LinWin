@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 class AppLauncherWidget;
+class FileManagerWidget;
 class QKeyEvent;
 class QPushButton;
 class QResizeEvent;
@@ -28,5 +29,7 @@ private:
     AppLauncherWidget *startMenu_ = nullptr;
     QPushButton *startButton_ = nullptr;
     QPushButton *homeButton_ = nullptr;
+    QPushButton *filesButton_ = nullptr;
     QPushButton *clipboardButton_ = nullptr;
+    FileManagerWidget *fileManager_ = nullptr;
 };

@@ -7,9 +7,12 @@ This document turns the project goal into observable user behaviour. LinWin is i
 - The Home page displays detected distribution, desktop environment, session type, and kernel.
 - The in-window bottom panel provides Home and Clipboard navigation, a detected system/session label, and a live clock/date display.
 - The Start popup searches launchable desktop applications, opens them through GIO, focuses search when opened, and stores pinned app IDs in local Qt application settings.
+- The Files page browses from the home folder, supports location entry and back/up/home navigation, opens files with the host default application, and provides new folder, rename, copy/cut/paste, shortcut-link, and move-to-Trash actions.
+- The Files page supports common keyboard shortcuts (Ctrl+C/X/V, F2, Delete, Ctrl+L, Alt+Up), multi-selection, context menus, and Qt file-view drag-and-drop.
 - The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, and clear actions, and a 50-item history stored in local Qt application settings.
 - Clipboard capture defaults to off. Saved clipboard text is not encrypted. Image/file clips and background capture are not supported yet; desktop compositor permissions may limit access.
 - LinWin does not yet launch as a login-session shell, manage hardware, provide the installation wizard, replace the host taskbar, track running windows, or control Alt+Tab/window switching.
+- The file manager is an initial preview: large copies can take time, cross-device cut/move may fail with an explanation, and operation progress, undo, advanced conflict handling, and broad compositor testing remain future work.
 
 ## Product goals
 
@@ -61,6 +64,9 @@ The installer must identify the host distribution, kernel, package manager, and 
 
 ### File operations and drag-and-drop
 
+- Implemented preview: browse local folders, open files with the host default app, create folders, rename with the file extension left unselected, copy/cut/paste, create a symbolic-link shortcut, and move items to the system Trash.
+- Implemented preview: standard keyboard shortcuts, multi-selection, context-menu actions, and drag-and-drop through Qt's file model.
+- Remaining: progress for large operations, clearer conflict choices, undo where safe, and broader X11/Wayland and file-manager interoperability checks.
 - Rename selects the base filename by default and leaves the extension unselected when the file has one.
 - Copy, cut, paste, and rename work through keyboard shortcuts and clearly labelled context-menu actions.
 - Drag-and-drop communicates copy, move, link, open, or pin before completing an ambiguous operation.

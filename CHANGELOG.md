@@ -4,6 +4,8 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Added an initial file manager page with folder navigation, open, new folder, extension-aware rename selection, cut/copy/paste, symbolic-link shortcuts, system Trash, keyboard shortcuts, multi-select, context menus, and drag-and-drop.
+- Added Files to the in-window shell panel and updated project status, usage guidance, and roadmap.
 - Replaced the tab strip with a responsive shell workspace, persistent in-window bottom panel, Home/Clipboard navigation, live date/clock, and a floating searchable Start menu.
 - Added keyboard-friendly Start search focus on opening and a clear Escape dismissal path when the main window has focus.
 - Added a searchable Start-style application launcher that discovers registered apps, launches them through GIO, and stores pinned favorites.

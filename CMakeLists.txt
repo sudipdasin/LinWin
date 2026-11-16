@@ -20,6 +20,8 @@ qt_add_executable(linwin
     src/app_launcher_widget.h
     src/clipboard_history_widget.cpp
     src/clipboard_history_widget.h
+    src/file_manager_widget.cpp
+    src/file_manager_widget.h
     src/system_profile.cpp
     src/system_profile.h
 )

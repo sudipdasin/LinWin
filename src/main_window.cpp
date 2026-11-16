@@ -3,6 +3,7 @@
 
 #include "app_launcher_widget.h"
 #include "clipboard_history_widget.h"
+#include "file_manager_widget.h"
 #include "system_profile.h"
 
 #include <QDateTime>
@@ -108,7 +109,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *status = new QLabel(QStringLiteral("Early development — shell prototype"), content);
     status->setObjectName(QStringLiteral("statusBadge"));
     auto *statusDescription = new QLabel(
-        QStringLiteral("The bottom panel and searchable Start menu are interface previews. Login-session integration, live window switching, the installer, full file workflows, and hardware controls are still in development."), content);
+        QStringLiteral("The bottom panel, searchable Start menu, and basic file manager are previews. Login-session integration, live window switching, the installer, advanced file workflows, and hardware controls are still in development."), content);
     statusDescription->setObjectName(QStringLiteral("intro"));
     statusDescription->setWordWrap(true);
     layout->addWidget(statusHeading);
@@ -127,6 +128,8 @@ MainWindow::MainWindow(QWidget *parent)
     scroll->setWidget(content);
 
     pages_->addWidget(scroll);
+    fileManager_ = new FileManagerWidget(pages_);
+    pages_->addWidget(fileManager_);
     pages_->addWidget(new ClipboardHistoryWidget(pages_));
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
@@ -144,6 +147,7 @@ MainWindow::MainWindow(QWidget *parent)
     startButton_ = makePanelButton(QStringLiteral("⊞  Start"), QStringLiteral("startButton"), taskbar);
     startButton_->setToolTip(tr("Open the app menu (Super key integration is planned)"));
     homeButton_ = makePanelButton(QStringLiteral("Home"), QStringLiteral("navigationButton"), taskbar);
+    filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
     clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
     homeButton_->setChecked(true);
 
@@ -167,6 +171,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     taskbarLayout->addWidget(startButton_);
     taskbarLayout->addWidget(homeButton_);
+    taskbarLayout->addWidget(filesButton_);
     taskbarLayout->addWidget(clipboardButton_);
     taskbarLayout->addStretch(1);
     taskbarLayout->addWidget(systemStatus);
@@ -184,10 +189,12 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
     connect(homeButton_, &QPushButton::clicked, this, [this]() { showPage(0); });
-    connect(clipboardButton_, &QPushButton::clicked, this, [this]() { showPage(1); });
+    connect(filesButton_, &QPushButton::clicked, this, [this]() { showPage(1); });
+    connect(clipboardButton_, &QPushButton::clicked, this, [this]() { showPage(2); });
     connect(pages_, &QStackedWidget::currentChanged, this, [this](int index) {
         homeButton_->setChecked(index == 0);
-        clipboardButton_->setChecked(index == 1);
+        filesButton_->setChecked(index == 1);
+        clipboardButton_->setChecked(index == 2);
     });
 
     setStyleSheet(QStringLiteral(
@@ -203,6 +210,11 @@ MainWindow::MainWindow(QWidget *parent)
         "#statusBadge { color: #714c06; background: #fff0c2; border-radius: 8px; padding: 8px 12px; font-weight: 600; }"
         "#privacyNote { color: #654d17; background: #fff7dc; border: 1px solid #f0dda1; border-radius: 8px; padding: 10px 12px; }"
         "#clipboardEntries, #applicationList { background: white; border: 1px solid #e0e6ef; border-radius: 8px; padding: 4px; }"
+        "#fileView { background: white; border: 1px solid #e0e6ef; border-radius: 8px; alternate-background-color: #f8faff; }"
+        "#fileLocation { background: white; border: 1px solid #cfd9e8; border-radius: 7px; padding: 8px 10px; }"
+        "#fileAction { background: white; color: #263853; border: 1px solid #d5deeb; border-radius: 7px; padding: 7px 10px; }"
+        "#fileAction:hover { background: #edf3ff; border-color: #a9bfeb; }"
+        "#fileStatus { color: #64738a; font-size: 12px; }"
         "#taskbar { background: #17243a; border-top: 1px solid #263853; }"
         "#taskbar QPushButton { background: transparent; color: #e5ecf7; border: 0; border-radius: 7px; padding: 9px 13px; font-size: 13px; }"
         "#taskbar QPushButton:hover { background: #263853; }"
