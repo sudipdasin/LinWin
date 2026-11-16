@@ -5,7 +5,7 @@
 #include <QStringList>
 #include <QWidget>
 
-#include <gio/gio.h>
+typedef struct _GAppInfo GAppInfo;
 
 class QLabel;
 class QLineEdit;
