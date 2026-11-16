@@ -2,14 +2,20 @@
 #include "task_manager_widget.h"
 
 #include <QElapsedTimer>
+#include <QDateTime>
 #include <QFile>
 #include <QFileInfo>
+#include <QFileDialog>
 #include <QHeaderView>
 #include <QHBoxLayout>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSaveFile>
 #include <QSortFilterProxyModel>
 #include <QTableView>
 #include <QTimer>
@@ -24,6 +30,8 @@
 #include <QShortcut>
 #include <QThread>
 #include <QVariant>
+#include <QHash>
+#include <QVector>
 
 #include <algorithm>
 #include <cerrno>
@@ -33,6 +41,7 @@
 #include <utility>
 #include <unistd.h>
 #include <sys/types.h>
+#include <pwd.h>
 
 namespace {
 struct ProcessEntry {
@@ -114,7 +123,26 @@ QString processOwner(const QString &pidText, uint *uidOut)
             break;
         }
         *uidOut = uid;
-        return uid == static_cast<uint>(::geteuid()) ? QObject::tr("You") : QString::number(uid);
+        if (uid == static_cast<uint>(::geteuid())) {
+            return QObject::tr("You");
+        }
+        static QHash<uint, QString> userNames;
+        if (userNames.contains(uid)) {
+            return userNames.value(uid);
+        }
+        long recommendedSize = ::sysconf(_SC_GETPW_R_SIZE_MAX);
+        if (recommendedSize < 1024) {
+            recommendedSize = 16384;
+        }
+        QVector<char> buffer(static_cast<qsizetype>(recommendedSize));
+        struct passwd record {};
+        struct passwd *found = nullptr;
+        const int lookup = ::getpwuid_r(static_cast<uid_t>(uid), &record, buffer.data(),
+                                        static_cast<size_t>(buffer.size()), &found);
+        const QString name = lookup == 0 && found != nullptr
+            ? QString::fromLocal8Bit(record.pw_name) : QString::number(uid);
+        userNames.insert(uid, name);
+        return name;
     }
     return QObject::tr("Unknown");
 }
@@ -299,6 +327,26 @@ public:
         return parseProcessStat(QString::number(pid), &current) && current.startTicks == startTicks;
     }
 
+    QJsonArray reportRows() const
+    {
+        QJsonArray rows;
+        for (const ProcessEntry &entry : entries_) {
+            QJsonObject row;
+            row.insert(QStringLiteral("pid"), entry.pid);
+            row.insert(QStringLiteral("name"), entry.name);
+            row.insert(QStringLiteral("user"), entry.owner);
+            row.insert(QStringLiteral("state"), entry.state);
+            row.insert(QStringLiteral("cpu_percent"), entry.cpuPercent);
+            row.insert(QStringLiteral("resident_bytes"), static_cast<qint64>(entry.residentBytes));
+            const QString command = processCommand(QString::number(entry.pid));
+            if (!command.isEmpty()) {
+                row.insert(QStringLiteral("command_line"), command);
+            }
+            rows.append(row);
+        }
+        return rows;
+    }
+
     void resetCpuBaseline()
     {
         previousCpuTicks_.clear();
@@ -365,12 +413,15 @@ TaskManagerWidget::TaskManagerWidget(QWidget *parent)
     endTaskButton_->setObjectName(QStringLiteral("primaryAction"));
     forceStopButton_ = new QPushButton(tr("Force stop"), this);
     forceStopButton_->setObjectName(QStringLiteral("dangerAction"));
+    exportButton_ = new QPushButton(tr("Export report…"), this);
+    exportButton_->setObjectName(QStringLiteral("secondaryAction"));
     endTaskButton_->setEnabled(false);
     forceStopButton_->setEnabled(false);
     toolbar->addWidget(search_, 1);
     toolbar->addWidget(refreshButton);
     toolbar->addWidget(endTaskButton_);
     toolbar->addWidget(forceStopButton_);
+    toolbar->addWidget(exportButton_);
     layout->addLayout(toolbar);
 
     model_ = new ProcessTableModel(this);
@@ -409,6 +460,7 @@ TaskManagerWidget::TaskManagerWidget(QWidget *parent)
     connect(search_, &QLineEdit::textChanged, proxy_, &QSortFilterProxyModel::setFilterFixedString);
     connect(endTaskButton_, &QPushButton::clicked, this, [this]() { stopSelectedProcess(false); });
     connect(forceStopButton_, &QPushButton::clicked, this, [this]() { stopSelectedProcess(true); });
+    connect(exportButton_, &QPushButton::clicked, this, &TaskManagerWidget::exportProcessReport);
     connect(table_->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
         const qint64 pid = selectedPid();
         const ProcessEntry *entry = model_->find(pid);
@@ -449,6 +501,36 @@ void TaskManagerWidget::refreshProcesses()
             }
         }
     }
+}
+
+void TaskManagerWidget::exportProcessReport()
+{
+    const auto answer = QMessageBox::warning(
+        this, tr("Review report privacy"),
+        tr("This report can include process names, user names, command-line arguments, and file paths. It is saved only on this computer. Review it before sharing."),
+        QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel);
+    if (answer != QMessageBox::Yes) {
+        return;
+    }
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("Export process report"), QStringLiteral("linwin-process-report.json"),
+        tr("JSON report (*.json)"));
+    if (path.isEmpty()) {
+        return;
+    }
+
+    QJsonObject report;
+    report.insert(QStringLiteral("created_at"), QDateTime::currentDateTime().toString(Qt::ISODate));
+    report.insert(QStringLiteral("process_count"), model_->rowCount());
+    report.insert(QStringLiteral("processes"), model_->reportRows());
+    const QByteArray bytes = QJsonDocument(report).toJson(QJsonDocument::Indented);
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) {
+        QMessageBox::critical(this, tr("Export failed"),
+                              tr("Could not save the report. Check that you have permission and enough disk space."));
+        return;
+    }
+    status_->setText(tr("Process report saved locally · review it before sharing"));
 }
 
 qint64 TaskManagerWidget::selectedPid() const
