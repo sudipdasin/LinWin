@@ -6,6 +6,7 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 - Added a lightweight task manager preview with live `/proc` process data, CPU and resident-memory usage, search, sorting, two-second refresh, confirmed same-user End task, and separately confirmed Force stop.
 - Added a privacy-reviewed local JSON process report with atomic file saving; command-line details are disclosed before export.
+- Added a read-only process details dialog with parent PID/name, executable, working directory, and command line; open it from Details or by double-clicking a row.
 - Added Tasks to the shell panel and documented the preview's process-control limits.
 - Added an initial file manager page with folder navigation, open, new folder, extension-aware rename selection, cut/copy/paste, symbolic-link shortcuts, system Trash, keyboard shortcuts, multi-select, context menus, and drag-and-drop.
 - Added Files to the in-window shell panel and updated project status, usage guidance, and roadmap.
