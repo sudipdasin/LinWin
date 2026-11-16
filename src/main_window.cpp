@@ -277,8 +277,8 @@ MainWindow::MainWindow(QWidget *parent)
         windowSwitcherStatus_->hide();
         windowListProcess_ = new QProcess(this);
         connect(windowListProcess_, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
-                [this](int code, QProcess::ExitStatus status) {
-            if (status == QProcess::NormalExit && code == 0)
+                [this](int code, QProcess::ExitStatus processStatus) {
+            if (processStatus == QProcess::NormalExit && code == 0)
                 updateExternalWindows(QString::fromLocal8Bit(windowListProcess_->readAllStandardOutput()));
             else if (windowSwitcherStatus_ != nullptr)
                 windowSwitcherStatus_->setText(tr("Could not read the X11 window list."));
@@ -295,7 +295,6 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     updateShellGeometry();
-}
 }
 
 void MainWindow::refreshExternalWindows()
