@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=LinWin
-Comment=Linux desktop usability tools
+Comment=Lightweight Linux desktop shell
 Exec=linwin
 Icon=linwin
 Terminal=false

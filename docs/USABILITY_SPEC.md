@@ -1,23 +1,27 @@
 # LinWin usability specification
 
-This document turns the project goal into observable user behaviour. The clipboard section distinguishes the current preview from the full desired behaviour; other items remain goals unless explicitly marked as implemented.
+This document turns the project goal into observable user behaviour. LinWin is intended to replace the desktop-shell layer, not the host distribution or kernel. The clipboard section distinguishes the current preview from the full desired behaviour; other items remain goals unless explicitly marked as implemented.
 
 ## Current implementation
 
 - The Overview page displays detected distribution, desktop environment, session type, and kernel.
 - The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, and clear actions, and a 50-item history stored in local Qt application settings.
 - Clipboard capture defaults to off. Saved clipboard text is not encrypted. Image/file clips and background capture are not supported yet; desktop compositor permissions may limit access.
+- LinWin does not yet launch as a login-session shell, manage hardware, provide the installation wizard, or replace the panel/launcher.
 
 ## Product goals
 
 - Make familiar desktop tasks discoverable and consistent for people switching to Linux.
-- Run on multiple distributions and desktop environments without requiring a LinWin-specific kernel or base OS.
+- Replace the user's desktop-shell layer across supported distributions and desktop environments without requiring a LinWin-specific kernel or base OS.
+- Keep the host kernel, drivers, applications, and package manager in place; expose controls through supported Linux userspace interfaces.
+- Keep the shell lean and responsive; avoid unnecessary always-running processes and duplicate system services.
+- Enable the standard component set by default while allowing each component to be switched off in setup and later settings.
 - Preserve each user's ability to keep the host desktop's normal tools and settings.
 - Make missing capabilities clear, especially when a desktop environment or system service does not expose a needed interface.
 
 ## Cross-desktop behaviour
 
-Each feature must declare whether it is a shared application, a system-service integration, or a desktop-specific adapter. Desktop-specific behaviour must not be represented as universally supported. The support matrix should record distribution, desktop, session type (Wayland/X11), version, and verification status.
+Each feature must declare whether it is a core shell function, optional component, host-system integration, or desktop/session adapter. Desktop-specific behaviour must not be represented as universally supported. The support matrix should record distribution, desktop, session type (Wayland/X11), version, and verification status.
 
 ## Interaction requirements
 
@@ -32,7 +36,8 @@ Each feature must declare whether it is a shared application, a system-service i
 - Show pinned and running apps distinctly; group related windows and provide window previews.
 - Right-click exposes useful app actions where the desktop or app supports them.
 - The launcher searches installed applications and exposes pinned apps, recent items, settings, and power actions.
-- Replacing or adding a panel/launcher is opt-in and reversible.
+- The installer explains the shell-session change, keeps the previous desktop as a recovery option, and provides a tested rollback and uninstall path.
+- Standard shell components start enabled by default and can each be disabled without disabling the whole shell.
 
 ### File operations and drag-and-drop
 

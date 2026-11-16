@@ -1,38 +1,41 @@
 # Roadmap
 
-This roadmap describes intent; it is not a promise that every item is already available.
+LinWin's goal is to become a lightweight desktop-shell replacement that works across Linux distributions. The current dashboard and clipboard page are prototypes, not a complete shell.
 
-## Foundation
+## Architecture and install foundation
 
-- [x] C++20 and Qt 6 application scaffold
-- [x] Detect distribution, desktop session, and kernel for support diagnostics
-- [x] Public contribution, security, and licensing documentation
-- [x] Automated C++ build on Ubuntu, Debian, Fedora, and Arch containers
-- [ ] Validate and publish installable packages on Debian/Ubuntu/Mint, Fedora, and Arch
-- [ ] Publish verified compatibility matrix by distro, desktop, and session type
+- [x] Choose a shared C++20/Qt 6 shell core that keeps the host Linux kernel and drivers
+- [ ] Define a small shell process and optional, independently switchable components
+- [ ] Add a comprehensive GUI installer with hardware/session detection, component choices, rollback, and uninstall
+- [ ] Set measurable startup, idle CPU, memory, and interaction-latency budgets
+- [ ] Publish a verified distro, desktop, session, and component compatibility matrix
 
-## Core usability tools
+## Shell experience
 
-- [x] Opt-in local text clipboard history with search, copy, remove, clear, and a 50-item limit
-- [ ] Pinned clips, image/file formats, finer privacy controls, and configurable middle-click selection paste
-- [ ] Optional background capture with explicit session/desktop permission support
-- [ ] Cross-distro file-operation helper with clear copy/move/link feedback and undo where supported
-- [ ] Searchable settings hub that opens native settings panels when appropriate
-- [ ] Bluetooth pairing flow built on the system Bluetooth service
-- [ ] Accessible zoom, text scaling, and high-contrast controls
+- [ ] Replace the prototype window with a login-session shell and recovery/fallback path
+- [ ] Build the panel/taskbar, application launcher, overview, notifications, and shell settings
+- [ ] Add window switching, keyboard shortcuts, and drag-and-drop through supported desktop/compositor interfaces
+- [ ] Make optional shell components enabled by default in the standard install profile and individually switchable
 
-## Desktop integrations
+## System integration
 
-- [ ] Cinnamon integration (Linux Mint)
-- [ ] Xfce integration (Linux Mint and other Xfce distributions)
-- [ ] KDE Plasma integration
-- [ ] MATE integration
-- [ ] Launcher, taskbar, Alt+Tab, shortcuts, and drag-and-drop adapters, each with explicit support status
+- [ ] Add hardware and service controls through documented Linux interfaces and system services
+- [ ] Add Bluetooth pairing through BlueZ and network/audio/power integration through host services
+- [ ] Add accessible zoom, text scaling, and high-contrast controls
+- [ ] Add safe configuration links and narrow, authenticated privileged actions
+- [ ] Keep hardware drivers, device firmware, and kernel maintenance owned by the host distribution
+
+## User-facing components
+
+- [x] Prototype opt-in local text clipboard history with search, copy, remove, clear, and a 50-item limit
+- [ ] Add pinned and image/file clips, background capture adapters, and finer privacy controls
+- [ ] Add file manager workflows for rename, copy/paste, shortcuts, and clear drag-and-drop feedback
+- [ ] Add a full task manager with safe app-close and advanced system-process views
 
 ## Release readiness
 
-- [ ] Automated build checks across supported distro images
-- [ ] Automated tests for shared core behaviour
-- [ ] Signed release artifacts and checksums
-- [ ] Upgrade, rollback, and uninstall documentation
-- [ ] Security contact and vulnerability response process
+- [x] Automated C++ builds on Ubuntu, Debian, Fedora, and Arch Linux containers
+- [ ] Validate packages and shell startup/uninstall on supported desktops and session types
+- [ ] Add automated tests for shared core behaviour and installer rollback
+- [ ] Publish signed release artifacts, checksums, upgrade, rollback, and uninstall guidance
+- [ ] Establish contributor and security response processes

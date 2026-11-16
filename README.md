@@ -1,23 +1,23 @@
 # LinWin
 
-LinWin is an open-source project to make everyday Linux desktop interactions easier and more consistent across distributions and desktop environments.
+LinWin is an open-source, lightweight Linux desktop-shell replacement designed to make everyday desktop use approachable, responsive, and consistent across distributions. It is intended for people moving from Windows as well as existing Linux users.
 
-The project is being built as a set of installable tools and desktop integrations. It does not require a custom Linux kernel or a single base distribution. The initial implementation uses C++20 and Qt 6.
+LinWin replaces the desktop-shell layer, such as the panel, launcher, overview, and selected system controls, while retaining the host distribution, Linux kernel, drivers, and applications. It is not a new distribution, kernel, or bundle of unrelated utilities. The shared shell is being developed in C++20 and Qt 6, with optional components that can be enabled or disabled independently.
 
 ## Project status
 
-**Early development.** The dashboard reports the detected distribution, desktop session, and kernel. The Clipboard tab includes opt-in text history with search, copy, remove, and clear actions. Capture is off by default, stores up to 50 recent text items in the user's local Qt application settings, and works only while LinWin is open. Saved text is not encrypted. Clipboard image/file history, background capture, file management, window switching, taskbar/launcher integrations, and Bluetooth workflows remain planned.
+**Early development.** The current build is a prototype dashboard plus an opt-in clipboard component. It is not yet a full shell replacement and does not include the installation wizard. Clipboard history captures up to 50 text clips while LinWin is open; capture is off by default and saved text is unencrypted. See [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md) for the intended design and stages.
 
 ## Intended compatibility
 
-LinWin aims to support multiple distributions and desktops, including:
+LinWin aims to replace the shell layer on multiple distributions and desktop environments, including:
 
 - Linux Mint Cinnamon, Xfce, and MATE
 - Ubuntu with KDE Plasma
 - Fedora with KDE Plasma or Xfce
 - Debian and other distributions as adapters and packages mature
 
-Compatibility will be published per feature and per desktop environment. A desktop panel or window-switcher integration may need a desktop-specific adapter, while standalone tools can be shared.
+Compatibility will be published per distribution, desktop, session type, and shell component. Desktop-specific adapters will integrate with the host compositor and session; LinWin will not claim universal support where an interface is unavailable.
 
 ## Build
 
@@ -46,16 +46,16 @@ The DEB and RPM package generators are starting points; maintainers must validat
 
 ## Design principles
 
-- Keep the shared core independent of a particular distribution.
-- Prefer documented desktop and system interfaces over shelling out to distribution-specific commands.
-- Keep the user interface unprivileged; request authorization only for specific operations that require it.
-- Add desktop-specific adapters for panel, launcher, window-switching, and settings integration where no common interface exists.
-- Make compatibility and limitations visible instead of silently degrading behaviour.
-- Keep features optional and removable; do not replace the user's desktop without an explicit choice.
+- Use the host Linux kernel, drivers, and system services; do not fork or replace them.
+- Access hardware and kernel-managed state through documented interfaces and system services. Keep the shell unprivileged and use narrow, user-authorized helpers only when elevated access is required.
+- Keep the core small. Avoid duplicate daemons, bundled applications, and always-running services for optional features; load components on demand where practical.
+- Enable the standard component set by default, and let the installation wizard and settings hub turn each component off independently.
+- Preserve the existing desktop as a recovery path. Explain the session change and make switching back or uninstalling straightforward.
+- Publish compatibility per distribution, desktop, session type, and component.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md), [ROADMAP.md](ROADMAP.md), [the usability specification](docs/USABILITY_SPEC.md), and [SECURITY.md](SECURITY.md) before opening a change. Bug reports should state the distribution, version, desktop environment, display server, and steps to reproduce. Please remove personal paths, hostnames, usernames, and device serials from logs before sharing them.
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [ROADMAP.md](ROADMAP.md), [the architecture](docs/ARCHITECTURE.md), [the installer specification](docs/INSTALLER_SPEC.md), [the usability specification](docs/USABILITY_SPEC.md), and [SECURITY.md](SECURITY.md) before opening a change. Bug reports should state the distribution, version, desktop environment, display server, and steps to reproduce. Please remove personal paths, hostnames, usernames, and device serials from logs before sharing them.
 
 ## License
 

@@ -35,7 +35,7 @@ QFrame *makeCard(const QString &title, const QString &body, QWidget *parent)
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle(QStringLiteral("LinWin — Linux usability tools"));
+    setWindowTitle(QStringLiteral("LinWin — Linux desktop shell"));
     setMinimumSize(380, 420);
     resize(1040, 700);
 
@@ -58,7 +58,7 @@ MainWindow::MainWindow(QWidget *parent)
     title->setObjectName(QStringLiteral("pageTitle"));
     title->setWordWrap(true);
     auto *intro = new QLabel(
-        QStringLiteral("LinWin is an open-source project for making everyday Linux desktop tasks simpler across distributions and desktop environments."), content);
+        QStringLiteral("A lightweight shell replacement for Linux desktops, built around familiar workflows and optional components."), content);
     intro->setObjectName(QStringLiteral("intro"));
     intro->setWordWrap(true);
     layout->addWidget(eyebrow);
@@ -78,10 +78,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *statusHeading = new QLabel(QStringLiteral("Project status"), content);
     statusHeading->setObjectName(QStringLiteral("sectionTitle"));
-    auto *status = new QLabel(QStringLiteral("Early development — shared core scaffold"), content);
+    auto *status = new QLabel(QStringLiteral("Early development — shell prototype"), content);
     status->setObjectName(QStringLiteral("statusBadge"));
     auto *statusDescription = new QLabel(
-        QStringLiteral("Clipboard history is now available as an optional, local-only feature. File operations, Bluetooth, and desktop-shell integrations remain in development."), content);
+        QStringLiteral("This build is a prototype, not yet a full shell replacement. The clipboard component is optional; the taskbar, launcher, hardware controls, session integration, and installation wizard are in development."), content);
     statusDescription->setObjectName(QStringLiteral("intro"));
     statusDescription->setWordWrap(true);
     layout->addWidget(statusHeading);

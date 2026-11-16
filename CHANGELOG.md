@@ -2,6 +2,12 @@
 
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
+## Unreleased
+
+- Clarified LinWin's product goal as a lightweight desktop-shell replacement that retains the host distribution, kernel, drivers, and applications.
+- Specified the modular component defaults, performance direction, system-access boundary, recovery path, and graphical installer flow.
+- Corrected prototype UI and package descriptions so they do not imply the shell replacement is already implemented.
+
 ## 0.2.0 - Clipboard history preview
 
 - Added an opt-in clipboard tab for recent text, with search, copy, remove, and clear actions.
