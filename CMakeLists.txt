@@ -22,6 +22,8 @@ qt_add_executable(linwin
     src/clipboard_history_widget.h
     src/file_manager_widget.cpp
     src/file_manager_widget.h
+    src/task_manager_widget.cpp
+    src/task_manager_widget.h
     src/system_profile.cpp
     src/system_profile.h
 )

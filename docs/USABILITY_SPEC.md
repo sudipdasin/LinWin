@@ -5,14 +5,17 @@ This document turns the project goal into observable user behaviour. LinWin is i
 ## Current implementation
 
 - The Home page displays detected distribution, desktop environment, session type, and kernel.
-- The in-window bottom panel provides Home and Clipboard navigation, a detected system/session label, and a live clock/date display.
+- The in-window bottom panel provides Home, Files, Tasks, and Clipboard navigation, a detected system/session label, and a live clock/date display.
 - The Start popup searches launchable desktop applications, opens them through GIO, focuses search when opened, and stores pinned app IDs in local Qt application settings.
 - The Files page browses from the home folder, supports location entry and back/up/home navigation, opens files with the host default application, and provides new folder, rename, copy/cut/paste, shortcut-link, and move-to-Trash actions.
 - The Files page supports common keyboard shortcuts (Ctrl+C/X/V, F2, Delete, Ctrl+L, Alt+Up), multi-selection, context menus, and Qt file-view drag-and-drop.
+- The Tasks page lists visible processes with CPU share, resident memory, PID, owner, and state; it searches, sorts, and refreshes every two seconds using Linux `/proc` while the page is open. Polling pauses when the user leaves the page.
+- **End task** sends SIGTERM after confirmation; **Force stop** sends SIGKILL after a separate data-loss warning. Both actions are limited to the current user's processes, recheck process identity before signalling, and do not request elevated privileges.
 - The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, and clear actions, and a 50-item history stored in local Qt application settings.
 - Clipboard capture defaults to off. Saved clipboard text is not encrypted. Image/file clips and background capture are not supported yet; desktop compositor permissions may limit access.
 - LinWin does not yet launch as a login-session shell, manage hardware, provide the installation wizard, replace the host taskbar, track running windows, or control Alt+Tab/window switching.
 - The file manager is an initial preview: large copies can take time, cross-device cut/move may fail with an explanation, and operation progress, undo, advanced conflict handling, and broad compositor testing remain future work.
+- The task manager is an initial process view, not a live-window taskbar: desktop app/window grouping, per-process history, services, startup management, and authorized control of other users' system processes are not implemented.
 
 ## Product goals
 
@@ -97,6 +100,9 @@ The installer must identify the host distribution, kernel, package manager, and 
 
 ### Task manager
 
+- Implemented preview: searchable and sortable process list with per-process CPU share, resident memory, PID, user, and state, refreshed every two seconds.
+- Implemented preview: confirmed normal close and force stop for processes owned by the current user, with process-identity checks and no elevation.
+- Remaining: recognizable application grouping, window-aware app close, history graphs, services/startup views, and narrowly authorized system-process controls.
 - Present applications and processes with CPU and memory use, sort/search, and a clear close-app action.
 - Make force-quit available for unresponsive apps, with an explicit confirmation when data loss is possible.
 - Put services, startup items, and advanced process controls behind an advanced view and the host's authorization mechanisms.

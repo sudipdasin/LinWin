@@ -5,6 +5,7 @@
 #include "clipboard_history_widget.h"
 #include "file_manager_widget.h"
 #include "system_profile.h"
+#include "task_manager_widget.h"
 
 #include <QDateTime>
 #include <QFrame>
@@ -130,6 +131,8 @@ MainWindow::MainWindow(QWidget *parent)
     pages_->addWidget(scroll);
     fileManager_ = new FileManagerWidget(pages_);
     pages_->addWidget(fileManager_);
+    taskManager_ = new TaskManagerWidget(pages_);
+    pages_->addWidget(taskManager_);
     pages_->addWidget(new ClipboardHistoryWidget(pages_));
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
@@ -148,6 +151,7 @@ MainWindow::MainWindow(QWidget *parent)
     startButton_->setToolTip(tr("Open the app menu (Super key integration is planned)"));
     homeButton_ = makePanelButton(QStringLiteral("Home"), QStringLiteral("navigationButton"), taskbar);
     filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
+    tasksButton_ = makePanelButton(QStringLiteral("Tasks"), QStringLiteral("navigationButton"), taskbar);
     clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
     homeButton_->setChecked(true);
 
@@ -172,6 +176,7 @@ MainWindow::MainWindow(QWidget *parent)
     taskbarLayout->addWidget(startButton_);
     taskbarLayout->addWidget(homeButton_);
     taskbarLayout->addWidget(filesButton_);
+    taskbarLayout->addWidget(tasksButton_);
     taskbarLayout->addWidget(clipboardButton_);
     taskbarLayout->addStretch(1);
     taskbarLayout->addWidget(systemStatus);
@@ -190,11 +195,13 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(homeButton_, &QPushButton::clicked, this, [this]() { showPage(0); });
     connect(filesButton_, &QPushButton::clicked, this, [this]() { showPage(1); });
-    connect(clipboardButton_, &QPushButton::clicked, this, [this]() { showPage(2); });
+    connect(tasksButton_, &QPushButton::clicked, this, [this]() { showPage(2); });
+    connect(clipboardButton_, &QPushButton::clicked, this, [this]() { showPage(3); });
     connect(pages_, &QStackedWidget::currentChanged, this, [this](int index) {
         homeButton_->setChecked(index == 0);
         filesButton_->setChecked(index == 1);
-        clipboardButton_->setChecked(index == 2);
+        tasksButton_->setChecked(index == 2);
+        clipboardButton_->setChecked(index == 3);
     });
 
     setStyleSheet(QStringLiteral(
@@ -215,6 +222,9 @@ MainWindow::MainWindow(QWidget *parent)
         "#fileAction { background: white; color: #263853; border: 1px solid #d5deeb; border-radius: 7px; padding: 7px 10px; }"
         "#fileAction:hover { background: #edf3ff; border-color: #a9bfeb; }"
         "#fileStatus { color: #64738a; font-size: 12px; }"
+        "#processTable { background: white; border: 1px solid #e0e6ef; border-radius: 8px; alternate-background-color: #f8faff; }"
+        "#dangerAction { background: #fff1f0; color: #9b2020; border: 1px solid #f0c6c2; border-radius: 6px; padding: 8px 12px; font-weight: 600; }"
+        "#dangerAction:hover { background: #ffe1df; }"
         "#taskbar { background: #17243a; border-top: 1px solid #263853; }"
         "#taskbar QPushButton { background: transparent; color: #e5ecf7; border: 0; border-radius: 7px; padding: 9px 13px; font-size: 13px; }"
         "#taskbar QPushButton:hover { background: #263853; }"

@@ -4,6 +4,8 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Added a lightweight task manager preview with live `/proc` process data, CPU and resident-memory usage, search, sorting, two-second refresh, confirmed same-user End task, and separately confirmed Force stop.
+- Added Tasks to the shell panel and documented the preview's process-control limits.
 - Added an initial file manager page with folder navigation, open, new folder, extension-aware rename selection, cut/copy/paste, symbolic-link shortcuts, system Trash, keyboard shortcuts, multi-select, context menus, and drag-and-drop.
 - Added Files to the in-window shell panel and updated project status, usage guidance, and roadmap.
 - Replaced the tab strip with a responsive shell workspace, persistent in-window bottom panel, Home/Clipboard navigation, live date/clock, and a floating searchable Start menu.

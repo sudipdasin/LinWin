@@ -12,7 +12,7 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 
 ## Shell experience
 
-- [x] Add a responsive in-window bottom panel, Home/Clipboard navigation, and a searchable Start popup
+- [x] Add a responsive in-window bottom panel, Home/Files/Tasks/Clipboard navigation, and a searchable Start popup
 - [ ] Replace the prototype window with a login-session shell and recovery/fallback path
 - [x] Searchable Start-style app launcher using the host application registry, with persistent pinned apps and native launch behavior
 - [ ] Integrate a host-session taskbar, Alt+Tab switching, live window tracking/previews, Bluetooth, accessibility, task manager, settings, and notifications
@@ -33,7 +33,8 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 - [ ] Add pinned and image/file clips, background capture adapters, and finer privacy controls
 - [x] Add a basic file manager preview with folder navigation, rename, copy/cut/paste, shortcut links, system Trash, keyboard actions, and drag-and-drop
 - [ ] Add file-operation progress, conflict choices, undo where safe, file search, and richer drag-and-drop feedback
-- [ ] Add a full task manager with safe app-close and advanced system-process views
+- [x] Add a lightweight task manager preview with `/proc` CPU/memory sampling, search, sorting, safe same-user close, and confirmed force-stop
+- [ ] Add process grouping, live-window awareness, richer resource history, and privileged system-process controls through desktop authorization
 
 ## Release readiness
 

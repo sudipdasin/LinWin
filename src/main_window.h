@@ -5,6 +5,7 @@
 
 class AppLauncherWidget;
 class FileManagerWidget;
+class TaskManagerWidget;
 class QKeyEvent;
 class QPushButton;
 class QResizeEvent;
@@ -30,6 +31,8 @@ private:
     QPushButton *startButton_ = nullptr;
     QPushButton *homeButton_ = nullptr;
     QPushButton *filesButton_ = nullptr;
+    QPushButton *tasksButton_ = nullptr;
     QPushButton *clipboardButton_ = nullptr;
     FileManagerWidget *fileManager_ = nullptr;
+    TaskManagerWidget *taskManager_ = nullptr;
 };
