@@ -1,0 +1,11 @@
+/build/
+/cmake-build-*/
+*.user
+*.autosave
+*.swp
+*.deb
+*.rpm
+*.tar.gz
+*.tar.Z
+*.tar.bz2
+*.tar.xz
