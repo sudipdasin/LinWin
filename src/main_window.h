@@ -3,18 +3,13 @@
 
 #include <QMainWindow>
 
-class QLabel;
-class QResizeEvent;
+class QTabWidget;
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
-protected:
-    void resizeEvent(QResizeEvent *event) override;
-
 private:
-    void updateResponsiveLayout(int width);
-    QLabel *sidebar_ = nullptr;
+    QTabWidget *pages_ = nullptr;
 };

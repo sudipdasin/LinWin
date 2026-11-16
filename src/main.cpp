@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("LinWin"));
     QCoreApplication::setOrganizationName(QStringLiteral("LinWin contributors"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("0.2.0"));
 
     MainWindow window;
     window.show();

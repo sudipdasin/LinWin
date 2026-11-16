@@ -6,7 +6,7 @@ The project is being built as a set of installable tools and desktop integration
 
 ## Project status
 
-**Early development.** This repository contains the first buildable project scaffold and a system-profile dashboard. The dashboard reports the detected distribution, desktop session, and kernel. Clipboard history, file management, window switching, taskbar/launcher integrations, Bluetooth workflows, and other usability features are planned; they are not implemented by this initial scaffold.
+**Early development.** The dashboard reports the detected distribution, desktop session, and kernel. The Clipboard tab includes opt-in text history with search, copy, remove, and clear actions. Capture is off by default, stores up to 50 recent text items in the user's local Qt application settings, and works only while LinWin is open. Saved text is not encrypted. Clipboard image/file history, background capture, file management, window switching, taskbar/launcher integrations, and Bluetooth workflows remain planned.
 
 ## Intended compatibility
 
@@ -34,7 +34,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-Run from the build directory with `./linwin`. Package formats can be generated with CPack where the corresponding packaging tools are installed:
+Run from the build directory with `./linwin`. Open **Clipboard**, enable history if desired, and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. Package formats can be generated with CPack where the corresponding packaging tools are installed:
 
 ```sh
 cd build

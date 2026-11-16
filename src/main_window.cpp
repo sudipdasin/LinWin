@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
 #include "system_profile.h"
+#include "clipboard_history_widget.h"
 
 #include <QFrame>
 #include <QGridLayout>
-#include <QHBoxLayout>
 #include <QLabel>
-#include <QResizeEvent>
 #include <QScrollArea>
+#include <QTabWidget>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -36,26 +36,15 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setWindowTitle(QStringLiteral("LinWin — Linux usability tools"));
-    setMinimumSize(520, 420);
+    setMinimumSize(380, 420);
     resize(1040, 700);
 
     const SystemProfile profile = SystemProfile::detect();
-    auto *root = new QWidget(this);
-    auto *rootLayout = new QHBoxLayout(root);
-    rootLayout->setContentsMargins(0, 0, 0, 0);
-    rootLayout->setSpacing(0);
+    pages_ = new QTabWidget(this);
+    pages_->setDocumentMode(true);
+    pages_->setObjectName(QStringLiteral("mainPages"));
 
-    sidebar_ = new QLabel(root);
-    sidebar_->setObjectName(QStringLiteral("sidebar"));
-    sidebar_->setText(QStringLiteral("LINWIN\n\nOverview\nRoadmap\nSystem info"));
-    sidebar_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    sidebar_->setMargin(22);
-    sidebar_->setMinimumWidth(176);
-    sidebar_->setMaximumWidth(220);
-    sidebar_->setTextInteractionFlags(Qt::NoTextInteraction);
-    rootLayout->addWidget(sidebar_);
-
-    auto *scroll = new QScrollArea(root);
+    auto *scroll = new QScrollArea(pages_);
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     auto *content = new QWidget(scroll);
@@ -92,7 +81,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *status = new QLabel(QStringLiteral("Early development — shared core scaffold"), content);
     status->setObjectName(QStringLiteral("statusBadge"));
     auto *statusDescription = new QLabel(
-        QStringLiteral("This first build detects the current Linux environment. Clipboard, file operations, Bluetooth, and desktop-shell integrations are planned and are not yet available."), content);
+        QStringLiteral("Clipboard history is now available as an optional, local-only feature. File operations, Bluetooth, and desktop-shell integrations remain in development."), content);
     statusDescription->setObjectName(QStringLiteral("intro"));
     statusDescription->setWordWrap(true);
     layout->addWidget(statusHeading);
@@ -110,12 +99,15 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addStretch();
 
     scroll->setWidget(content);
-    rootLayout->addWidget(scroll, 1);
-    setCentralWidget(root);
+    pages_->addTab(scroll, tr("Overview"));
+    pages_->addTab(new ClipboardHistoryWidget(pages_), tr("Clipboard"));
+    setCentralWidget(pages_);
 
     setStyleSheet(QStringLiteral(
         "QMainWindow, QWidget { background: #f5f7fb; color: #172033; font-family: 'Sans Serif'; }"
-        "#sidebar { background: #101a2b; color: #f4f7ff; font-size: 15px; font-weight: 600; }"
+        "QTabWidget::pane { border: 0; }"
+        "QTabBar::tab { padding: 10px 18px; color: #526078; }"
+        "QTabBar::tab:selected { color: #2456bd; border-bottom: 2px solid #3568d4; font-weight: 700; }"
         "#eyebrow { color: #3568d4; font-size: 11px; font-weight: 700; letter-spacing: 1px; }"
         "#pageTitle { color: #111a2b; font-size: 30px; font-weight: 700; }"
         "#sectionTitle { color: #172033; font-size: 18px; font-weight: 650; margin-top: 6px; }"
@@ -123,19 +115,8 @@ MainWindow::MainWindow(QWidget *parent)
         "#card { background: white; border: 1px solid #e0e6ef; border-radius: 12px; min-height: 78px; }"
         "#cardTitle { color: #526078; font-size: 12px; font-weight: 600; }"
         "#cardBody { color: #172033; font-size: 16px; font-weight: 600; }"
-        "#statusBadge { color: #714c06; background: #fff0c2; border-radius: 8px; padding: 8px 12px; font-weight: 600; }"));
-    updateResponsiveLayout(width());
-}
-
-void MainWindow::resizeEvent(QResizeEvent *event)
-{
-    QMainWindow::resizeEvent(event);
-    updateResponsiveLayout(event->size().width());
-}
-
-void MainWindow::updateResponsiveLayout(int width)
-{
-    if (sidebar_ != nullptr) {
-        sidebar_->setVisible(width >= 760);
-    }
+        "#statusBadge { color: #714c06; background: #fff0c2; border-radius: 8px; padding: 8px 12px; font-weight: 600; }"
+        "#privacyNote { color: #654d17; background: #fff7dc; border: 1px solid #f0dda1; border-radius: 8px; padding: 10px 12px; }"
+        "#clipboardEntries { background: white; border: 1px solid #e0e6ef; border-radius: 8px; padding: 4px; }"
+        "#primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }"));
 }

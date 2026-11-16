@@ -1,6 +1,12 @@
 # LinWin usability specification
 
-This document turns the project goal into observable user behaviour. Items below describe desired behaviour; they are not claims that the early-development build already provides these features.
+This document turns the project goal into observable user behaviour. The clipboard section distinguishes the current preview from the full desired behaviour; other items remain goals unless explicitly marked as implemented.
+
+## Current implementation
+
+- The Overview page displays detected distribution, desktop environment, session type, and kernel.
+- The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, and clear actions, and a 50-item history stored in local Qt application settings.
+- Clipboard capture defaults to off. Saved clipboard text is not encrypted. Image/file clips and background capture are not supported yet; desktop compositor permissions may limit access.
 
 ## Product goals
 
@@ -38,7 +44,8 @@ Each feature must declare whether it is a shared application, a system-service i
 
 ### Clipboard and pointer behaviour
 
-- Provide searchable clipboard history with pinning, clear-history, and privacy controls.
+- Implemented preview: opt-in text history with search, copy, removal, clear-history, and a bounded 50-item local store.
+- Remaining: pinned items, image/file content where supported, background capture adapters, and finer privacy controls.
 - Explicit `Ctrl+C`/`Ctrl+V` clipboard use is the default mental model.
 - Middle-click selection paste is a visible, opt-in preference; changing it must not disable middle-click link/tab actions in applications.
 - Clipboard history must handle text and common image/file content where the compositor permits it, and explain unavailable formats.

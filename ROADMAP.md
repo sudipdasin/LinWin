@@ -7,12 +7,15 @@ This roadmap describes intent; it is not a promise that every item is already av
 - [x] C++20 and Qt 6 application scaffold
 - [x] Detect distribution, desktop session, and kernel for support diagnostics
 - [x] Public contribution, security, and licensing documentation
-- [ ] Build and package on Debian/Ubuntu/Mint, Fedora, and Arch
+- [x] Automated C++ build on Ubuntu, Debian, Fedora, and Arch containers
+- [ ] Validate and publish installable packages on Debian/Ubuntu/Mint, Fedora, and Arch
 - [ ] Publish verified compatibility matrix by distro, desktop, and session type
 
 ## Core usability tools
 
-- [ ] Clipboard history with search, pinning, privacy controls, and configurable middle-click selection paste
+- [x] Opt-in local text clipboard history with search, copy, remove, clear, and a 50-item limit
+- [ ] Pinned clips, image/file formats, finer privacy controls, and configurable middle-click selection paste
+- [ ] Optional background capture with explicit session/desktop permission support
 - [ ] Cross-distro file-operation helper with clear copy/move/link feedback and undo where supported
 - [ ] Searchable settings hub that opens native settings panels when appropriate
 - [ ] Bluetooth pairing flow built on the system Bluetooth service
