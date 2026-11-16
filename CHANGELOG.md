@@ -4,9 +4,10 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
-- Clarified LinWin's product goal as a lightweight desktop-shell replacement that retains the host distribution, kernel, drivers, and applications.
-- Specified the modular component defaults, performance direction, system-access boundary, recovery path, and graphical installer flow.
-- Corrected prototype UI and package descriptions so they do not imply the shell replacement is already implemented.
+- Defined the core audience as Windows switchers and Linux beginners who should be able to install and use LinWin without terminal or Bash knowledge.
+- Specified a unified, familiar shell experience with automatic distro, kernel, hardware, and package detection in the GUI installer.
+- Clarified the modular component defaults, performance direction, system-access boundary, recovery path, and graphical setup flow.
+- Corrected prototype UI and package descriptions so they do not imply the complete shell is already implemented.
 
 ## 0.2.0 - Clipboard history preview
 

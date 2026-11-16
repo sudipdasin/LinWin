@@ -1,12 +1,12 @@
 # LinWin
 
-LinWin is an open-source, lightweight Linux desktop-shell replacement designed to make everyday desktop use approachable, responsive, and consistent across distributions. It is intended for people moving from Windows as well as existing Linux users.
+LinWin is an open-source, lightweight, all-in-one Linux desktop shell for people moving from Windows. Its goal is to make Linux feel familiar and easy from the first login, including for people who do not know Linux, terminals, or Bash.
 
-LinWin replaces the desktop-shell layer, such as the panel, launcher, overview, and selected system controls, while retaining the host distribution, Linux kernel, drivers, and applications. It is not a new distribution, kernel, or bundle of unrelated utilities. The shared shell is being developed in C++20 and Qt 6, with optional components that can be enabled or disabled independently.
+LinWin brings the taskbar, Start-style application menu, Alt+Tab window switching, file workflows, clipboard, Bluetooth, accessibility, task manager, and system settings into one coherent shell. It replaces the desktop-shell layer while retaining the host distribution, kernel, drivers, and applications. The shared shell is being developed in C++20 and Qt 6; supported components are enabled by default and can be turned off individually.
 
 ## Project status
 
-**Early development.** The current build is a prototype dashboard plus an opt-in clipboard component. It is not yet a full shell replacement and does not include the installation wizard. Clipboard history captures up to 50 text clips while LinWin is open; capture is off by default and saved text is unencrypted. See [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md) for the intended design and stages.
+**Early development.** The current build is only a prototype dashboard plus an opt-in clipboard component; it is not yet the complete shell or graphical installer. The planned installer will detect the distribution, desktop session, kernel, package manager, and available hardware, then select compatible packages and configure LinWin without asking users to use a terminal. The finished shell aims to handle normal setup and daily tasks entirely through a clear graphical interface. The prototype clipboard keeps up to 50 text clips while open; capture is off by default and saved text is unencrypted. See [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
 
 ## Intended compatibility
 
@@ -19,7 +19,9 @@ LinWin aims to replace the shell layer on multiple distributions and desktop env
 
 Compatibility will be published per distribution, desktop, session type, and shell component. Desktop-specific adapters will integrate with the host compositor and session; LinWin will not claim universal support where an interface is unavailable.
 
-## Build
+## Build from source (contributors)
+
+These commands are for developers building the prototype from source. They are not the planned end-user installation flow; the finished product is intended to install and configure through the graphical wizard.
 
 Requirements:
 
@@ -46,10 +48,11 @@ The DEB and RPM package generators are starting points; maintainers must validat
 
 ## Design principles
 
-- Use the host Linux kernel, drivers, and system services; do not fork or replace them.
+- Use the host Linux kernel, drivers, and system services; detect compatibility and configure the right packages automatically.
 - Access hardware and kernel-managed state through documented interfaces and system services. Keep the shell unprivileged and use narrow, user-authorized helpers only when elevated access is required.
 - Keep the core small. Avoid duplicate daemons, bundled applications, and always-running services for optional features; load components on demand where practical.
 - Enable the standard component set by default, and let the installation wizard and settings hub turn each component off independently.
+- Make normal setup and everyday use possible through the GUI, with no terminal or Bash knowledge required.
 - Preserve the existing desktop as a recovery path. Explain the session change and make switching back or uninstalling straightforward.
 - Publish compatibility per distribution, desktop, session type, and component.
 

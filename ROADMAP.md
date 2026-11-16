@@ -1,21 +1,21 @@
 # Roadmap
 
-LinWin's goal is to become a lightweight desktop-shell replacement that works across Linux distributions. The current dashboard and clipboard page are prototypes, not a complete shell.
+LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switchers feel at home and supports users with no prior Linux or terminal knowledge. The dashboard and clipboard page are prototypes, not the complete shell.
 
 ## Architecture and install foundation
 
 - [x] Choose a shared C++20/Qt 6 shell core that keeps the host Linux kernel and drivers
 - [ ] Define a small shell process and optional, independently switchable components
-- [ ] Add a comprehensive GUI installer with hardware/session detection, component choices, rollback, and uninstall
+- [ ] Add a comprehensive GUI installer that detects distro, kernel, package manager, session, hardware, and dependencies; installs matching packages; configures components; and provides rollback/uninstall
 - [ ] Set measurable startup, idle CPU, memory, and interaction-latency budgets
-- [ ] Publish a verified distro, desktop, session, and component compatibility matrix
+- [ ] Publish verified distro, kernel, desktop, session, package, and component compatibility
 
 ## Shell experience
 
 - [ ] Replace the prototype window with a login-session shell and recovery/fallback path
-- [ ] Build the panel/taskbar, application launcher, overview, notifications, and shell settings
-- [ ] Add window switching, keyboard shortcuts, and drag-and-drop through supported desktop/compositor interfaces
-- [ ] Make optional shell components enabled by default in the standard install profile and individually switchable
+- [ ] Build an integrated taskbar, Start-style application launcher, Alt+Tab switching, file workflows, clipboard, Bluetooth, accessibility, task manager, settings, and notifications
+- [ ] Add keyboard shortcuts and drag-and-drop through supported desktop/compositor interfaces
+- [ ] Enable supported components by default in the standard install profile and let users switch each one off independently
 
 ## System integration
 

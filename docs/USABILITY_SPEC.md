@@ -11,7 +11,9 @@ This document turns the project goal into observable user behaviour. LinWin is i
 
 ## Product goals
 
-- Make familiar desktop tasks discoverable and consistent for people switching to Linux.
+- Make Windows switchers feel at home with familiar conventions such as a taskbar, Start-style app menu, Alt+Tab, direct file actions, and clear system controls.
+- Make normal installation, configuration, and daily computer use possible entirely through a graphical interface; users should not need Linux, terminal, or Bash knowledge.
+- Integrate the common desktop features into one shell instead of requiring newcomers to assemble separate tools.
 - Replace the user's desktop-shell layer across supported distributions and desktop environments without requiring a LinWin-specific kernel or base OS.
 - Keep the host kernel, drivers, applications, and package manager in place; expose controls through supported Linux userspace interfaces.
 - Keep the shell lean and responsive; avoid unnecessary always-running processes and duplicate system services.
@@ -21,7 +23,14 @@ This document turns the project goal into observable user behaviour. LinWin is i
 
 ## Cross-desktop behaviour
 
-Each feature must declare whether it is a core shell function, optional component, host-system integration, or desktop/session adapter. Desktop-specific behaviour must not be represented as universally supported. The support matrix should record distribution, desktop, session type (Wayland/X11), version, and verification status.
+The installer must identify the host distribution, kernel, package manager, and desktop session, then choose compatible packages and adapters automatically where supported. It must surface unsupported combinations in plain language. Each feature must declare whether it is a core shell function, optional component, host-system integration, or desktop/session adapter. Desktop-specific behaviour must not be represented as universally supported. The support matrix should record distribution, desktop, session type (Wayland/X11), version, and verification status.
+
+## Beginner experience
+
+- Provide one graphical place for installation, component selection, system settings, and recovery.
+- Use familiar names, visible controls, and helpful explanations instead of requiring commands or scripts.
+- Keep advanced options discoverable but out of the way until requested.
+- Show the detected Linux system and explain compatibility without making users understand distro or kernel terminology.
 
 ## Interaction requirements
 
@@ -36,8 +45,16 @@ Each feature must declare whether it is a core shell function, optional componen
 - Show pinned and running apps distinctly; group related windows and provide window previews.
 - Right-click exposes useful app actions where the desktop or app supports them.
 - The launcher searches installed applications and exposes pinned apps, recent items, settings, and power actions.
-- The installer explains the shell-session change, keeps the previous desktop as a recovery option, and provides a tested rollback and uninstall path.
-- Standard shell components start enabled by default and can each be disabled without disabling the whole shell.
+- Pinned and running apps are distinct; related windows can be grouped and previewed.
+- Right-click exposes useful app actions where the desktop or app supports them.
+- Search finds installed applications and exposes pinned apps, settings, recent items, and power actions.
+- Common shell components start enabled by default and can each be disabled without disabling the whole shell.
+
+## Installation and first run
+
+- The GUI installer detects the distribution, kernel, package manager, desktop session, and available hardware, then selects compatible packages and configuration.
+- Users do not need to open a terminal, learn Bash, or identify package names to install, configure, or use LinWin.
+- The installer explains the shell-session change, keeps the previous desktop as a recovery option, and provides rollback and uninstall paths.
 
 ### File operations and drag-and-drop
 
@@ -83,11 +100,11 @@ Each feature must declare whether it is a core shell function, optional componen
 
 ## Initial delivery order
 
-1. Shared diagnostics and support matrix.
-2. Clipboard history and preferences, with distinct desktop/compositor adapters.
-3. File operation helper and shortcut handling.
-4. Searchable settings hub and Bluetooth pairing flow.
-5. Desktop adapters for launchers, taskbars, and window switching.
-6. Task manager and deeper system configuration links.
+1. Establish desktop, kernel, hardware, and package compatibility detection.
+2. Build the login-session shell core, recovery path, and component settings.
+3. Implement the GUI installer with host-specific package selection and rollback.
+4. Integrate the familiar taskbar, Start-style launcher, Alt+Tab switching, and file workflows.
+5. Add system controls and optional clipboard, Bluetooth, accessibility, and task-manager components.
+6. Verify support across targeted distributions, desktops, kernel versions, and X11/Wayland sessions.
 
 The order may change as maintainers learn which integration APIs are reliable on the target desktops.

@@ -54,11 +54,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *eyebrow = new QLabel(QStringLiteral("CROSS-DISTRO DESKTOP TOOLS"), content);
     eyebrow->setObjectName(QStringLiteral("eyebrow"));
-    auto *title = new QLabel(QStringLiteral("Make Linux feel at home."), content);
+    auto *title = new QLabel(QStringLiteral("A familiar desktop, built for Linux."), content);
     title->setObjectName(QStringLiteral("pageTitle"));
     title->setWordWrap(true);
     auto *intro = new QLabel(
-        QStringLiteral("A lightweight shell replacement for Linux desktops, built around familiar workflows and optional components."), content);
+        QStringLiteral("LinWin brings familiar desktop features into one shell. The finished product aims to handle setup and everyday use without terminal or Bash knowledge."), content);
     intro->setObjectName(QStringLiteral("intro"));
     intro->setWordWrap(true);
     layout->addWidget(eyebrow);
@@ -81,7 +81,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *status = new QLabel(QStringLiteral("Early development — shell prototype"), content);
     status->setObjectName(QStringLiteral("statusBadge"));
     auto *statusDescription = new QLabel(
-        QStringLiteral("This build is a prototype, not yet a full shell replacement. The clipboard component is optional; the taskbar, launcher, hardware controls, session integration, and installation wizard are in development."), content);
+        QStringLiteral("This is an early prototype, not the finished shell. The installer, taskbar, Start-style launcher, window switching, file workflows, and hardware controls are still in development."), content);
     statusDescription->setObjectName(QStringLiteral("intro"));
     statusDescription->setWordWrap(true);
     layout->addWidget(statusHeading);
