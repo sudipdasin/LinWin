@@ -10,28 +10,41 @@ class QLabel;
 class QLineEdit;
 class QListWidget;
 class QListWidgetItem;
+class QPushButton;
+class QEvent;
+class QObject;
 
 class ClipboardHistoryWidget final : public QWidget {
     Q_OBJECT
 public:
     explicit ClipboardHistoryWidget(QWidget *parent = nullptr);
+    void focusSearch();
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
     void captureClipboardText();
     void copySelectedEntry();
     void removeSelectedEntry();
     void clearHistory();
+    void toggleSelectedPin();
+    void updateMiddleClickPreference(bool enabled);
     void filterEntries(const QString &query);
 
 private:
     void saveHistory() const;
     void refreshList();
     void updateCaptureState(bool enabled);
+    void updatePinButtonLabel();
 
     QClipboard *clipboard_ = nullptr;
     QCheckBox *captureCheckBox_ = nullptr;
+    QCheckBox *middleClickPasteCheckBox_ = nullptr;
+    QPushButton *pinButton_ = nullptr;
     QLineEdit *searchField_ = nullptr;
     QListWidget *historyList_ = nullptr;
     QLabel *statusLabel_ = nullptr;
     QStringList history_;
+    QStringList pinned_;
 };

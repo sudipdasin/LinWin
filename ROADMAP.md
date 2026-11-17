@@ -30,7 +30,7 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 
 ## User-facing components
 
-- [x] Prototype opt-in local text clipboard history with search, copy, remove, clear, and a 50-item limit
+- [x] Add opt-in local text clipboard history with search, copy, remove, clear, up to 50 recent and 50 pinned items, and a LinWin-only middle-click paste preference
 - [ ] Add pinned and image/file clips, background capture adapters, and finer privacy controls
 - [x] Add a basic file manager preview with folder navigation, rename, copy/cut/paste, shortcut links, system Trash, keyboard actions, and drag-and-drop
 - [ ] Add file-operation progress, conflict choices, undo where safe, file search, and richer drag-and-drop feedback

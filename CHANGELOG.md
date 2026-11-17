@@ -4,6 +4,8 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Expanded the clipboard center with pinned text clips, Super+V and Ctrl+Alt+V quick-open shortcuts while LinWin is active, and an opt-in middle-click paste preference limited to LinWin text fields.
+
 - Added an X11 open-window taskbar strip with click-to-activate and an in-app Alt+Tab cycle when optional `wmctrl` is available; Wayland sessions keep their compositor's native switcher.
 
 - Added direct BlueZ Bluetooth scanning and device actions (pair, connect, disconnect, trust, forget), with pairing prompts, bounded scan duration, and a desktop-settings fallback.

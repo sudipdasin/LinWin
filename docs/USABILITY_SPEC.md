@@ -11,8 +11,9 @@ This document turns the project goal into observable user behaviour. LinWin is i
 - The Files page supports common keyboard shortcuts (Ctrl+C/X/V, F2, Delete, Ctrl+L, Alt+Up), multi-selection, context menus, and Qt file-view drag-and-drop.
 - The Tasks page lists visible processes with CPU share, resident memory, PID, owner, and state; it searches, sorts, and refreshes every two seconds using Linux `/proc` while the page is open. Polling pauses when the user leaves the page.
 - **End task** sends SIGTERM after confirmation; **Force stop** sends SIGKILL after a separate data-loss warning. Both actions are limited to the current user's processes, recheck process identity before signalling, and do not request elevated privileges.
-- The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, and clear actions, and a 50-item history stored in local Qt application settings.
-- Clipboard capture defaults to off. Saved clipboard text is not encrypted. Image/file clips and background capture are not supported yet; desktop compositor permissions may limit access.
+- The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, pin/unpin, and clear actions. It stores up to 50 recent plus 50 pinned text clips in local Qt application settings.
+- Super+V and Ctrl+Alt+V open Clipboard and focus search while LinWin is active; these are not global desktop hotkeys.
+- Middle-click paste is opt-in inside LinWin text fields and does not change behavior in other applications or the desktop. Clipboard capture defaults to off, and saved text is not encrypted. Image/file clips and background capture are not supported yet; compositor permissions may limit access.
 - LinWin does not yet launch as a login-session shell, manage hardware, provide the installation wizard, replace the host taskbar, track running windows, or control Alt+Tab/window switching.
 - The file manager is an initial preview: large copies can take time, cross-device cut/move may fail with an explanation, and operation progress, undo, advanced conflict handling, and broad compositor testing remain future work.
 - The task manager is an initial process view, not a live-window taskbar: desktop app/window grouping, per-process history, services, startup management, and authorized control of other users' system processes are not implemented.
@@ -78,8 +79,9 @@ The installer must identify the host distribution, kernel, package manager, and 
 
 ### Clipboard and pointer behaviour
 
-- Implemented preview: opt-in text history with search, copy, removal, clear-history, and a bounded 50-item local store.
-- Remaining: pinned items, image/file content where supported, background capture adapters, and finer privacy controls.
+- Implemented preview: opt-in text history with search, copy, removal, pinned items, clear-history, and bounded local storage.
+- Implemented preview: Super+V / Ctrl+Alt+V quick-open while LinWin is active and an opt-in middle-click paste preference for LinWin text fields; other applications are unchanged.
+- Remaining: image/file content where supported, background capture adapters, and finer privacy controls.
 - Explicit `Ctrl+C`/`Ctrl+V` clipboard use is the default mental model.
 - Middle-click selection paste is a visible, opt-in preference; changing it must not disable middle-click link/tab actions in applications.
 - Clipboard history must handle text and common image/file content where the compositor permits it, and explain unavailable formats.
