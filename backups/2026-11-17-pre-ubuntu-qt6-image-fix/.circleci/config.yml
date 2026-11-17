@@ -1,0 +1,24 @@
+version: 2.1
+jobs:
+  ubuntu-smoke:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Install Ubuntu Qt6 build dependencies
+          command: sudo apt-get update -qq && sudo apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev
+      - run:
+          name: Compile and test Ubuntu build
+          command: |
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+            cmake --build build --parallel 2
+            ctest --test-dir build --output-on-failure
+workflows:
+  ubuntu-ci:
+    jobs:
+      - ubuntu-smoke:
+          filters:
+            branches:
+              only: ci/dual-provider-free-tier-20261117
