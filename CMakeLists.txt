@@ -43,7 +43,17 @@ if(BUILD_TESTING)
     target_include_directories(linwin-task-manager-tests PRIVATE src)
     target_link_libraries(linwin-task-manager-tests PRIVATE Qt6::Widgets)
     add_test(NAME task-manager-tabs COMMAND linwin-task-manager-tests)
-    set_tests_properties(task-manager-tabs PROPERTIES
+
+    add_executable(linwin-clipboard-tests
+        tests/test_clipboard_center.cpp
+        src/clipboard_history_widget.cpp
+        src/clipboard_history_widget.h
+    )
+    target_include_directories(linwin-clipboard-tests PRIVATE src)
+    target_link_libraries(linwin-clipboard-tests PRIVATE Qt6::Widgets)
+    add_test(NAME clipboard-center COMMAND linwin-clipboard-tests)
+
+    set_tests_properties(task-manager-tabs clipboard-center PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 20
     )

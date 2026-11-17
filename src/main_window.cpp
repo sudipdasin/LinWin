@@ -139,7 +139,8 @@ MainWindow::MainWindow(QWidget *parent)
     pages_->addWidget(fileManager_);
     taskManager_ = new TaskManagerWidget(pages_);
     pages_->addWidget(taskManager_);
-    pages_->addWidget(new ClipboardHistoryWidget(pages_));
+    clipboardHistory_ = new ClipboardHistoryWidget(pages_);
+    pages_->addWidget(clipboardHistory_);
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
     startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
@@ -218,7 +219,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(homeButton_, &QPushButton::clicked, this, [this]() { showPage(0); });
     connect(filesButton_, &QPushButton::clicked, this, [this]() { showPage(1); });
     connect(tasksButton_, &QPushButton::clicked, this, [this]() { showPage(2); });
-    connect(clipboardButton_, &QPushButton::clicked, this, [this]() { showPage(3); });
+    connect(clipboardButton_, &QPushButton::clicked, this, &MainWindow::showClipboardCenter);
+    auto *superClipboardShortcut = new QShortcut(QKeySequence(Qt::META | Qt::Key_V), this);
+    superClipboardShortcut->setObjectName(QStringLiteral("clipboardSuperVShortcut"));
+    superClipboardShortcut->setContext(Qt::ApplicationShortcut);
+    connect(superClipboardShortcut, &QShortcut::activated, this, &MainWindow::showClipboardCenter);
+    auto *fallbackClipboardShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+V")), this);
+    fallbackClipboardShortcut->setObjectName(QStringLiteral("clipboardFallbackShortcut"));
+    fallbackClipboardShortcut->setContext(Qt::ApplicationShortcut);
+    connect(fallbackClipboardShortcut, &QShortcut::activated, this, &MainWindow::showClipboardCenter);
+
     connect(pages_, &QStackedWidget::currentChanged, this, [this](int index) {
         homeButton_->setChecked(index == 0);
         filesButton_->setChecked(index == 1);
@@ -380,6 +390,12 @@ void MainWindow::showPage(int index)
     pages_->setCurrentIndex(index);
     startMenu_->hide();
     startButton_->setChecked(false);
+}
+
+void MainWindow::showClipboardCenter()
+{
+    showPage(3);
+    if (clipboardHistory_ != nullptr) clipboardHistory_->focusSearch();
 }
 
 void MainWindow::updateShellGeometry()
