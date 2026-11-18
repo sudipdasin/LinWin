@@ -142,6 +142,17 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     : QWidget(parent)
 {
     setObjectName(QStringLiteral("settingsHub"));
+    setStyleSheet(QStringLiteral(
+        "#settingsSearch { background: white; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
+        "#settingsStatus { color: #64738a; font-size: 12px; }"
+        "QFrame[linwinSettingsCard=\"true\"] { background: white; border: 1px solid #e0e6ef; border-radius: 11px; }"
+        "#settingsCardTitle { color: #172033; font-size: 16px; font-weight: 650; }"
+        "#settingsCardDescription { color: #526078; font-size: 13px; }"
+        "#settingsAvailability { color: #287345; font-size: 12px; }"
+        "#settingsAvailability[available=\"false\"] { color: #7b8493; }"
+        "#settingsOpenButton { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 7px 13px; font-weight: 600; }"
+        "#settingsOpenButton:disabled { background: #e8edf4; color: #788397; }"
+        "#settingsEmptyState { color: #64738a; background: white; border: 1px dashed #cfd9e8; border-radius: 10px; padding: 22px; }"));
     auto *outer = new QVBoxLayout(this);
     outer->setContentsMargins(28, 24, 28, 20);
     outer->setSpacing(12);
@@ -207,6 +218,7 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
         auto *card = new QFrame(content);
         card->setObjectName(QStringLiteral("settingsCard_%1").arg(index));
         card->setProperty("categoryTitle", category.title);
+        card->setProperty("linwinSettingsCard", true);
         card->setFrameShape(QFrame::StyledPanel);
         auto *cardLayout = new QVBoxLayout(card);
         cardLayout->setContentsMargins(16, 14, 16, 14);
