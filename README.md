@@ -2,11 +2,11 @@
 
 LinWin is an open-source, lightweight, all-in-one Linux desktop shell for people moving from Windows. Its goal is to make Linux feel familiar and easy from the first login, including for people who do not know Linux, terminals, or Bash.
 
-LinWin brings the taskbar, Start-style application menu, Alt+Tab window switching, file workflows, clipboard, Bluetooth, accessibility, task manager, and system settings into one coherent shell. It replaces the desktop-shell layer while retaining the host distribution, kernel, drivers, and applications. The shared shell is being developed in C++20 and Qt 6; supported components are enabled by default and can be turned off individually. The launcher reads the Linux desktop application registry and remembers pinned apps.
+LinWin is being built as one familiar shell for Linux, using C++20 and Qt 6 while keeping the host distribution, kernel, drivers, and applications. Its goal is to bring the taskbar, Start-style app menu, window switching, file workflows, clipboard, device controls, task manager, and system settings into one easy interface.
 
 ## Project status
 
-**Early development.** The current build is a shell-interface preview with a persistent in-window bottom panel, searchable Start popup, basic file manager, task manager preview, system overview, and opt-in clipboard component; it is not yet the complete login-session shell or graphical installer. The planned installer will detect the distribution, desktop session, kernel, package manager, and available hardware, then select compatible packages and configure LinWin without asking users to use a terminal. The finished shell aims to handle normal setup and daily tasks entirely through a clear graphical interface. The file manager preview supports navigation, rename, cut/copy/paste, shortcut links, system Trash, keyboard actions, and drag-and-drop. The task manager preview reads process, CPU, and memory data from `/proc`, refreshes every two seconds, and only offers to stop processes owned by the current user. Select a process and choose Details or double-click it to view its parent, executable, working directory, and command line. It can export a local JSON process report after warning that command lines and paths may be sensitive. The clipboard preview keeps up to 50 text clips while open; capture is off by default and saved text is unencrypted. Actual desktop-panel replacement, Alt+Tab/window tracking, and session integration are still future work. See [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
+**Status: pre-beta engineering preview.** LinWin currently runs as a regular application window; it is not a login-session shell replacement and does not include the graphical installer, recovery flow, or component setup wizard. Do not replace your normal desktop with this build. For evaluation, run it in a test account or virtual machine. Current pages include Start app search and pinned apps, a basic file manager, a /proc process monitor, a searchable native Settings launcher, and opt-in text clipboard history. X11 taskbar window listing and in-app Alt+Tab require wmctrl; Wayland continues to use the host compositor's switcher. Host settings and hardware support depend on installed desktop tools and services. The clipboard preview stores text unencrypted, so capture is off by default. See [beta readiness and testing limits](docs/BETA_READINESS.md), [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
 
 ## Intended compatibility
 
@@ -37,15 +37,14 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-Run from the build directory with `./linwin`. Open **Start** on the bottom panel to search installed applications, pin favorites, and launch apps through the host desktop registry. Use **Home**, **Files**, **Tasks**, and **Clipboard** to switch pages. In Files, double-click folders to browse, use the action buttons or standard shortcuts (Ctrl+C/X/V, F2, Delete) for common file tasks, and drag items into folders. In Tasks, search or sort the process list, review CPU and memory use, choose **End task** to request a normal close, or use **Force stop** only when necessary. In Clipboard, enable history if desired and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. Package formats can be generated with CPack where the corresponding packaging tools are installed:
+Run from the build directory with `./linwin`. Open **Start** on the bottom panel to search installed applications, pin favorites, and launch apps through the host desktop registry. Use **Home**, **Files**, **Tasks**, **Clipboard**, and **Settings** to switch pages. Press **Ctrl+,** to open Settings and search for a host settings panel. In Files, double-click folders to browse, use the action buttons or standard shortcuts (Ctrl+C/X/V, F2, Delete) for common file tasks, and drag items into folders. In Tasks, search or sort the process list, review CPU and memory use, choose **End task** to request a normal close, or use **Force stop** only when necessary. In Clipboard, enable history if desired and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. A generic preview archive can be generated with CPack. It is a developer/test package, not an end-user installer:
 
 ```sh
 cd build
-cpack -G DEB
-cpack -G RPM
+cpack -G TGZ
 ```
 
-The DEB and RPM package generators are starting points; maintainers must validate dependencies and install/uninstall behaviour on each target distribution before calling a package supported.
+Pull requests produce short-lived per-distro archive artifacts after compiling, testing, and checking the staged install tree. These artifacts do not configure a login session or install a shell replacement. Native DEB/RPM packages, dependency resolution, upgrades, rollback, and uninstall must be validated before a public beta install is offered.
 
 ## Design principles
 

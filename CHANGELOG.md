@@ -4,6 +4,9 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Clarified the pre-beta status and documented the release blockers and safe evaluation limits.
+- Run distro build and UI tests on pull requests, stage-install the binary, produce checksummed seven-day preview archives, and include the GPL license and README in install trees.
+
 - Added a searchable Settings Hub for display, network, Bluetooth, sound, printers, power, accessibility, appearance, accounts, updates/software, and date/time; it detects installed native settings tools, opens them without shell commands or elevation, and clearly marks unavailable categories.
 - Added a Settings taskbar page and Ctrl+, shortcut, plus a UI test for category search and empty-state behaviour.
 

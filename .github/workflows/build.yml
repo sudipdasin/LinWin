@@ -12,20 +12,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: ubuntu:24.04
+          - platform: ubuntu-24.04
+            image: ubuntu:24.04
             install: apt-get update && apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev
-          - image: debian:13
+          - platform: debian-13
+            image: debian:13
             install: apt-get update && apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev
-          - image: fedora:latest
+          - platform: fedora
+            image: fedora:latest
             install: dnf install -y cmake gcc-c++ pkgconf-pkg-config glib2-devel qt6-qtbase-devel
-          - image: archlinux:latest
+          - platform: arch
+            image: archlinux:latest
             install: pacman -Syu --noconfirm --needed cmake gcc make pkgconf glib2 qt6-base
     steps:
       - uses: actions/checkout@v4
-      - name: Build in ${{ matrix.image }}
+      - name: Build, test, stage install, and create preview archive in ${{ matrix.image }}
         run: |
           docker run --rm \
             -v "$PWD:/src" \
             -w /src \
             "${{ matrix.image }}" \
-            sh -lc '${{ matrix.install }} && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2 && ctest --test-dir build --output-on-failure'
+            sh -lc '${{ matrix.install }} && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr && cmake --build build --parallel 2 && ctest --test-dir build --output-on-failure && DESTDIR=/src/build/stage cmake --install build && test -x build/stage/usr/bin/linwin && test -f build/stage/usr/share/applications/linwin.desktop && cpack --config build/CPackConfig.cmake -G TGZ -B build && tar -tzf build/linwin-*.tar.gz > build/archive-files.txt && grep -q "bin/linwin" build/archive-files.txt && sha256sum build/linwin-*.tar.gz > build/SHA256SUMS'
+      - name: Upload short-lived preview package
+        uses: actions/upload-artifact@v4
+        with:
+          name: linwin-preview-${{ matrix.platform }}
+          path: |
+            build/linwin-*.tar.gz
+            build/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
