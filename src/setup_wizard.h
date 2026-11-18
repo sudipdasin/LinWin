@@ -2,10 +2,10 @@
 #pragma once
 
 #include <QWizard>
+#include <QProcess>
 #include <QString>
 
 class QLabel;
-class QProcess;
 
 class SetupWizard final : public QWizard {
     Q_OBJECT
