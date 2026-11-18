@@ -71,7 +71,7 @@ jobs:
                   useradd --create-home builder &&
                   chown -R builder:builder build/archsrc &&
                   su builder -c "cd /src/build/archsrc && makepkg -f --noconfirm --nodeps" &&
-                  pkg=$(find build/archsrc -maxdepth 1 -name "linwin-*.pkg.tar.zst" -print -quit) &&
+                  pkg=$(find build/archsrc -maxdepth 1 -name "linwin-[0-9]*.pkg.tar.zst" -print -quit) &&
                   test -n "$pkg" &&
                   pacman -U --noconfirm "$pkg" &&
                   pacman -Q linwin &&
