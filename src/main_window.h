@@ -25,7 +25,7 @@ class QWidget;
 class MainWindow final : public QMainWindow {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(bool shellMode = false, QWidget *parent = nullptr);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -50,6 +50,7 @@ private:
     QPushButton *tasksButton_ = nullptr;
     QPushButton *clipboardButton_ = nullptr;
     QPushButton *settingsButton_ = nullptr;
+    QPushButton *signOutButton_ = nullptr;
     FileManagerWidget *fileManager_ = nullptr;
     TaskManagerWidget *taskManager_ = nullptr;
     ClipboardHistoryWidget *clipboardHistory_ = nullptr;

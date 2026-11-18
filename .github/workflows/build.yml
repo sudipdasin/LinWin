@@ -44,6 +44,8 @@ jobs:
               DESTDIR=/src/build/stage cmake --install build &&
               test -x build/stage/usr/bin/linwin &&
               test -f build/stage/usr/share/applications/linwin.desktop &&
+              test -x build/stage/usr/libexec/linwin-session-helper &&
+              test -x build/stage/usr/libexec/linwin-session &&
               mkdir -p build/release &&
               case "$LINWIN_PACKAGE" in
                 deb)
@@ -66,7 +68,7 @@ jobs:
                   ;;
                 arch)
                   mkdir -p build/archsrc &&
-                  tar --exclude="./build" --exclude="./.git" -czf build/archsrc/linwin-0.3.0.tar.gz -C . . &&
+                  tar --exclude="./build" --exclude="./.git" -czf build/archsrc/linwin-0.4.0.tar.gz -C . . &&
                   cp packaging/arch/PKGBUILD build/archsrc/PKGBUILD &&
                   useradd --create-home builder &&
                   chown -R builder:builder build/archsrc &&
@@ -84,7 +86,7 @@ jobs:
       - name: Upload installable beta package
         uses: actions/upload-artifact@v4
         with:
-          name: linwin-${{ matrix.platform }}-0.3.0-beta.1
+          name: linwin-${{ matrix.platform }}-0.4.0-beta.1
           path: build/release/*
           if-no-files-found: error
           retention-days: 7

@@ -20,6 +20,7 @@
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollArea>
@@ -57,10 +58,10 @@ QPushButton *makePanelButton(const QString &text, const QString &name, QWidget *
 }
 }
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(bool shellMode, QWidget *parent)
     : QMainWindow(parent)
 {
-    setWindowTitle(QStringLiteral("LinWin — shell preview"));
+    setWindowTitle(shellMode ? QStringLiteral("LinWin Desktop") : QStringLiteral("LinWin — shell preview"));
     setMinimumSize(480, 420);
     resize(1180, 760);
 
@@ -114,10 +115,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *statusHeading = new QLabel(QStringLiteral("Project status"), content);
     statusHeading->setObjectName(QStringLiteral("sectionTitle"));
-    auto *status = new QLabel(QStringLiteral("Early development — shell prototype"), content);
+    auto *status = new QLabel(shellMode ? QStringLiteral("LinWin desktop session is active")
+                                        : QStringLiteral("LinWin desktop shell preview"), content);
     status->setObjectName(QStringLiteral("statusBadge"));
-    auto *statusDescription = new QLabel(
-        QStringLiteral("The bottom panel, searchable Start menu, and basic file manager are previews. Login-session integration, live window switching, the installer, advanced file workflows, and hardware controls are still in development."), content);
+    auto *statusDescription = new QLabel(shellMode
+        ? QStringLiteral("You are using LinWin as an X11 desktop session with the XFCE window manager. Your previous desktop remains available in the login session selector. Choose Sign out to return to that selector.")
+        : QStringLiteral("The taskbar, searchable Start menu, file manager, and task manager are still evolving. Launch LinWin Setup to check whether this system can run the current XFCE/X11 session integration."), content);
     statusDescription->setObjectName(QStringLiteral("intro"));
     statusDescription->setWordWrap(true);
     layout->addWidget(statusHeading);
@@ -164,6 +167,10 @@ MainWindow::MainWindow(QWidget *parent)
     tasksButton_ = makePanelButton(QStringLiteral("Tasks"), QStringLiteral("navigationButton"), taskbar);
     clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
     settingsButton_ = makePanelButton(QStringLiteral("Settings"), QStringLiteral("navigationButton"), taskbar);
+    if (shellMode) {
+        signOutButton_ = makePanelButton(QStringLiteral("Sign out"), QStringLiteral("signOutButton"), taskbar);
+        signOutButton_->setToolTip(tr("End the LinWin session and return to the login screen"));
+    }
     homeButton_->setChecked(true);
 
     auto *windowScroll = new QScrollArea(taskbar);
@@ -206,6 +213,8 @@ MainWindow::MainWindow(QWidget *parent)
     taskbarLayout->addWidget(tasksButton_);
     taskbarLayout->addWidget(clipboardButton_);
     taskbarLayout->addWidget(settingsButton_);
+    if (signOutButton_ != nullptr)
+        taskbarLayout->addWidget(signOutButton_);
     taskbarLayout->addWidget(windowScroll, 1);
     taskbarLayout->addWidget(systemStatus);
     taskbarLayout->addSpacing(14);
@@ -226,6 +235,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(tasksButton_, &QPushButton::clicked, this, [this]() { showPage(2); });
     connect(clipboardButton_, &QPushButton::clicked, this, &MainWindow::showClipboardCenter);
     connect(settingsButton_, &QPushButton::clicked, this, &MainWindow::showSettingsHub);
+    if (signOutButton_ != nullptr) {
+        connect(signOutButton_, &QPushButton::clicked, this, [this]() {
+            if (QMessageBox::question(this, tr("Sign out of LinWin?"),
+                    tr("Your applications will close and the login screen will appear. Choose your previous desktop there to return to it."),
+                    QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes)
+                close();
+        });
+    }
     auto *settingsShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+,")), this);
     settingsShortcut->setObjectName(QStringLiteral("settingsHubShortcut"));
     settingsShortcut->setContext(Qt::ApplicationShortcut);

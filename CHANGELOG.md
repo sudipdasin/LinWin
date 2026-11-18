@@ -4,6 +4,12 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Add a GUI setup/uninstall wizard, a narrowly scoped polkit helper, and a selectable X11 session adapter built around XFCE's window manager and desktop.
+- Add a full-screen shell launch mode, an in-session Sign out action, recovery guidance, and package-manager uninstall for APT, DNF, and pacman systems.
+- Restrict the first shell-session setup to systems with the required XFCE tools; preserve the existing desktop session and leave unsupported Wayland/other-WM environments untouched.
+- Add offscreen setup-review coverage and a session-wrapper smoke test; extend package install checks to cover the helper and X11 session files.
+- Bump the project to 0.4.0 for the session integration preview.
+
 - Grouped hardware- and service-dependent Network, Disk, Bluetooth, Startup apps, Services, and GPU Task Manager panels under a separate Experimental tab.
 - Prepare installable DEB, RPM, and Arch x86_64 beta packages; test package install/removal in the matching distro containers and attach checksummed CI artifacts.
 - Publish a desktop-menu entry and accurate app-preview package metadata; retain the host login session and existing desktop.
