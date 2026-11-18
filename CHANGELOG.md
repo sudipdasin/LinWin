@@ -2,14 +2,16 @@
 
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
-## Unreleased
+## 1.0.0-beta.1 - Major public testing preview
 
 - Add persistent, default-on Start menu, File Manager, Task Manager, and Clipboard feature toggles in Settings; turning off a component immediately removes its taskbar entry and blocks its shortcut route.
 - Pause clipboard capture and LinWin-only middle-click behavior whenever the Clipboard component is turned off, even if history capture was previously opted in.
 - Add familiar Super, Super+E, and Ctrl+Shift+Esc shortcuts for Start, Files, and Task Manager.
 - Add settings UI coverage for component defaults and preference persistence.
 - Separate the GPL LinWin Free product from future paid work using a private companion repository and documented process-separation/licensing rules.
-- Bump the project to 0.5.0 for the modular shell controls preview.
+- Start the 1.0.0 public beta line as an installable, feedback-driven preview; this is not a stable release.
+- Run the complete build, UI/session tests, package creation, and install/remove checks on pull requests and pushes to main.
+- Gate private Pro source mirroring on a successful CI run for the exact public main commit.
 
 - Add a GUI setup/uninstall wizard, a narrowly scoped polkit helper, and a selectable X11 session adapter built around XFCE's window manager and desktop.
 - Add a full-screen shell launch mode, an in-session Sign out action, recovery guidance, and package-manager uninstall for APT, DNF, and pacman systems.
@@ -48,6 +50,10 @@ All notable LinWin changes will be recorded here. This project is in early devel
 - Specified a unified, familiar shell experience with automatic distro, kernel, hardware, and package detection in the GUI installer.
 - Clarified the modular component defaults, performance direction, system-access boundary, recovery path, and graphical setup flow.
 - Corrected prototype UI and package descriptions so they do not imply the complete shell is already implemented.
+
+## Unreleased
+
+No unreleased changes yet.
 
 ## 0.2.0 - Clipboard history preview
 

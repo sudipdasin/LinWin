@@ -1,43 +1,39 @@
-# LinWin public beta readiness
+# LinWin 1.0 public beta readiness
 
 Last reviewed: 2026-11-18
 
 ## Release state
 
-LinWin's next preview adds an installable X11 shell session and GUI setup/uninstall flow. The current adapter starts the LinWin shell with XFCE's window manager, settings daemon, and desktop process. It is an experimental session integration, not a release candidate for replacing a daily-use desktop. The GUI registers/removes the selectable session and can uninstall the LinWin package, but does not yet install missing XFCE dependencies or offer per-component toggles.
+LinWin 1.0.0-beta.1 is an installable public testing preview, not a stable desktop replacement. The app can run as a normal desktop application. Its optional login-session adapter supports XFCE on X11 and keeps the user's original session available as a recovery path. Wayland and non-XFCE login sessions are not supported by the adapter.
 
-The previous v0.3.0 beta's C++ build, UI tests, and native package install/removal passed in Ubuntu 24.04, Debian 13, Fedora, and Arch x86_64 containers. The new session helper and wrapper still require CI validation and real desktop testing. Container checks do not prove login manager behavior on a real Mint/XFCE or any other desktop.
+The graphical setup flow checks for required XFCE tools and registers or removes the selectable session. It does not install missing desktop dependencies. Package upgrade, rollback, real login-manager integration, and recovery across hardware and display-manager combinations remain incomplete.
 
-## Current test scope
+## Automated test scope
 
-| Area | Current evidence | Public beta status |
+Every pull request and push to `main` runs a direct Ubuntu runner-VM build, C++ UI/session tests, CLI startup check, and a short Xvfb shell-launch smoke test. A four-distribution package matrix builds and tests packages on Ubuntu 24.04, Debian 13, Fedora, and Arch Linux x86_64, including package install/remove checks. These checks verify the code and package transactions; they do not verify a physical desktop session.
+
+The private LinWin Pro mirror is intended to import a public `main` revision only after CI reports success for that exact commit. The private sync workflow runs on an hourly schedule and can also be manually dispatched. This automation depends on GitHub Actions being available for the private repository.
+
+## Known coverage limits
+
+| Area | Current behavior | Remaining limits |
 | --- | --- | --- |
-| Compile | Four-distro container matrix | Automated; desktop runtime not yet verified |
-| UI tests | Task manager, clipboard, settings search, and setup-wizard review | Automated subset only |
-| Session wrapper | Starts the XFCE session processes and LinWin full-screen entry point; rejects Wayland | Smoke test only; not yet exercised in a display manager on hardware |
-| Install package | Native package install/remove and installed session helper files | Automated in distro containers after this change passes |
-| Start menu and files | Implemented previews | Manual desktop coverage still needed |
-| Task manager | /proc process view and same-user actions | Not equivalent to full Windows Task Manager; services/startup management and broad hardware history are incomplete |
-| Clipboard | Opt-in local text history; storage is unencrypted | Privacy limitation; capture defaults off |
-| Window switching | X11 adapter uses optional wmctrl; Wayland uses host switcher | No compositor-independent adapter |
-| Settings and devices | Opens available host tools and some direct interfaces | Depends on distro packages, services, hardware, and desktop session |
-| GUI setup/uninstall | Registers the X11 session through a narrow pkexec helper; uninstalls via APT/DNF/pacman | First implementation; real polkit and package-manager interaction needs VM validation |
-| Shell session | XFCE X11 adapter with LinWin full-screen panel, launcher, and sign-out | Experimental; no Wayland, non-XFCE WM, or desktop-manager matrix yet |
-| Upgrade / rollback / recovery | Existing session kept; previous session remains selectable; failed uninstall restores session entry | Upgrade/failed-start recovery and safe rollback still require testing |
-
-## Required before a broader shell-replacement beta
-
-- [ ] Add dependency installation and per-component selection; current setup requires XFCE tools already installed.
-- [ ] Validate login, lock, logout, sleep/wake, multi-monitor, scaling, keyboard navigation, and accessibility on a named support matrix.
-- [ ] Test on clean virtual machines and representative real hardware across X11 and Wayland; publish exact versions and results.
-- [ ] Exercise package upgrade, failed upgrade recovery, rollback, and GUI uninstall with each distribution's package manager on real desktop installations.
-- [ ] Confirm that logs, screenshots, package metadata, and source contain no unintended host paths, user names, tokens, serials, or other private data.
-- [ ] Document known issues, minimum requirements, dependency behavior, privacy implications, and a beginner-friendly recovery path.
-- [ ] Review task-manager actions, Bluetooth permissions, clipboard persistence, and all system integration boundaries.
-- [ ] Create signed or otherwise verifiable release artifacts and publish checksums, source commit, and reproducible build instructions.
+| Start, taskbar, and shortcuts | Familiar Start-style launcher, pinned apps, taskbar, and common keyboard shortcuts | Window-management behavior varies by desktop and session |
+| Files | Browse, rename, copy/cut/paste, trash, shortcuts, and drag-and-drop | Cross-toolkit drag-and-drop and unusual mount types need broader testing |
+| Clipboard | Optional local text history and LinWin-scoped paste behavior | Saved text is not encrypted; clipboard integration varies by session |
+| Task Manager | Live process/resource views and same-user task actions | Network, disk, Bluetooth, startup, services, and GPU panels are experimental and may be unavailable on some systems; this is not yet equivalent to Windows Task Manager |
+| Window switching | X11 window listing and in-app Alt+Tab when `wmctrl` is installed; host compositor switcher otherwise | No compositor-independent window-control layer |
+| Settings and devices | Opens available host tools and reads selected system interfaces | Depends on distro packages, permissions, services, hardware, and desktop session |
+| Setup and uninstall | GUI setup/uninstall flow with a narrowly scoped authorization helper | Real polkit prompts, login-manager behavior, upgrade, rollback, and recovery need more VM and hardware coverage |
 
 ## Safe evaluation
 
-Install this beta only as a normal app and test it in a virtual machine or test account. Do not select LinWin as the only login shell, remove the existing desktop, or depend on it for recovery or system administration. Package manager installation/removal is tested in CI containers; real desktop integration remains unverified.
+Test in a virtual machine or secondary account. Keep your existing desktop session selectable. Do not rely on this preview as the only way to administer or recover a system. Report issues with the LinWin version, distribution and version, desktop and display session, relevant hardware, and reproduction steps. Remove names, local paths, hostnames, network identifiers, serials, and tokens from diagnostics before posting them.
 
-Report bugs with LinWin commit, distribution/version, desktop/session (X11 or Wayland), hardware model where relevant, and reproduction steps. Remove personal names, paths, hostnames, network identifiers, and serial numbers from diagnostic output before sharing them.
+## Work before stable 1.0
+
+- Validate login, lock, logout, sleep/wake, multi-monitor, scaling, keyboard navigation, and accessibility on a named support matrix.
+- Test package upgrade, failed-upgrade recovery, rollback, and GUI uninstall on clean VMs for each supported distribution.
+- Add dependency installation and per-component selection to setup where appropriate.
+- Improve and test service, startup, Bluetooth, network, disk, and GPU panels on representative systems.
+- Confirm release artifacts are checksummed and that the source tree contains no unintended private data.
