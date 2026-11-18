@@ -4,6 +4,9 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Added a searchable Settings Hub for display, network, Bluetooth, sound, printers, power, accessibility, appearance, accounts, updates/software, and date/time; it detects installed native settings tools, opens them without shell commands or elevation, and clearly marks unavailable categories.
+- Added a Settings taskbar page and Ctrl+, shortcut, plus a UI test for category search and empty-state behaviour.
+
 - Expanded the clipboard center with pinned text clips, Super+V and Ctrl+Alt+V quick-open shortcuts while LinWin is active, and an opt-in middle-click paste preference limited to LinWin text fields.
 
 - Added an X11 open-window taskbar strip with click-to-activate and an in-app Alt+Tab cycle when optional `wmctrl` is available; Wayland sessions keep their compositor's native switcher.
