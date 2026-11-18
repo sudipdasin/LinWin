@@ -59,4 +59,4 @@ For a future combined download, publish separate package manifests and clearly l
 
 ## Current status
 
-The private `LinWin-Pro` repository has been created. This strategy and its implementation are in progress. No Pro features or paid binaries are part of the current public beta, and no public IPC extension protocol has been implemented yet.
+The private `LinWin-Pro` repository has been created and contains a source snapshot plus private-only scaffolding. Its hourly sync workflow is intended to copy public `main` only after the exact commit passes the public VM and distro CI matrix. This automation depends on GitHub Actions being available for the private repository. No Pro features or paid binaries are part of the current public beta, and no public IPC extension protocol has been implemented yet.

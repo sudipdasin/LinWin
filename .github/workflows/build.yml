@@ -1,6 +1,8 @@
 name: Build and package
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -97,7 +99,7 @@ jobs:
                   ;;
                 arch)
                   mkdir -p build/archsrc &&
-                  tar --exclude="./build" --exclude="./.git" -czf build/archsrc/linwin-0.5.0.tar.gz -C . . &&
+                  tar --exclude="./build" --exclude="./.git" -czf build/archsrc/linwin-1.0.0.tar.gz -C . . &&
                   cp packaging/arch/PKGBUILD build/archsrc/PKGBUILD &&
                   useradd --create-home builder &&
                   chown -R builder:builder build/archsrc &&
@@ -115,7 +117,7 @@ jobs:
       - name: Upload installable beta package
         uses: actions/upload-artifact@v4
         with:
-          name: linwin-${{ matrix.platform }}-0.5.0-beta.1
+          name: linwin-${{ matrix.platform }}-1.0.0-beta.1
           path: build/release/*
           if-no-files-found: error
           retention-days: 7
