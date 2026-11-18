@@ -11,6 +11,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Guard the public/private source boundary
+        run: |
+          if git ls-files | grep -Eq '(^|/)(private-pro|proprietary|linwin-pro|pro-assets)(/|$)'; then
+            echo "Private-only LinWin Pro paths must not be tracked in the public repository."
+            exit 1
+          fi
       - name: Install build dependencies on the runner VM
         run: |
           sudo apt-get update
