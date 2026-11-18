@@ -22,4 +22,4 @@ Contributions are welcome. LinWin is intended to work across Linux distributions
 
 Build with the commands in the README. Include the exact distribution, desktop environment, session type (Wayland/X11), and manual verification steps in the pull request description. Do not claim an environment is supported unless it has been checked.
 
-By submitting a contribution, you agree that it may be distributed under LinWin's GPL-3.0-or-later license.
+By submitting a contribution, you agree that it may be distributed under LinWin's GPL-3.0-or-later license. Contributors retain their copyright. A contribution is **not** automatically licensed for proprietary redistribution or incorporation into LinWin Pro; obtain explicit permission from each rightsholder before using it under different terms. Keep Pro-only code and assets out of this public repository. See the [commercial edition strategy](docs/COMMERCIAL_EDITION_STRATEGY.md).

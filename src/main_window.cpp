@@ -489,6 +489,7 @@ void MainWindow::applyComponentVisibility(const QString &component, bool enabled
 
     button->setVisible(enabled);
     pages_->widget(pageIndex)->setEnabled(enabled);
+    if (component == QStringLiteral("clipboard")) clipboardHistory_->setComponentEnabled(enabled);
     if (!enabled && pages_->currentIndex() == pageIndex) showPage(0);
 }
 

@@ -4,6 +4,10 @@ LinWin is an open-source, lightweight, all-in-one Linux desktop shell for people
 
 LinWin is being built as one familiar shell for Linux, using C++20 and Qt 6 while keeping the host distribution, kernel, drivers, and applications. Its goal is to bring the taskbar, Start-style app menu, window switching, file workflows, clipboard, device controls, task manager, and system settings into one easy interface.
 
+## Free and Pro development
+
+The public LinWin repository is the complete, independently useful **LinWin Free** shell and is licensed under GPL-3.0-or-later. Paid development will live in the separate, private [`LinWin-Pro`](https://github.com/sudipdasin/LinWin-Pro) repository. Its `public-core/` directory is maintained as a synchronized snapshot of this repository; all proprietary implementation, assets, and release material stay in that private repository. LinWin Free remains installable and usable without LinWin Pro. The Pro product is planned as a separately installed companion application communicating through documented, process-separated interfaces; the public project will not load proprietary libraries into the GPL shell. See [commercial edition strategy](docs/COMMERCIAL_EDITION_STRATEGY.md).
+
 ## Project status
 
 **Status: installable shell-session beta preview.** The package installs LinWin as a normal application first. The new **LinWin Setup** wizard can register an optional X11 login session on systems with XFCE's `xfwm4`, `xfsettingsd`, and `xfdesktop`; your existing desktop remains selectable as a recovery option. This first session adapter does not support Wayland or other window managers yet. The GUI can remove the session and uninstall the LinWin package through the system authorization dialog. Test in a VM or secondary account. Clipboard history is opt-in and saved text is unencrypted. X11 window listing and in-app Alt+Tab require `wmctrl`; Wayland uses the host compositor's switcher when running LinWin as a regular application. See [beta readiness and testing limits](docs/BETA_READINESS.md), [architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
@@ -70,7 +74,7 @@ CI builds and tests DEB packages for Ubuntu/Debian, an RPM for Fedora, and an Ar
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md), [ROADMAP.md](ROADMAP.md), [the architecture](docs/ARCHITECTURE.md), [the installer specification](docs/INSTALLER_SPEC.md), [the usability specification](docs/USABILITY_SPEC.md), and [SECURITY.md](SECURITY.md) before opening a change. Bug reports should state the distribution, version, desktop environment, display server, and steps to reproduce. Please remove personal paths, hostnames, usernames, and device serials from logs before sharing them.
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [ROADMAP.md](ROADMAP.md), [the architecture](docs/ARCHITECTURE.md), [commercial edition strategy](docs/COMMERCIAL_EDITION_STRATEGY.md), [the installer specification](docs/INSTALLER_SPEC.md), [the usability specification](docs/USABILITY_SPEC.md), and [SECURITY.md](SECURITY.md) before opening a change. Bug reports should state the distribution, version, desktop environment, display server, and steps to reproduce. Please remove personal paths, hostnames, usernames, and device serials from logs before sharing them.
 
 ## License
 

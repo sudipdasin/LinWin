@@ -19,6 +19,7 @@ class ClipboardHistoryWidget final : public QWidget {
 public:
     explicit ClipboardHistoryWidget(QWidget *parent = nullptr);
     void focusSearch();
+    void setComponentEnabled(bool enabled);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -47,4 +48,5 @@ private:
     QLabel *statusLabel_ = nullptr;
     QStringList history_;
     QStringList pinned_;
+    bool componentEnabled_ = true;
 };

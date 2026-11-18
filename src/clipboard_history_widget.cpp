@@ -145,7 +145,7 @@ ClipboardHistoryWidget::ClipboardHistoryWidget(QWidget *parent)
 
 void ClipboardHistoryWidget::captureClipboardText()
 {
-    if (!captureCheckBox_->isChecked() || clipboard_ == nullptr) {
+    if (!componentEnabled_ || !captureCheckBox_->isChecked() || clipboard_ == nullptr) {
         return;
     }
 
@@ -300,7 +300,8 @@ void ClipboardHistoryWidget::updateMiddleClickPreference(bool enabled)
 
 bool ClipboardHistoryWidget::eventFilter(QObject *watched, QEvent *event)
 {
-    if (!middleClickPasteCheckBox_->isChecked() && event->type() == QEvent::MouseButtonPress) {
+    if ((!componentEnabled_ || !middleClickPasteCheckBox_->isChecked())
+        && event->type() == QEvent::MouseButtonPress) {
         QWidget *widget = qobject_cast<QWidget *>(watched);
         QWidget *current = widget;
         while (current != nullptr) {
@@ -321,11 +322,21 @@ void ClipboardHistoryWidget::focusSearch()
     searchField_->setFocus(Qt::ShortcutFocusReason);
 }
 
+void ClipboardHistoryWidget::setComponentEnabled(bool enabled)
+{
+    componentEnabled_ = enabled;
+    setEnabled(enabled);
+    if (!enabled && captureCheckBox_->isChecked())
+        statusLabel_->setText(tr("Clipboard history is hidden in LinWin Settings; capture is paused until it is enabled again."));
+}
+
 void ClipboardHistoryWidget::updateCaptureState(bool enabled)
 {
     QSettings settings;
     settings.setValue(kCaptureSetting, enabled);
-    statusLabel_->setText(enabled
+    statusLabel_->setText(!componentEnabled_ && enabled
+        ? tr("Clipboard history is hidden in LinWin Settings; capture is paused until it is enabled again.")
+        : enabled
         ? tr("Clipboard monitoring is on while LinWin is open. Stored history is not encrypted.")
         : tr("Clipboard monitoring is off. Existing saved items remain until you clear them."));
 }

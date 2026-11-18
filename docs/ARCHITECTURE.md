@@ -14,6 +14,14 @@ Bring common desktop actions together in one consistent graphical shell: a taskb
 4. **Host-system interfaces:** detect the host distribution, release, CPU architecture, kernel, desktop session, package manager, hardware, and available services. Use existing kernel drivers and documented Linux userspace interfaces, system buses, portals, and services. Examples include udev for device discovery, BlueZ for Bluetooth, and the host's network, audio, power, and login services.
 5. **Narrow privileged helper:** only add one for an operation that genuinely requires elevated privileges. Keep the UI and normal shell process unprivileged, authenticate through the host authorization mechanism, limit each helper action, and report the result.
 
+## Free and Pro boundary
+
+The public repository contains the entire LinWin Free shell under GPL-3.0-or-later. LinWin Pro is developed in the private `sudipdasin/LinWin-Pro` repository; a scheduled sync keeps an unmodified `public-core/` snapshot aligned with public `main`, while all private implementation and licensed assets live under `proprietary/`. Changes to the free core are made and reviewed in the public project first. Never commit private source, credentials, customer data, or restricted assets to this repository.
+
+The planned Pro edition is a separate executable and package. It may add optional applications and integration points, but LinWin Free must continue to build, install, and work by itself. Prefer documented OS interfaces such as D-Bus, portals, and standard desktop entries, using a versioned protocol and explicit user consent for privileged operations. Do not load a private shared library into the GPL process, link private code into the shell executable, exchange complex shared-memory structures, or make the free shell depend on a license service. Process separation is an architectural aim, not a legal guarantee; the actual product boundary and distribution model need qualified license review before paid binaries ship.
+
+The Pro team must not relicense community contributions without explicit permission from every relevant rightsholder. Public contributions remain available under the repository's GPL license. Keep copyright notices, third-party license records, and asset provenance with both products.
+
 ## Hardware and kernel access
 
 “Direct access” means LinWin can expose and coordinate hardware and system controls from one shell using the host's supported interfaces, while the installer selects packages compatible with the detected distribution and supported kernel. Device drivers, firmware loading, kernel updates, and low-level device ownership remain with the Linux kernel and distribution. The shell must not bypass drivers with arbitrary device writes or run as root. Read-only kernel information can be shown where useful; changes that require privilege must go through a narrowly scoped, authenticated system operation.

@@ -5,8 +5,10 @@ All notable LinWin changes will be recorded here. This project is in early devel
 ## Unreleased
 
 - Add persistent, default-on Start menu, File Manager, Task Manager, and Clipboard feature toggles in Settings; turning off a component immediately removes its taskbar entry and blocks its shortcut route.
+- Pause clipboard capture and LinWin-only middle-click behavior whenever the Clipboard component is turned off, even if history capture was previously opted in.
 - Add familiar Super, Super+E, and Ctrl+Shift+Esc shortcuts for Start, Files, and Task Manager.
 - Add settings UI coverage for component defaults and preference persistence.
+- Separate the GPL LinWin Free product from future paid work using a private companion repository and documented process-separation/licensing rules.
 - Bump the project to 0.5.0 for the modular shell controls preview.
 
 - Add a GUI setup/uninstall wizard, a narrowly scoped polkit helper, and a selectable X11 session adapter built around XFCE's window manager and desktop.
