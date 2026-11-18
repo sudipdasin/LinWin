@@ -14,7 +14,7 @@ jobs:
       - name: Install build dependencies on the runner VM
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev
+          sudo apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev xvfb xauth
       - name: Build LinWin on the runner VM
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
       - name: Compile on the runner VM
@@ -22,7 +22,12 @@ jobs:
       - name: Run C++ UI and session tests on the runner VM
         run: ctest --test-dir build --output-on-failure
       - name: Check command-line startup on the runner VM
-        run: ./build/linwin --version
+        run: QT_QPA_PLATFORM=offscreen ./build/linwin --version
+      - name: Launch the full-screen shell under a virtual X server
+        run: |
+          status=0
+          timeout 5s xvfb-run -a env XDG_SESSION_TYPE=x11 ./build/linwin --shell || status=$?
+          test "$status" -eq 124
 
   distro-build:
     runs-on: ubuntu-24.04
