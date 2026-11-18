@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QSettings>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -19,6 +20,9 @@ class SettingsHubWidget final : public QWidget {
 public:
     explicit SettingsHubWidget(QWidget *parent = nullptr);
     void focusSearch();
+
+signals:
+    void componentEnabledChanged(const QString &component, bool enabled);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;

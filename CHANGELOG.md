@@ -4,6 +4,11 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Add persistent, default-on Start menu, File Manager, Task Manager, and Clipboard feature toggles in Settings; turning off a component immediately removes its taskbar entry and blocks its shortcut route.
+- Add familiar Super, Super+E, and Ctrl+Shift+Esc shortcuts for Start, Files, and Task Manager.
+- Add settings UI coverage for component defaults and preference persistence.
+- Bump the project to 0.5.0 for the modular shell controls preview.
+
 - Add a GUI setup/uninstall wizard, a narrowly scoped polkit helper, and a selectable X11 session adapter built around XFCE's window manager and desktop.
 - Add a full-screen shell launch mode, an in-session Sign out action, recovery guidance, and package-manager uninstall for APT, DNF, and pacman systems.
 - Restrict the first shell-session setup to systems with the required XFCE tools; preserve the existing desktop session and leave unsupported Wayland/other-WM environments untouched.

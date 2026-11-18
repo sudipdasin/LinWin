@@ -21,7 +21,7 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 - [x] Add a searchable Settings Hub that detects and opens installed native desktop settings tools
 - [x] Add an X11 window-list adapter with taskbar activation and in-app Alt+Tab cycling when `wmctrl` is installed
 - [ ] Add keyboard shortcuts and drag-and-drop through supported desktop/compositor interfaces
-- [ ] Enable supported components by default in the standard install profile and let users switch each one off independently
+- [x] Enable core shell components by default and let users switch Start, Files, Task Manager, and Clipboard off independently in Settings
 
 ## System integration
 

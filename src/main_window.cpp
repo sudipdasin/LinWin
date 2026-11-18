@@ -15,6 +15,7 @@
 #include <QRegularExpression>
 #include <QShortcut>
 #include <QStandardPaths>
+#include <QSettings>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -147,6 +148,8 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     pages_->addWidget(clipboardHistory_);
     settingsHub_ = new SettingsHubWidget(pages_);
     pages_->addWidget(settingsHub_);
+    connect(settingsHub_, &SettingsHubWidget::componentEnabledChanged,
+            this, &MainWindow::applyComponentVisibility);
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
     startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
@@ -172,6 +175,9 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
         signOutButton_->setToolTip(tr("End the LinWin session and return to the login screen"));
     }
     homeButton_->setChecked(true);
+    for (const QString &component : {QStringLiteral("start-menu"), QStringLiteral("files"),
+                                     QStringLiteral("task-manager"), QStringLiteral("clipboard")})
+        applyComponentVisibility(component, componentEnabled(component));
 
     auto *windowScroll = new QScrollArea(taskbar);
     windowScroll->setObjectName(QStringLiteral("windowSwitcher"));
@@ -247,6 +253,26 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     settingsShortcut->setObjectName(QStringLiteral("settingsHubShortcut"));
     settingsShortcut->setContext(Qt::ApplicationShortcut);
     connect(settingsShortcut, &QShortcut::activated, this, &MainWindow::showSettingsHub);
+    auto *startShortcut = new QShortcut(QKeySequence(Qt::Key_Super_L), this);
+    startShortcut->setObjectName(QStringLiteral("startMenuShortcut"));
+    startShortcut->setContext(Qt::ApplicationShortcut);
+    connect(startShortcut, &QShortcut::activated, this, [this]() {
+        if (componentEnabled(QStringLiteral("start-menu"))) startButton_->toggle();
+    });
+    auto *startFallbackShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Escape")), this);
+    startFallbackShortcut->setObjectName(QStringLiteral("startMenuFallbackShortcut"));
+    startFallbackShortcut->setContext(Qt::ApplicationShortcut);
+    connect(startFallbackShortcut, &QShortcut::activated, this, [this]() {
+        if (componentEnabled(QStringLiteral("start-menu"))) startButton_->toggle();
+    });
+    auto *filesShortcut = new QShortcut(QKeySequence(QStringLiteral("Meta+E")), this);
+    filesShortcut->setObjectName(QStringLiteral("openFilesShortcut"));
+    filesShortcut->setContext(Qt::ApplicationShortcut);
+    connect(filesShortcut, &QShortcut::activated, this, [this]() { showPage(1); });
+    auto *taskManagerShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+Escape")), this);
+    taskManagerShortcut->setObjectName(QStringLiteral("openTaskManagerShortcut"));
+    taskManagerShortcut->setContext(Qt::ApplicationShortcut);
+    connect(taskManagerShortcut, &QShortcut::activated, this, [this]() { showPage(2); });
     auto *superClipboardShortcut = new QShortcut(QKeySequence(Qt::META | Qt::Key_V), this);
     superClipboardShortcut->setObjectName(QStringLiteral("clipboardSuperVShortcut"));
     superClipboardShortcut->setContext(Qt::ApplicationShortcut);
@@ -415,6 +441,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::showPage(int index)
 {
+    if ((index == 1 && !componentEnabled(QStringLiteral("files")))
+        || (index == 2 && !componentEnabled(QStringLiteral("task-manager")))
+        || (index == 3 && !componentEnabled(QStringLiteral("clipboard"))))
+        return;
     pages_->setCurrentIndex(index);
     startMenu_->hide();
     startButton_->setChecked(false);
@@ -422,6 +452,7 @@ void MainWindow::showPage(int index)
 
 void MainWindow::showClipboardCenter()
 {
+    if (!componentEnabled(QStringLiteral("clipboard"))) return;
     showPage(3);
     if (clipboardHistory_ != nullptr) clipboardHistory_->focusSearch();
 }
@@ -430,6 +461,35 @@ void MainWindow::showSettingsHub()
 {
     showPage(4);
     if (settingsHub_ != nullptr) settingsHub_->focusSearch();
+}
+
+bool MainWindow::componentEnabled(const QString &component) const
+{
+    QSettings settings;
+    return settings.value(QStringLiteral("components/%1").arg(component), true).toBool();
+}
+
+void MainWindow::applyComponentVisibility(const QString &component, bool enabled)
+{
+    if (component == QStringLiteral("start-menu")) {
+        startButton_->setVisible(enabled);
+        if (!enabled) {
+            startMenu_->hide();
+            startButton_->setChecked(false);
+        }
+        return;
+    }
+
+    int pageIndex = -1;
+    QPushButton *button = nullptr;
+    if (component == QStringLiteral("files")) { pageIndex = 1; button = filesButton_; }
+    else if (component == QStringLiteral("task-manager")) { pageIndex = 2; button = tasksButton_; }
+    else if (component == QStringLiteral("clipboard")) { pageIndex = 3; button = clipboardButton_; }
+    if (pageIndex < 0 || button == nullptr) return;
+
+    button->setVisible(enabled);
+    pages_->widget(pageIndex)->setEnabled(enabled);
+    if (!enabled && pages_->currentIndex() == pageIndex) showPage(0);
 }
 
 void MainWindow::updateShellGeometry()
