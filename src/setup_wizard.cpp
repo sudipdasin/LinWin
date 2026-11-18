@@ -25,10 +25,10 @@ namespace {
 QString helperPath()
 {
     const QString installed = QString::fromUtf8(LINWIN_SESSION_HELPER_PATH);
-    if (QFileInfo::isExecutable(installed))
+    if (QFileInfo(installed).isExecutable())
         return installed;
     const QString sibling = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("linwin-session-helper"));
-    return QFileInfo::isExecutable(sibling) ? sibling : QString();
+    return QFileInfo(sibling).isExecutable() ? sibling : QString();
 }
 
 bool hasXfceSessionTools(QStringList *missing)
