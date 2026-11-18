@@ -3,10 +3,12 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QCoreApplication>
 #include <QListWidget>
 #include <QPushButton>
 #include <QSettings>
+#include <QMetaObject>
 
 #include <iostream>
 
@@ -41,5 +43,31 @@ int main(int argc, char **argv)
         std::cerr << "Clipboard history should start empty\n";
         return 1;
     }
+    auto *captureToggle = widget.findChild<QCheckBox *>(QStringLiteral("captureClipboard"));
+    captureToggle->setChecked(true);
+    QApplication::clipboard()->setText(QStringLiteral("first clip"));
+    application.processEvents();
+    const int savedCount = history->count();
+    if (savedCount != 1) {
+        std::cerr << "Enabled clipboard history should capture a new text clip\n";
+        return 1;
+    }
+    widget.setComponentEnabled(false);
+    if (widget.isEnabled()) {
+        std::cerr << "Disabled clipboard component should not remain interactive\n";
+        return 1;
+    }
+    QApplication::clipboard()->setText(QStringLiteral("must not be captured while disabled"));
+    QMetaObject::invokeMethod(&widget, "captureClipboardText", Qt::DirectConnection);
+    if (history->count() != savedCount) {
+        std::cerr << "Disabled clipboard component must pause capture\n";
+        return 1;
+    }
+    widget.setComponentEnabled(true);
+    if (!widget.isEnabled()) {
+        std::cerr << "Re-enabled clipboard component should become available\n";
+        return 1;
+    }
+    settings.clear();
     return 0;
 }

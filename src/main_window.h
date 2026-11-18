@@ -40,6 +40,8 @@ private:
     void cycleExternalWindow();
     void showClipboardCenter();
     void showSettingsHub();
+    void applyComponentVisibility(const QString &component, bool enabled);
+    bool componentEnabled(const QString &component) const;
 
     QWidget *desktopArea_ = nullptr;
     QStackedWidget *pages_ = nullptr;

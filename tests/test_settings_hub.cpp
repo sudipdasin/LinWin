@@ -2,9 +2,11 @@
 #include "settings_hub_widget.h"
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QFrame>
 #include <QLineEdit>
 #include <QLabel>
+#include <QSettings>
 #include <QRegularExpression>
 #include <QVector>
 
@@ -31,6 +33,10 @@ bool expect(bool condition, const char *message)
 int main(int argc, char **argv)
 {
     QApplication application(argc, argv);
+    QCoreApplication::setOrganizationName(QStringLiteral("LinWin tests"));
+    QCoreApplication::setApplicationName(QStringLiteral("settings hub"));
+    QSettings settings;
+    settings.clear();
     SettingsHubWidget widget;
     widget.resize(900, 700);
     widget.show();
@@ -40,6 +46,21 @@ int main(int argc, char **argv)
     const auto cards = widget.findChildren<QFrame *>(QRegularExpression(QStringLiteral("^settingsCard_")));
     passed &= expect(cards.size() == 11, "expected all 11 settings categories");
     passed &= expect(visibleCards(widget) == 11, "all categories should be visible before searching");
+
+    auto *filesToggle = widget.findChild<QCheckBox *>(QStringLiteral("componentToggle_files"));
+    auto *tasksToggle = widget.findChild<QCheckBox *>(QStringLiteral("componentToggle_task-manager"));
+    passed &= expect(filesToggle != nullptr && filesToggle->isChecked(),
+                     "file manager should be enabled by default");
+    passed &= expect(tasksToggle != nullptr && tasksToggle->isChecked(),
+                     "Task Manager should be enabled by default");
+    if (filesToggle != nullptr) filesToggle->setChecked(false);
+    passed &= expect(!settings.value(QStringLiteral("components/files"), true).toBool(),
+                     "component changes should persist to account settings");
+    SettingsHubWidget reopened;
+    auto *reopenedFilesToggle = reopened.findChild<QCheckBox *>(QStringLiteral("componentToggle_files"));
+    passed &= expect(reopenedFilesToggle != nullptr && !reopenedFilesToggle->isChecked(),
+                     "saved component preferences should load when settings reopen");
+    settings.clear();
 
     auto *search = widget.findChild<QLineEdit *>(QStringLiteral("settingsSearch"));
     passed &= expect(search != nullptr, "search field should have a stable object name");

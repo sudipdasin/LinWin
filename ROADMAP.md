@@ -2,6 +2,15 @@
 
 LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switchers feel at home and supports users with no prior Linux or terminal knowledge. The first experimental login-session adapter targets X11 with XFCE tools; it is not yet a broadly supported desktop-panel replacement.
 
+## Product editions
+
+- [x] Keep LinWin Free as a complete, useful, GPL-3.0-or-later application in the public repository
+- [x] Establish the private `LinWin-Pro` repository for proprietary source, licensed resources, and paid-product work
+- [ ] Automate a read-only hourly snapshot sync of public `main` into private `public-core/`
+- [ ] Publish a versioned, open process-boundary interface before developing integrations that depend on it
+- [ ] Keep LinWin Free buildable and usable without Pro; distribute any Pro client as a separate optional package
+- [ ] Review copyright, dependency, packaging, and GPL/Qt obligations before any commercial binary distribution
+
 ## Architecture and install foundation
 
 - [x] Choose a shared C++20/Qt 6 shell core that keeps the host Linux kernel and drivers
@@ -21,7 +30,7 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 - [x] Add a searchable Settings Hub that detects and opens installed native desktop settings tools
 - [x] Add an X11 window-list adapter with taskbar activation and in-app Alt+Tab cycling when `wmctrl` is installed
 - [ ] Add keyboard shortcuts and drag-and-drop through supported desktop/compositor interfaces
-- [ ] Enable supported components by default in the standard install profile and let users switch each one off independently
+- [x] Enable core shell components by default and let users switch Start, Files, Task Manager, and Clipboard off independently in Settings
 
 ## System integration
 

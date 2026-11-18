@@ -2,6 +2,7 @@
 #include "settings_hub_widget.h"
 
 #include <QFrame>
+#include <QCheckBox>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -169,6 +170,46 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     outer->addWidget(eyebrow);
     outer->addWidget(heading);
     outer->addWidget(description);
+
+    auto *componentHeading = new QLabel(tr("LinWin features"), this);
+    componentHeading->setObjectName(QStringLiteral("sectionTitle"));
+    outer->addWidget(componentHeading);
+    auto *componentDescription = new QLabel(
+        tr("Choose which parts appear on the taskbar. Changes are saved for your account and take effect immediately."), this);
+    componentDescription->setObjectName(QStringLiteral("intro"));
+    componentDescription->setWordWrap(true);
+    outer->addWidget(componentDescription);
+    auto *componentFrame = new QFrame(this);
+    componentFrame->setObjectName(QStringLiteral("shellComponents"));
+    componentFrame->setStyleSheet(QStringLiteral(
+        "#shellComponents { background: white; border: 1px solid #e0e6ef; border-radius: 10px; }"
+        "#shellComponents QCheckBox { padding: 7px 10px; font-weight: 550; }"));
+    auto *componentLayout = new QGridLayout(componentFrame);
+    componentLayout->setContentsMargins(12, 8, 12, 8);
+    componentLayout->setHorizontalSpacing(24);
+    componentLayout->setVerticalSpacing(2);
+    QSettings preferences;
+    const QVector<QPair<QString, QString>> components{
+        {QStringLiteral("start-menu"), tr("Start menu")},
+        {QStringLiteral("files"), tr("File manager")},
+        {QStringLiteral("task-manager"), tr("Task Manager")},
+        {QStringLiteral("clipboard"), tr("Clipboard history")}
+    };
+    for (qsizetype index = 0; index < components.size(); ++index) {
+        const auto &component = components.at(index);
+        auto *toggle = new QCheckBox(component.second, componentFrame);
+        toggle->setObjectName(QStringLiteral("componentToggle_%1").arg(component.first));
+        toggle->setAccessibleName(tr("Show %1 on the LinWin taskbar").arg(component.second));
+        toggle->setChecked(preferences.value(QStringLiteral("components/%1").arg(component.first), true).toBool());
+        componentLayout->addWidget(toggle, static_cast<int>(index / 2), static_cast<int>(index % 2));
+        connect(toggle, &QCheckBox::toggled, this, [this, key = component.first](bool enabled) {
+            QSettings saved;
+            saved.setValue(QStringLiteral("components/%1").arg(key), enabled);
+            saved.sync();
+            emit componentEnabledChanged(key, enabled);
+        });
+    }
+    outer->addWidget(componentFrame);
 
     search_ = new QLineEdit(this);
     search_->setObjectName(QStringLiteral("settingsSearch"));

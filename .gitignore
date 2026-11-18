@@ -9,3 +9,11 @@
 *.tar.Z
 *.tar.bz2
 *.tar.xz
+
+# LinWin Pro source, licensed assets, and local release material must never enter
+# the public LinWin repository. The private companion repository has its own tree.
+/private-pro/
+/proprietary/
+/linwin-pro/
+/pro-assets/
+*.pro-secrets
