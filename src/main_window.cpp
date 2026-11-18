@@ -5,6 +5,7 @@
 #include "clipboard_history_widget.h"
 #include "file_manager_widget.h"
 #include "system_profile.h"
+#include "settings_hub_widget.h"
 #include "task_manager_widget.h"
 
 #include <QDateTime>
@@ -141,6 +142,8 @@ MainWindow::MainWindow(QWidget *parent)
     pages_->addWidget(taskManager_);
     clipboardHistory_ = new ClipboardHistoryWidget(pages_);
     pages_->addWidget(clipboardHistory_);
+    settingsHub_ = new SettingsHubWidget(pages_);
+    pages_->addWidget(settingsHub_);
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
     startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
@@ -160,6 +163,7 @@ MainWindow::MainWindow(QWidget *parent)
     filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
     tasksButton_ = makePanelButton(QStringLiteral("Tasks"), QStringLiteral("navigationButton"), taskbar);
     clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
+    settingsButton_ = makePanelButton(QStringLiteral("Settings"), QStringLiteral("navigationButton"), taskbar);
     homeButton_->setChecked(true);
 
     auto *windowScroll = new QScrollArea(taskbar);
@@ -201,6 +205,7 @@ MainWindow::MainWindow(QWidget *parent)
     taskbarLayout->addWidget(filesButton_);
     taskbarLayout->addWidget(tasksButton_);
     taskbarLayout->addWidget(clipboardButton_);
+    taskbarLayout->addWidget(settingsButton_);
     taskbarLayout->addWidget(windowScroll, 1);
     taskbarLayout->addWidget(systemStatus);
     taskbarLayout->addSpacing(14);
@@ -220,6 +225,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(filesButton_, &QPushButton::clicked, this, [this]() { showPage(1); });
     connect(tasksButton_, &QPushButton::clicked, this, [this]() { showPage(2); });
     connect(clipboardButton_, &QPushButton::clicked, this, &MainWindow::showClipboardCenter);
+    connect(settingsButton_, &QPushButton::clicked, this, &MainWindow::showSettingsHub);
+    auto *settingsShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+,")), this);
+    settingsShortcut->setObjectName(QStringLiteral("settingsHubShortcut"));
+    settingsShortcut->setContext(Qt::ApplicationShortcut);
+    connect(settingsShortcut, &QShortcut::activated, this, &MainWindow::showSettingsHub);
     auto *superClipboardShortcut = new QShortcut(QKeySequence(Qt::META | Qt::Key_V), this);
     superClipboardShortcut->setObjectName(QStringLiteral("clipboardSuperVShortcut"));
     superClipboardShortcut->setContext(Qt::ApplicationShortcut);
@@ -234,6 +244,7 @@ MainWindow::MainWindow(QWidget *parent)
         filesButton_->setChecked(index == 1);
         tasksButton_->setChecked(index == 2);
         clipboardButton_->setChecked(index == 3);
+        settingsButton_->setChecked(index == 4);
     });
 
     setStyleSheet(QStringLiteral(
@@ -396,6 +407,12 @@ void MainWindow::showClipboardCenter()
 {
     showPage(3);
     if (clipboardHistory_ != nullptr) clipboardHistory_->focusSearch();
+}
+
+void MainWindow::showSettingsHub()
+{
+    showPage(4);
+    if (settingsHub_ != nullptr) settingsHub_->focusSearch();
 }
 
 void MainWindow::updateShellGeometry()

@@ -25,6 +25,8 @@ qt_add_executable(linwin
     src/task_manager_widget.cpp
     src/task_manager_widget.h
     src/system_profile.cpp
+    src/settings_hub_widget.cpp
+    src/settings_hub_widget.h
     src/system_profile.h
 )
 
@@ -53,7 +55,16 @@ if(BUILD_TESTING)
     target_link_libraries(linwin-clipboard-tests PRIVATE Qt6::Widgets)
     add_test(NAME clipboard-center COMMAND linwin-clipboard-tests)
 
-    set_tests_properties(task-manager-tabs clipboard-center PROPERTIES
+    add_executable(linwin-settings-hub-tests
+        tests/test_settings_hub.cpp
+        src/settings_hub_widget.cpp
+        src/settings_hub_widget.h
+    )
+    target_include_directories(linwin-settings-hub-tests PRIVATE src)
+    target_link_libraries(linwin-settings-hub-tests PRIVATE Qt6::Widgets)
+    add_test(NAME settings-hub-search COMMAND linwin-settings-hub-tests)
+
+    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 20
     )

@@ -10,6 +10,7 @@ class AppLauncherWidget;
 class ClipboardHistoryWidget;
 class FileManagerWidget;
 class TaskManagerWidget;
+class SettingsHubWidget;
 
 class QHBoxLayout;
 class QLabel;
@@ -38,6 +39,7 @@ private:
     void activateExternalWindow(const QString &id);
     void cycleExternalWindow();
     void showClipboardCenter();
+    void showSettingsHub();
 
     QWidget *desktopArea_ = nullptr;
     QStackedWidget *pages_ = nullptr;
@@ -47,9 +49,11 @@ private:
     QPushButton *filesButton_ = nullptr;
     QPushButton *tasksButton_ = nullptr;
     QPushButton *clipboardButton_ = nullptr;
+    QPushButton *settingsButton_ = nullptr;
     FileManagerWidget *fileManager_ = nullptr;
     TaskManagerWidget *taskManager_ = nullptr;
     ClipboardHistoryWidget *clipboardHistory_ = nullptr;
+    SettingsHubWidget *settingsHub_ = nullptr;
     QHBoxLayout *windowButtonsLayout_ = nullptr;
     QLabel *windowSwitcherStatus_ = nullptr;
     QProcess *windowListProcess_ = nullptr;

@@ -5,16 +5,16 @@ This document turns the project goal into observable user behaviour. LinWin is i
 ## Current implementation
 
 - The Home page displays detected distribution, desktop environment, session type, and kernel.
-- The in-window bottom panel provides Home, Files, Tasks, and Clipboard navigation, a detected system/session label, and a live clock/date display.
+- The in-window bottom panel provides Home, Files, Tasks, Clipboard, and Settings navigation, a detected system/session label, and a live clock/date display.
 - The Start popup searches launchable desktop applications, opens them through GIO, focuses search when opened, and stores pinned app IDs in local Qt application settings.
 - The Files page browses from the home folder, supports location entry and back/up/home navigation, opens files with the host default application, and provides new folder, rename, copy/cut/paste, shortcut-link, and move-to-Trash actions.
 - The Files page supports common keyboard shortcuts (Ctrl+C/X/V, F2, Delete, Ctrl+L, Alt+Up), multi-selection, context menus, and Qt file-view drag-and-drop.
 - The Tasks page lists visible processes with CPU share, resident memory, PID, owner, and state; it searches, sorts, and refreshes every two seconds using Linux `/proc` while the page is open. Polling pauses when the user leaves the page.
 - **End task** sends SIGTERM after confirmation; **Force stop** sends SIGKILL after a separate data-loss warning. Both actions are limited to the current user's processes, recheck process identity before signalling, and do not request elevated privileges.
-- The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, pin/unpin, and clear actions. It stores up to 50 recent plus 50 pinned text clips in local Qt application settings.
+- The Settings page searches display, network, Bluetooth, sound, printers, power, accessibility, appearance, users/accounts, updates/software, and date/time. It detects known native tools, opens them directly without a shell or elevation, and marks categories unavailable when no supported tool is installed. Ctrl+, opens Settings and focuses search. The page links to host tools; it does not write system configuration itself.\n- The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, pin/unpin, and clear actions. It stores up to 50 recent plus 50 pinned text clips in local Qt application settings.
 - Super+V and Ctrl+Alt+V open Clipboard and focus search while LinWin is active; these are not global desktop hotkeys.
 - Middle-click paste is opt-in inside LinWin text fields and does not change behavior in other applications or the desktop. Clipboard capture defaults to off, and saved text is not encrypted. Image/file clips and background capture are not supported yet; compositor permissions may limit access.
-- LinWin does not yet launch as a login-session shell, manage hardware, provide the installation wizard, replace the host taskbar, track running windows, or control Alt+Tab/window switching.
+- LinWin does not yet launch as a login-session shell, directly manage hardware, provide the installation wizard, replace the host taskbar, or provide compositor-independent window tracking and Alt+Tab switching.
 - The file manager is an initial preview: large copies can take time, cross-device cut/move may fail with an explanation, and operation progress, undo, advanced conflict handling, and broad compositor testing remain future work.
 - The task manager is an initial process view, not a live-window taskbar: desktop app/window grouping, per-process history, services, startup management, and authorized control of other users' system processes are not implemented.
 
@@ -113,7 +113,7 @@ The installer must identify the host distribution, kernel, package manager, and 
 
 ### System configuration
 
-- Provide one searchable entry point for LinWin settings and links into native display, sound, network, printer, account, power, update, privacy, and accessibility panels.
+- Implemented preview: the Settings page searches common categories and opens an installed native panel for display, network, Bluetooth, sound, printers, power, accessibility, appearance, users/accounts, updates/software, and date/time. Ctrl+, focuses search. Missing tools are reported as unavailable. This opens the host panel and does not modify system settings itself.\n- Remaining: discover portal and desktop-specific modules beyond known executable adapters; add privacy and fine-grained LinWin shell settings; report useful errors when a host settings module fails.
 - Prefer invoking the desktop's existing settings module over writing configuration files directly.
 - Privileged changes are narrow, authenticated, and reported back to the user.
 
