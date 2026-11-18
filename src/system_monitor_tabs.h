@@ -124,6 +124,11 @@ public:
         addReportTab(tr("App history"), &history_);
         addReportTab(tr("Users"), &users_);
         addReportTab(tr("Details"), &details_);
+
+        experimentalTabs_ = new QTabWidget(tabs_);
+        experimentalTabs_->setObjectName(QStringLiteral("experimentalTaskManagerTabs"));
+        experimentalTabs_->setDocumentMode(true);
+        tabs_->addTab(experimentalTabs_, tr("Experimental"));
         addReportTab(tr("Network"), &network_);
         addReportTab(tr("Disk"), &disk_);
         addReportTab(tr("Bluetooth"), nullptr);
@@ -135,6 +140,7 @@ public:
         autoRefresh_->setInterval(2000);
         connect(autoRefresh_, &QTimer::timeout, tabs_, [this]() { refreshCurrent(); });
         connect(tabs_, &QTabWidget::currentChanged, tabs_, [this]() { refreshCurrent(); });
+        connect(experimentalTabs_, &QTabWidget::currentChanged, tabs_, [this]() { refreshCurrent(); });
         refreshCurrent();
     }
 
@@ -149,6 +155,17 @@ public:
     }
 
 private:
+    void addPage(QWidget *page, const QString &name)
+    {
+        static const QStringList experimentalPages{
+            tr("Network"), tr("Disk"), tr("Bluetooth"), tr("Startup apps"), tr("Services"), tr("GPU")
+        };
+        if (experimentalPages.contains(name))
+            experimentalTabs_->addTab(page, name);
+        else
+            tabs_->addTab(page, name);
+    }
+
     void addReportTab(const QString &name, QPlainTextEdit **view)
     {
         QWidget *page = new QWidget(tabs_);
@@ -171,7 +188,7 @@ private:
             grid->addWidget(diskChart_, 1, 0);
             grid->addWidget(networkChart_, 1, 1);
             layout->addLayout(grid, 1);
-            tabs_->addTab(page, name);
+            addPage(page, name);
             return;
         }
         if (name == tr("Bluetooth")) {
@@ -225,7 +242,7 @@ private:
             });
             connect(pair, &QPushButton::clicked, tabs_, [this]() { runBluetoothAction(QStringLiteral("pair")); });
             connect(settings, &QPushButton::clicked, tabs_, [this, page]() { openBluetoothSettings(page); });
-            tabs_->addTab(page, name);
+            addPage(page, name);
             return;
         }
         QComboBox *filter = nullptr;
@@ -288,7 +305,7 @@ private:
             layout->addWidget(actionStatus);
             actionStatusByTab_.insert(name, actionStatus);
         }
-        tabs_->addTab(page, name);
+        addPage(page, name);
         if (name == tr("Bluetooth")) {
             auto *openSettings = new QPushButton(tr("Open Bluetooth settings…"), page);
             layout->addWidget(openSettings, 0, Qt::AlignLeft);
@@ -829,7 +846,9 @@ private:
 
     void refreshCurrent()
     {
-        const int index = tabs_->currentIndex() - firstIndex_;
+        const int outerIndex = tabs_->currentIndex() - firstIndex_;
+        const bool inExperimental = outerIndex == 4;
+        const int index = inExperimental ? 4 + experimentalTabs_->currentIndex() : outerIndex;
         if (index == 0) refreshPerformance();
         else if (index == 1) history_->setPlainText(appHistoryReport());
         else if (index == 2) users_->setPlainText(usersReport());
@@ -938,6 +957,7 @@ private:
     }
 
     QTabWidget *tabs_ = nullptr;
+    QTabWidget *experimentalTabs_ = nullptr;
     int firstIndex_ = 0;
     QHash<QString, QComboBox *> filters_;
     QHash<QString, QLabel *> actionStatusByTab_;
