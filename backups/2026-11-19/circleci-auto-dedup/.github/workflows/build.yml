@@ -1,0 +1,123 @@
+name: Build and package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  ubuntu-vm:
+    name: Build and test on Ubuntu VM
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard the public/private source boundary
+        run: |
+          if git ls-files | grep -Eq '(^|/)(private-pro|proprietary|linwin-pro|pro-assets)(/|$)'; then
+            echo "Private-only LinWin Pro paths must not be tracked in the public repository."
+            exit 1
+          fi
+      - name: Install build dependencies on the runner VM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev xvfb xauth
+      - name: Build LinWin on the runner VM
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+      - name: Compile on the runner VM
+        run: cmake --build build --parallel 2
+      - name: Run C++ UI and session tests on the runner VM
+        run: ctest --test-dir build --output-on-failure
+      - name: Check command-line startup on the runner VM
+        run: QT_QPA_PLATFORM=offscreen ./build/linwin --version
+      - name: Launch the full-screen shell under a virtual X server
+        run: |
+          status=0
+          timeout 5s xvfb-run -a env XDG_SESSION_TYPE=x11 ./build/linwin --shell || status=$?
+          test "$status" -eq 124
+
+  distro-build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-24.04
+            package: deb
+            image: ubuntu:24.04
+            install: apt-get update && apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev dpkg-dev file
+          - platform: debian-13
+            package: deb
+            image: debian:13
+            install: apt-get update && apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev dpkg-dev file
+          - platform: fedora
+            package: rpm
+            image: fedora:latest
+            install: dnf install -y cmake gcc-c++ pkgconf-pkg-config glib2-devel qt6-qtbase-devel rpm-build
+          - platform: arch-x86_64
+            package: arch
+            image: archlinux:latest
+            install: pacman -Syu --noconfirm --needed base-devel cmake gcc pkgconf glib2 qt6-base zstd
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build, test, and install/uninstall package in ${{ matrix.image }}
+        run: |
+          docker run --rm \
+            -v "$PWD:/src" \
+            -w /src \
+            -e LINWIN_PACKAGE=${{ matrix.package }} \
+            "${{ matrix.image }}" \
+            sh -lc '${{ matrix.install }} &&
+              cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr &&
+              cmake --build build --parallel 2 &&
+              ctest --test-dir build --output-on-failure &&
+              DESTDIR=/src/build/stage cmake --install build &&
+              test -x build/stage/usr/bin/linwin &&
+              test -f build/stage/usr/share/applications/linwin.desktop &&
+              test -x build/stage/usr/libexec/linwin-session-helper &&
+              test -x build/stage/usr/libexec/linwin-session &&
+              mkdir -p build/release &&
+              case "$LINWIN_PACKAGE" in
+                deb)
+                  cpack --config build/CPackConfig.cmake -G DEB -B build &&
+                  pkg=$(find build -maxdepth 1 -name "*.deb" -print -quit) &&
+                  test -n "$pkg" &&
+                  apt-get install -y "./$pkg" &&
+                  dpkg-query -W linwin &&
+                  apt-get remove -y linwin &&
+                  cp "$pkg" build/release/
+                  ;;
+                rpm)
+                  cpack --config build/CPackConfig.cmake -G RPM -B build &&
+                  pkg=$(find build -maxdepth 1 -name "*.rpm" -print -quit) &&
+                  test -n "$pkg" &&
+                  dnf install -y "$pkg" &&
+                  rpm -q linwin &&
+                  dnf remove -y linwin &&
+                  cp "$pkg" build/release/
+                  ;;
+                arch)
+                  mkdir -p build/archsrc &&
+                  tar --exclude="./build" --exclude="./.git" -czf build/archsrc/linwin-1.0.0.tar.gz -C . . &&
+                  cp packaging/arch/PKGBUILD build/archsrc/PKGBUILD &&
+                  useradd --create-home builder &&
+                  chown -R builder:builder build/archsrc &&
+                  su builder -c "cd /src/build/archsrc && makepkg -f --noconfirm --nodeps" &&
+                  pkg=$(find build/archsrc -maxdepth 1 -name "linwin-[0-9]*.pkg.tar.zst" -print -quit) &&
+                  test -n "$pkg" &&
+                  pacman -U --noconfirm "$pkg" &&
+                  pacman -Q linwin &&
+                  pacman -R --noconfirm linwin &&
+                  cp "$pkg" build/release/
+                  ;;
+                *) echo "Unknown package target: $LINWIN_PACKAGE"; exit 2 ;;
+              esac &&
+              sha256sum build/release/* > build/release/SHA256SUMS'
+      - name: Upload installable beta package
+        uses: actions/upload-artifact@v4
+        with:
+          name: linwin-${{ matrix.platform }}-1.0.0-beta.1
+          path: build/release/*
+          if-no-files-found: error
+          retention-days: 7
