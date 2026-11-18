@@ -21,7 +21,7 @@ Public: sudipdasin/LinWin (GPL-3.0-or-later)
   packaging/              Free package definitions
 
 Private: sudipdasin/LinWin-Pro (private)
-  public-core/            Automated, read-only subtree mirror of public main
+  public-core/            Hourly snapshot of public main, read-only to Pro developers
   proprietary/            Pro-only source and private resources
   pro-tests/              Tests for proprietary components
   pro-packaging/          Optional Pro package and combined installer
@@ -35,7 +35,7 @@ Do not copy or stage any private path into the public repository. Public core ch
 
 The private workflow fetches public `main`, archives its tracked files into `public-core/`, and records the exact upstream commit SHA in `sync/UPSTREAM_REVISION`. It uses only the private repository's `GITHUB_TOKEN` to write that private repository. It does not push to, create a branch in, or grant permissions on the public repository. Run it hourly and manually before Pro integration builds. Each sync is a snapshot commit and fails if it cannot update the private branch; it never overwrites private paths. Never use a public workflow or public Actions artifact for private source, keys, or assets.
 
-The sync is one-way: public `main` → private `public-core/`. It is not a fork-sync that overwrites the private default branch. Private work remains in its own top-level paths. A conflict in `public-core/` stops the sync for human review; it must not resolve by force-pushing or rewriting history.
+The sync is one-way: public `main` → private `public-core/`. It is not a fork-sync that overwrites the private default branch. Private work remains in its own top-level paths. A failed fetch, archive, or push must stop the workflow without force-pushing or rewriting history.
 
 ## Integration boundary
 
