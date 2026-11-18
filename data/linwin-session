@@ -1,0 +1,29 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Initial session integration: X11 with the XFCE window manager and desktop.
+
+if [ -z "${DISPLAY:-}" ] || [ "${XDG_SESSION_TYPE:-x11}" = "wayland" ]; then
+    echo "LinWin's first shell session requires an X11 display." >&2
+    exit 1
+fi
+
+for program in xfwm4 xfsettingsd xfdesktop linwin; do
+    if ! command -v "$program" >/dev/null 2>&1; then
+        echo "LinWin session requires '$program'. Install XFCE desktop components and LinWin, then try again." >&2
+        exit 1
+    fi
+done
+
+xfsettingsd --replace >/dev/null 2>&1 & settings_pid=$!
+xfwm4 --replace >/dev/null 2>&1 & window_manager_pid=$!
+xfdesktop --replace >/dev/null 2>&1 & desktop_pid=$!
+
+cleanup() {
+    kill "$desktop_pid" "$window_manager_pid" "$settings_pid" 2>/dev/null || true
+    wait "$desktop_pid" "$window_manager_pid" "$settings_pid" 2>/dev/null || true
+}
+trap cleanup EXIT HUP INT TERM
+
+# Give the window manager a moment to claim the display before showing LinWin.
+sleep 1
+linwin --shell

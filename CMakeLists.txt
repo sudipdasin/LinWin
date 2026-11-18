@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(LinWin VERSION 0.3.0 LANGUAGES CXX)
+project(LinWin VERSION 0.4.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,10 +28,23 @@ qt_add_executable(linwin
     src/settings_hub_widget.cpp
     src/settings_hub_widget.h
     src/system_profile.h
+    src/setup_wizard.cpp
+    src/setup_wizard.h
 )
 
 target_link_libraries(linwin PRIVATE Qt6::Widgets PkgConfig::GIO_UNIX)
 target_compile_options(linwin PRIVATE
+    "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>"
+)
+
+include(GNUInstallDirs)
+target_compile_definitions(linwin PRIVATE
+    LINWIN_SESSION_HELPER_PATH="${CMAKE_INSTALL_FULL_LIBEXECDIR}/linwin-session-helper"
+)
+
+add_executable(linwin-session-helper src/session_helper.cpp)
+target_link_libraries(linwin-session-helper PRIVATE Qt6::Core)
+target_compile_options(linwin-session-helper PRIVATE
     "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>"
 )
 
@@ -64,15 +77,33 @@ if(BUILD_TESTING)
     target_link_libraries(linwin-settings-hub-tests PRIVATE Qt6::Widgets)
     add_test(NAME settings-hub-search COMMAND linwin-settings-hub-tests)
 
-    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search PROPERTIES
+    add_executable(linwin-setup-wizard-tests
+        tests/test_setup_wizard.cpp
+        src/setup_wizard.cpp
+        src/setup_wizard.h
+        src/system_profile.cpp
+        src/system_profile.h
+    )
+    target_include_directories(linwin-setup-wizard-tests PRIVATE src)
+    target_link_libraries(linwin-setup-wizard-tests PRIVATE Qt6::Widgets)
+    target_compile_definitions(linwin-setup-wizard-tests PRIVATE LINWIN_SESSION_HELPER_PATH="/nonexistent/linwin-session-helper")
+    add_test(NAME setup-wizard-review COMMAND linwin-setup-wizard-tests)
+    add_test(NAME x11-session-wrapper
+        COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_session_wrapper.sh
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/linwin-session)
+
+    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search setup-wizard-review x11-session-wrapper PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 20
     )
 endif()
 
-include(GNUInstallDirs)
 install(TARGETS linwin RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS linwin-session-helper RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+install(PROGRAMS data/linwin-session DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
 install(FILES data/linwin.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES data/linwin-setup.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES data/linwin-uninstall.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(FILES data/linwin.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
 install(FILES LICENSE README.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
 set(CPACK_PACKAGE_NAME "linwin")

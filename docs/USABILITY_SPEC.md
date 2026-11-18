@@ -15,9 +15,10 @@ This document turns the project goal into observable user behaviour. LinWin is i
 - The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, pin/unpin, and clear actions. It stores up to 50 recent plus 50 pinned text clips in local Qt application settings.
 - Super+V and Ctrl+Alt+V open Clipboard and focus search while LinWin is active; these are not global desktop hotkeys.
 - Middle-click paste is opt-in inside LinWin text fields and does not change behavior in other applications or the desktop. Clipboard capture defaults to off, and saved text is not encrypted. Image/file clips and background capture are not supported yet; compositor permissions may limit access.
-- LinWin does not yet launch as a login-session shell, directly manage hardware, provide the installation wizard, replace the host taskbar, or provide compositor-independent window tracking and Alt+Tab switching.
+- LinWin can launch in a selectable X11 login session when XFCE's `xfwm4`, `xfsettingsd`, and `xfdesktop` tools are installed. The first GUI setup wizard registers that session without replacing the user's existing session; its uninstall flow removes the session and package through a narrow polkit helper. Wayland and other window managers are not supported by this adapter.
 - The file manager is an initial preview: large copies can take time, cross-device cut/move may fail with an explanation, and operation progress, undo, advanced conflict handling, and broad compositor testing remain future work.
 - The task manager remains a feature preview. The Experimental tab groups hardware/service-dependent Network, Disk, Bluetooth, Startup apps, Services, and GPU panels; desktop app/window grouping, broad startup/service management, and authorized control of other users' system processes are not implemented.
+- The setup wizard does not yet install missing XFCE dependencies or offer per-component toggles. It verifies the prerequisites and tells the user what is missing; the host distribution's software manager remains responsible for installing those desktop packages.
 
 ## Product goals
 

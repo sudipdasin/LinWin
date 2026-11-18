@@ -6,7 +6,7 @@ LinWin is being built as one familiar shell for Linux, using C++20 and Qt 6 whil
 
 ## Project status
 
-**Status: installable beta application preview.** LinWin installs as a regular desktop application, with a desktop-menu entry; it does not replace your login session or include the graphical shell installer, session recovery, or component setup wizard. You can install it, open its Start-style launcher, file manager, task manager, clipboard, Settings Hub, and experimental resource/device panels, then remove it with your distro's package manager. Test in a virtual machine or test account. Do not select it as your only desktop. Clipboard history is opt-in and saved text is unencrypted. X11 window listing and in-app Alt+Tab require wmctrl; Wayland uses the host compositor's switcher. See [beta readiness and testing limits](docs/BETA_READINESS.md), [architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
+**Status: installable shell-session beta preview.** The package installs LinWin as a normal application first. The new **LinWin Setup** wizard can register an optional X11 login session on systems with XFCE's `xfwm4`, `xfsettingsd`, and `xfdesktop`; your existing desktop remains selectable as a recovery option. This first session adapter does not support Wayland or other window managers yet. The GUI can remove the session and uninstall the LinWin package through the system authorization dialog. Test in a VM or secondary account. Clipboard history is opt-in and saved text is unencrypted. X11 window listing and in-app Alt+Tab require `wmctrl`; Wayland uses the host compositor's switcher when running LinWin as a regular application. See [beta readiness and testing limits](docs/BETA_READINESS.md), [architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
 
 ## Intended compatibility
 
@@ -17,7 +17,7 @@ LinWin aims to replace the shell layer on multiple distributions and desktop env
 - Fedora with KDE Plasma or Xfce
 - Debian and other distributions as adapters and packages mature
 
-Compatibility will be published per distribution, desktop, session type, and shell component. Desktop-specific adapters will integrate with the host compositor and session; LinWin will not claim universal support where an interface is unavailable.
+The first installable shell session targets X11 with XFCE session tools on Ubuntu/Debian-family systems, Fedora, and Arch x86_64. Mint Xfce can use the Ubuntu/Debian package when dependencies are available. The other listed distributions and desktops remain goals; package availability alone does not mean their login session is supported. Wayland support requires compositor-specific adapters and is not included in this preview.
 
 ## Install the beta application preview
 
@@ -27,9 +27,9 @@ Download the package for your distribution from the [latest LinWin prerelease](h
 - Fedora: download the **.rpm** package, then open it in GNOME Software or KDE Discover and choose Install.
 - Arch Linux x86_64: download the **.pkg.tar.zst** package and install it with your package manager (for example, pacman or a graphical pacman front end).
 
-After installation, launch **LinWin** from the applications menu. Uninstall it using the same software/package manager. These packages install the app and desktop-menu entry only; they do not change your login session, replace your taskbar, or install a shell session. The archive's checksum file can be used to verify the downloaded package.
+After installation, open **LinWin Setup** from the applications menu. Review the detected system and choose **Install LinWin session**. The wizard requests authorization only to add the LinWin session entry; it does not replace or remove your existing desktop. Log out and select **LinWin** in the login screen's session menu. Use **Sign out** on the LinWin taskbar to return to the login screen, then choose your previous session. To uninstall, open **Uninstall LinWin** from the applications menu and confirm package removal. The same checksum file can verify the downloaded package.
 
-The release is an experimental feature preview, not a supported system-shell replacement. The Task Manager's **Experimental** tab groups network, disk, Bluetooth, startup-program, service, and GPU views. They may be unavailable or incomplete depending on hardware, services, permissions, and desktop setup.
+This is an experimental shell-session preview, not a production-ready desktop replacement. It starts the XFCE window manager/settings/desktop alongside LinWin's taskbar, Start menu, file manager, task manager, clipboard, and settings hub. It does not yet include a graphical dependency installer, component-level enable/disable controls, upgrade rollback, or Wayland session adapters. The Task Manager's **Experimental** tab groups network, disk, Bluetooth, startup-program, service, and GPU views; these may be incomplete depending on hardware, services, permissions, and desktop setup.
 
 ## Build from source (contributors)
 
