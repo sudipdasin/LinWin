@@ -6,6 +6,24 @@ on:
   workflow_dispatch:
 
 jobs:
+  ubuntu-vm:
+    name: Build and test on Ubuntu VM
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies on the runner VM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ pkg-config libglib2.0-dev qt6-base-dev
+      - name: Build LinWin on the runner VM
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+      - name: Compile on the runner VM
+        run: cmake --build build --parallel 2
+      - name: Run C++ UI and session tests on the runner VM
+        run: ctest --test-dir build --output-on-failure
+      - name: Check command-line startup on the runner VM
+        run: ./build/linwin --version
+
   distro-build:
     runs-on: ubuntu-24.04
     strategy:
