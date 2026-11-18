@@ -38,9 +38,10 @@ int main(int argc, char **argv)
     app.processEvents();
 
     auto *more = window.findChild<QPushButton *>(QStringLiteral("taskbarOverflowButton"));
-    auto *clipboard = window.findChild<QPushButton *>(QStringLiteral("clipboardButton"));
+    QPushButton *clipboard = nullptr;
     QPushButton *settingsButton = nullptr;
     for (auto *button : window.findChildren<QPushButton *>()) {
+        if (button->text() == QStringLiteral("Clipboard")) clipboard = button;
         if (button->text() == QStringLiteral("Settings")) settingsButton = button;
     }
     auto *signOut = window.findChild<QPushButton *>(QStringLiteral("signOutButton"));
