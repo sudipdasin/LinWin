@@ -50,7 +50,7 @@ jobs:
                   cpack --config build/CPackConfig.cmake -G DEB -B build &&
                   pkg=$(find build -maxdepth 1 -name "*.deb" -print -quit) &&
                   test -n "$pkg" &&
-                  apt-get install -y "$pkg" &&
+                  apt-get install -y "./$pkg" &&
                   dpkg-query -W linwin &&
                   apt-get remove -y linwin &&
                   cp "$pkg" build/release/
