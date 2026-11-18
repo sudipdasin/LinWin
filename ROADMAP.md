@@ -40,8 +40,9 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 
 ## Release readiness
 
-- [x] Automated C++ builds on Ubuntu, Debian, Fedora, and Arch Linux containers
+- [x] Automated C++ builds and UI tests on Ubuntu, Debian, Fedora, and Arch Linux containers for pull requests
+- [x] Stage-install checks and short-lived checksummed TGZ preview artifacts in CI
 - [ ] Validate packages and shell startup/uninstall on supported desktops and session types
 - [ ] Add automated tests for shared core behaviour and installer rollback
-- [ ] Publish signed release artifacts, checksums, upgrade, rollback, and uninstall guidance
+- [ ] Publish signed beta release artifacts, checksums, upgrade, rollback, and uninstall guidance after package and session validation
 - [ ] Establish contributor and security response processes
