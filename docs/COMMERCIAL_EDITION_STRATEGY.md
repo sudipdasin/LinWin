@@ -33,7 +33,7 @@ Do not copy or stage any private path into the public repository. Public core ch
 
 ## Sync rules
 
-The private workflow fetches public `main` and updates `public-core/` using a Git subtree import. It uses only the private repository's `GITHUB_TOKEN` to write that private repository. It does not push to, create a branch in, or grant permissions on the public repository. Run it on a schedule and manually before Pro integration builds. Each sync records the upstream commit SHA and fails if it would overwrite private paths. Never use a public workflow or public Actions artifact for private source, keys, or assets.
+The private workflow fetches public `main`, archives its tracked files into `public-core/`, and records the exact upstream commit SHA in `sync/UPSTREAM_REVISION`. It uses only the private repository's `GITHUB_TOKEN` to write that private repository. It does not push to, create a branch in, or grant permissions on the public repository. Run it hourly and manually before Pro integration builds. Each sync is a snapshot commit and fails if it cannot update the private branch; it never overwrites private paths. Never use a public workflow or public Actions artifact for private source, keys, or assets.
 
 The sync is one-way: public `main` → private `public-core/`. It is not a fork-sync that overwrites the private default branch. Private work remains in its own top-level paths. A conflict in `public-core/` stops the sync for human review; it must not resolve by force-pushing or rewriting history.
 

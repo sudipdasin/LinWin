@@ -6,7 +6,7 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 
 - [x] Keep LinWin Free as a complete, useful, GPL-3.0-or-later application in the public repository
 - [x] Establish the private `LinWin-Pro` repository for proprietary source, licensed resources, and paid-product work
-- [ ] Automate a read-only subtree sync of public `main` into private `public-core/`
+- [ ] Automate a read-only hourly snapshot sync of public `main` into private `public-core/`
 - [ ] Publish a versioned, open process-boundary interface before developing integrations that depend on it
 - [ ] Keep LinWin Free buildable and usable without Pro; distribute any Pro client as a separate optional package
 - [ ] Review copyright, dependency, packaging, and GPL/Qt obligations before any commercial binary distribution
