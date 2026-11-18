@@ -6,7 +6,7 @@ LinWin is being built as one familiar shell for Linux, using C++20 and Qt 6 whil
 
 ## Project status
 
-**Status: pre-beta engineering preview.** LinWin currently runs as a regular application window; it is not a login-session shell replacement and does not include the graphical installer, recovery flow, or component setup wizard. Do not replace your normal desktop with this build. For evaluation, run it in a test account or virtual machine. Current pages include Start app search and pinned apps, a basic file manager, a /proc process monitor, a searchable native Settings launcher, and opt-in text clipboard history. X11 taskbar window listing and in-app Alt+Tab require wmctrl; Wayland continues to use the host compositor's switcher. Host settings and hardware support depend on installed desktop tools and services. The clipboard preview stores text unencrypted, so capture is off by default. See [beta readiness and testing limits](docs/BETA_READINESS.md), [the architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
+**Status: installable beta application preview.** LinWin installs as a regular desktop application, with a desktop-menu entry; it does not replace your login session or include the graphical shell installer, session recovery, or component setup wizard. You can install it, open its Start-style launcher, file manager, task manager, clipboard, Settings Hub, and experimental resource/device panels, then remove it with your distro's package manager. Test in a virtual machine or test account. Do not select it as your only desktop. Clipboard history is opt-in and saved text is unencrypted. X11 window listing and in-app Alt+Tab require wmctrl; Wayland uses the host compositor's switcher. See [beta readiness and testing limits](docs/BETA_READINESS.md), [architecture](docs/ARCHITECTURE.md), [installer specification](docs/INSTALLER_SPEC.md), and [roadmap](ROADMAP.md).
 
 ## Intended compatibility
 
@@ -18,6 +18,18 @@ LinWin aims to replace the shell layer on multiple distributions and desktop env
 - Debian and other distributions as adapters and packages mature
 
 Compatibility will be published per distribution, desktop, session type, and shell component. Desktop-specific adapters will integrate with the host compositor and session; LinWin will not claim universal support where an interface is unavailable.
+
+## Install the beta application preview
+
+Download the package for your distribution from the [latest LinWin prerelease](https://github.com/sudipdasin/LinWin/releases):
+
+- Ubuntu, Debian, and Linux Mint: download the **.deb** package, then open it in your Software application and choose Install.
+- Fedora: download the **.rpm** package, then open it in GNOME Software or KDE Discover and choose Install.
+- Arch Linux x86_64: download the **.pkg.tar.zst** package and install it with your package manager (for example, pacman or a graphical pacman front end).
+
+After installation, launch **LinWin** from the applications menu. Uninstall it using the same software/package manager. These packages install the app and desktop-menu entry only; they do not change your login session, replace your taskbar, or install a shell session. The archive's checksum file can be used to verify the downloaded package.
+
+The release is an experimental feature preview, not a supported system-shell replacement. The Task Manager's **Experimental** tab groups network, disk, Bluetooth, startup-program, service, and GPU views. They may be unavailable or incomplete depending on hardware, services, permissions, and desktop setup.
 
 ## Build from source (contributors)
 
@@ -37,14 +49,14 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-Run from the build directory with `./linwin`. Open **Start** on the bottom panel to search installed applications, pin favorites, and launch apps through the host desktop registry. Use **Home**, **Files**, **Tasks**, **Clipboard**, and **Settings** to switch pages. Press **Ctrl+,** to open Settings and search for a host settings panel. In Files, double-click folders to browse, use the action buttons or standard shortcuts (Ctrl+C/X/V, F2, Delete) for common file tasks, and drag items into folders. In Tasks, search or sort the process list, review CPU and memory use, choose **End task** to request a normal close, or use **Force stop** only when necessary. In Clipboard, enable history if desired and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. A generic preview archive can be generated with CPack. It is a developer/test package, not an end-user installer:
+Run from the build directory with `./linwin`. Open **Start** on the bottom panel to search installed applications, pin favorites, and launch apps through the host desktop registry. Use **Home**, **Files**, **Tasks**, **Clipboard**, and **Settings** to switch pages. In Tasks, stable process/performance views stay at the top level; network, disk, Bluetooth, startup, services, and GPU controls are grouped under **Experimental**. Press **Ctrl+,** to open Settings and search for a host settings panel. In Files, double-click folders to browse, use the action buttons or standard shortcuts (Ctrl+C/X/V, F2, Delete) for common file tasks, and drag items into folders. In Tasks, search or sort the process list, review CPU and memory use, choose **End task** to request a normal close, or use **Force stop** only when necessary. In Clipboard, enable history if desired and copy text while LinWin is open. Select an entry and double-click it or choose **Copy selected** to restore it. Use **Remove** or **Clear history** to erase saved items. For a generic developer archive, use CPack. The public beta packages are generated and install-tested in CI:
 
 ```sh
 cd build
 cpack -G TGZ
 ```
 
-Pull requests produce short-lived per-distro archive artifacts after compiling, testing, and checking the staged install tree. These artifacts do not configure a login session or install a shell replacement. Native DEB/RPM packages, dependency resolution, upgrades, rollback, and uninstall must be validated before a public beta install is offered.
+CI builds and tests DEB packages for Ubuntu/Debian, an RPM for Fedora, and an Arch package for x86_64; it installs and removes each package in a clean distro container. This verifies package-manager integration and files, not real desktop-session operation or rollback/upgrade behavior.
 
 ## Design principles
 

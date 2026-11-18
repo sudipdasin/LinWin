@@ -4,6 +4,10 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
+- Grouped hardware- and service-dependent Network, Disk, Bluetooth, Startup apps, Services, and GPU Task Manager panels under a separate Experimental tab.
+- Prepare installable DEB, RPM, and Arch x86_64 beta packages; test package install/removal in the matching distro containers and attach checksummed CI artifacts.
+- Publish a desktop-menu entry and accurate app-preview package metadata; retain the host login session and existing desktop.
+
 - Clarified the pre-beta status and documented the release blockers and safe evaluation limits.
 - Run distro build and UI tests on pull requests, stage-install the binary, produce checksummed seven-day preview archives, and include the GPL license and README in install trees.
 

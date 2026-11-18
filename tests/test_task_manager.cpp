@@ -19,9 +19,7 @@ int main(int argc, char **argv)
     }
     const QStringList expected{
         QStringLiteral("Processes"), QStringLiteral("Performance"), QStringLiteral("App history"),
-        QStringLiteral("Users"), QStringLiteral("Details"), QStringLiteral("Network"),
-        QStringLiteral("Disk"), QStringLiteral("Bluetooth"), QStringLiteral("Startup apps"),
-        QStringLiteral("Services"), QStringLiteral("GPU")
+        QStringLiteral("Users"), QStringLiteral("Details"), QStringLiteral("Experimental")
     };
     const auto *processTable = manager.findChild<QTableView *>(QStringLiteral("processTable"));
     if (processTable == nullptr || processTable->model() == nullptr || processTable->model()->columnCount() != 9) {
@@ -33,6 +31,24 @@ int main(int argc, char **argv)
         for (int i = 0; i < tabs->count(); ++i) found = found || tabs->tabText(i) == name;
         if (!found) {
             std::cerr << "Missing Task Manager tab: " << name.toStdString() << '\n';
+            return 1;
+        }
+    }
+    auto *experimentalTabs = manager.findChild<QTabWidget *>(QStringLiteral("experimentalTaskManagerTabs"));
+    if (experimentalTabs == nullptr) {
+        std::cerr << "Experimental monitoring features should be grouped in a separate tab\n";
+        return 1;
+    }
+    const QStringList experimentalExpected{
+        QStringLiteral("Network"), QStringLiteral("Disk"), QStringLiteral("Bluetooth"),
+        QStringLiteral("Startup apps"), QStringLiteral("Services"), QStringLiteral("GPU")
+    };
+    for (const QString &name : experimentalExpected) {
+        bool found = false;
+        for (int i = 0; i < experimentalTabs->count(); ++i)
+            found = found || experimentalTabs->tabText(i) == name;
+        if (!found) {
+            std::cerr << "Missing experimental Task Manager tab: " << name.toStdString() << '\n';
             return 1;
         }
     }

@@ -36,13 +36,14 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 - [x] Add a basic file manager preview with folder navigation, rename, copy/cut/paste, shortcut links, system Trash, keyboard actions, and drag-and-drop
 - [ ] Add file-operation progress, conflict choices, undo where safe, file search, and richer drag-and-drop feedback
 - [x] Add a lightweight task manager preview with `/proc` CPU/memory sampling, search, sorting, safe same-user close, and confirmed force-stop
+- [x] Group hardware/service-dependent Network, Disk, Bluetooth, Startup apps, Services, and GPU monitoring under an Experimental tab
 - [ ] Add process grouping, live-window awareness, richer resource history, and privileged system-process controls through desktop authorization
 
 ## Release readiness
 
-- [x] Automated C++ builds and UI tests on Ubuntu, Debian, Fedora, and Arch Linux containers for pull requests
-- [x] Stage-install checks and short-lived checksummed TGZ preview artifacts in CI
-- [ ] Validate packages and shell startup/uninstall on supported desktops and session types
+- [x] Automated C++ builds, UI tests, and native package install/removal on Ubuntu, Debian, Fedora, and Arch Linux x86_64 containers
+- [x] Publish short-lived checksummed native package artifacts from pull-request CI
+- [ ] Validate desktop startup, shell-session behavior, upgrades, and uninstall on supported desktops and session types
 - [ ] Add automated tests for shared core behaviour and installer rollback
-- [ ] Publish signed beta release artifacts, checksums, upgrade, rollback, and uninstall guidance after package and session validation
+- [ ] Publish signed broader beta artifacts with upgrade, rollback, shell-session recovery, and uninstall guidance after real desktop validation
 - [ ] Establish contributor and security response processes
