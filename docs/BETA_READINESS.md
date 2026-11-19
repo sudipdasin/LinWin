@@ -18,7 +18,7 @@ The private LinWin Pro mirror is intended to import a public `main` revision onl
 
 | Area | Current behavior | Remaining limits |
 | --- | --- | --- |
-| Start, taskbar, and shortcuts | Familiar Start-style launcher, pinned apps, taskbar, and common keyboard shortcuts | Window-management behavior varies by desktop and session |
+| Start, taskbar, and shortcuts | Familiar Start-style launcher, pinned apps, responsive taskbar overflow, and common keyboard shortcuts | Window-management behavior varies by desktop and session |
 | Files | Browse, rename, copy/cut/paste, trash, shortcuts, and drag-and-drop | Cross-toolkit drag-and-drop and unusual mount types need broader testing |
 | Clipboard | Optional local text history and LinWin-scoped paste behavior | Saved text is not encrypted; clipboard integration varies by session |
 | Task Manager | Live process/resource views and same-user task actions | Network, disk, Bluetooth, startup, services, and GPU panels are experimental and may be unavailable on some systems; this is not yet equivalent to Windows Task Manager |

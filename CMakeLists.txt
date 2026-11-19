@@ -12,8 +12,7 @@ find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GIO_UNIX REQUIRED IMPORTED_TARGET gio-unix-2.0)
 
-qt_add_executable(linwin
-    src/main.cpp
+set(LINWIN_SHELL_SOURCES
     src/main_window.cpp
     src/main_window.h
     src/app_launcher_widget.cpp
@@ -31,6 +30,8 @@ qt_add_executable(linwin
     src/setup_wizard.cpp
     src/setup_wizard.h
 )
+
+qt_add_executable(linwin src/main.cpp ${LINWIN_SHELL_SOURCES})
 
 target_link_libraries(linwin PRIVATE Qt6::Widgets PkgConfig::GIO_UNIX)
 target_compile_options(linwin PRIVATE
@@ -88,11 +89,22 @@ if(BUILD_TESTING)
     target_link_libraries(linwin-setup-wizard-tests PRIVATE Qt6::Widgets)
     target_compile_definitions(linwin-setup-wizard-tests PRIVATE LINWIN_SESSION_HELPER_PATH="/nonexistent/linwin-session-helper")
     add_test(NAME setup-wizard-review COMMAND linwin-setup-wizard-tests)
+    add_executable(linwin-taskbar-layout-tests
+        tests/test_taskbar_layout.cpp
+        ${LINWIN_SHELL_SOURCES}
+    )
+    target_include_directories(linwin-taskbar-layout-tests PRIVATE src)
+    target_link_libraries(linwin-taskbar-layout-tests PRIVATE Qt6::Widgets PkgConfig::GIO_UNIX)
+    target_compile_definitions(linwin-taskbar-layout-tests PRIVATE LINWIN_SESSION_HELPER_PATH="/nonexistent/linwin-session-helper")
+    target_compile_options(linwin-taskbar-layout-tests PRIVATE
+        "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>"
+    )
+    add_test(NAME responsive-taskbar COMMAND linwin-taskbar-layout-tests)
     add_test(NAME x11-session-wrapper
         COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_session_wrapper.sh
             ${CMAKE_CURRENT_SOURCE_DIR}/data/linwin-session)
 
-    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search setup-wizard-review x11-session-wrapper PROPERTIES
+    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search setup-wizard-review responsive-taskbar x11-session-wrapper PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 20
     )

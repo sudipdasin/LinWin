@@ -22,6 +22,7 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QMessageBox>
+#include <QMenu>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollArea>
@@ -164,7 +165,7 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     taskbarLayout->setSpacing(8);
 
     startButton_ = makePanelButton(QStringLiteral("⊞  Start"), QStringLiteral("startButton"), taskbar);
-    startButton_->setToolTip(tr("Open the app menu (Super key integration is planned)"));
+    startButton_->setToolTip(tr("Open the app menu (Super or Ctrl+Esc)"));
     homeButton_ = makePanelButton(QStringLiteral("Home"), QStringLiteral("navigationButton"), taskbar);
     filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
     tasksButton_ = makePanelButton(QStringLiteral("Tasks"), QStringLiteral("navigationButton"), taskbar);
@@ -174,12 +175,20 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
         signOutButton_ = makePanelButton(QStringLiteral("Sign out"), QStringLiteral("signOutButton"), taskbar);
         signOutButton_->setToolTip(tr("End the LinWin session and return to the login screen"));
     }
+    overflowButton_ = makePanelButton(tr("More"), QStringLiteral("taskbarOverflowButton"), taskbar);
+    overflowButton_->setToolTip(tr("Open additional shell actions"));
+    auto *overflowMenu = new QMenu(overflowButton_);
+    clipboardOverflowAction_ = overflowMenu->addAction(tr("Clipboard"));
+    settingsOverflowAction_ = overflowMenu->addAction(tr("Settings"));
+    if (shellMode) signOutOverflowAction_ = overflowMenu->addAction(tr("Sign out"));
+    overflowButton_->setMenu(overflowMenu);
     homeButton_->setChecked(true);
     for (const QString &component : {QStringLiteral("start-menu"), QStringLiteral("files"),
                                      QStringLiteral("task-manager"), QStringLiteral("clipboard")})
         applyComponentVisibility(component, componentEnabled(component));
 
     auto *windowScroll = new QScrollArea(taskbar);
+    windowSwitcher_ = windowScroll;
     windowScroll->setObjectName(QStringLiteral("windowSwitcher"));
     windowScroll->setWidgetResizable(true);
     windowScroll->setFrameShape(QFrame::NoFrame);
@@ -195,16 +204,16 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     windowButtonsLayout_->addWidget(windowSwitcherStatus_);
     windowScroll->setWidget(windowList);
 
-    auto *systemStatus = new QLabel(
+    systemStatus_ = new QLabel(
         QStringLiteral("%1  ·  %2").arg(profile.distribution, profile.sessionType), taskbar);
-    systemStatus->setObjectName(QStringLiteral("panelStatus"));
-    systemStatus->setToolTip(tr("Detected Linux distribution and session type"));
-    systemStatus->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    systemStatus_->setObjectName(QStringLiteral("panelStatus"));
+    systemStatus_->setToolTip(tr("Detected Linux distribution and session type"));
+    systemStatus_->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
-    auto *clock = new QLabel(taskbar);
-    clock->setObjectName(QStringLiteral("panelClock"));
-    clock->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    const auto refreshClock = [clock]() {
+    clock_ = new QLabel(taskbar);
+    clock_->setObjectName(QStringLiteral("panelClock"));
+    clock_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    const auto refreshClock = [clock = clock_]() {
         clock->setText(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm\nddd, d MMM")));
     };
     refreshClock();
@@ -221,12 +230,14 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     taskbarLayout->addWidget(settingsButton_);
     if (signOutButton_ != nullptr)
         taskbarLayout->addWidget(signOutButton_);
+    taskbarLayout->addWidget(overflowButton_);
     taskbarLayout->addWidget(windowScroll, 1);
-    taskbarLayout->addWidget(systemStatus);
+    taskbarLayout->addWidget(systemStatus_);
     taskbarLayout->addSpacing(14);
-    taskbarLayout->addWidget(clock);
+    taskbarLayout->addWidget(clock_);
     rootLayout->addWidget(taskbar);
     setCentralWidget(root);
+    updateTaskbarLayout();
 
     connect(startButton_, &QPushButton::toggled, this, [this](bool visible) {
         startMenu_->setVisible(visible);
@@ -241,13 +252,17 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     connect(tasksButton_, &QPushButton::clicked, this, [this]() { showPage(2); });
     connect(clipboardButton_, &QPushButton::clicked, this, &MainWindow::showClipboardCenter);
     connect(settingsButton_, &QPushButton::clicked, this, &MainWindow::showSettingsHub);
+    connect(clipboardOverflowAction_, &QAction::triggered, this, &MainWindow::showClipboardCenter);
+    connect(settingsOverflowAction_, &QAction::triggered, this, &MainWindow::showSettingsHub);
     if (signOutButton_ != nullptr) {
-        connect(signOutButton_, &QPushButton::clicked, this, [this]() {
+        const auto requestSignOut = [this]() {
             if (QMessageBox::question(this, tr("Sign out of LinWin?"),
                     tr("Your applications will close and the login screen will appear. Choose your previous desktop there to return to it."),
                     QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes)
                 close();
-        });
+        };
+        connect(signOutButton_, &QPushButton::clicked, this, requestSignOut);
+        connect(signOutOverflowAction_, &QAction::triggered, this, requestSignOut);
     }
     auto *settingsShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+,")), this);
     settingsShortcut->setObjectName(QStringLiteral("settingsHubShortcut"));
@@ -425,6 +440,7 @@ void MainWindow::cycleExternalWindow()
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
+    updateTaskbarLayout();
     updateShellGeometry();
 }
 
@@ -469,14 +485,39 @@ bool MainWindow::componentEnabled(const QString &component) const
     return settings.value(QStringLiteral("components/%1").arg(component), true).toBool();
 }
 
+void MainWindow::updateTaskbarLayout()
+{
+    const bool compact = width() < 780;
+    const bool hideWindowDetails = width() < 920;
+
+    if (startButton_ != nullptr) startButton_->setVisible(startMenuEnabled_);
+    if (filesButton_ != nullptr) filesButton_->setVisible(filesEnabled_);
+    if (tasksButton_ != nullptr) tasksButton_->setVisible(taskManagerEnabled_);
+    if (clipboardButton_ != nullptr) clipboardButton_->setVisible(clipboardEnabled_ && !compact);
+    if (settingsButton_ != nullptr) settingsButton_->setVisible(!compact);
+    if (signOutButton_ != nullptr) signOutButton_->setVisible(!compact);
+    if (overflowButton_ != nullptr) overflowButton_->setVisible(compact);
+
+    if (clipboardOverflowAction_ != nullptr)
+        clipboardOverflowAction_->setVisible(compact && clipboardEnabled_);
+    if (settingsOverflowAction_ != nullptr)
+        settingsOverflowAction_->setVisible(compact);
+    if (signOutOverflowAction_ != nullptr)
+        signOutOverflowAction_->setVisible(compact);
+
+    if (windowSwitcher_ != nullptr) windowSwitcher_->setVisible(!hideWindowDetails);
+    if (systemStatus_ != nullptr) systemStatus_->setVisible(!hideWindowDetails);
+}
+
 void MainWindow::applyComponentVisibility(const QString &component, bool enabled)
 {
     if (component == QStringLiteral("start-menu")) {
-        startButton_->setVisible(enabled);
+        startMenuEnabled_ = enabled;
         if (!enabled) {
             startMenu_->hide();
             startButton_->setChecked(false);
         }
+        updateTaskbarLayout();
         return;
     }
 
@@ -487,10 +528,13 @@ void MainWindow::applyComponentVisibility(const QString &component, bool enabled
     else if (component == QStringLiteral("clipboard")) { pageIndex = 3; button = clipboardButton_; }
     if (pageIndex < 0 || button == nullptr) return;
 
-    button->setVisible(enabled);
+    if (component == QStringLiteral("files")) filesEnabled_ = enabled;
+    else if (component == QStringLiteral("task-manager")) taskManagerEnabled_ = enabled;
+    else if (component == QStringLiteral("clipboard")) clipboardEnabled_ = enabled;
     pages_->widget(pageIndex)->setEnabled(enabled);
     if (component == QStringLiteral("clipboard")) clipboardHistory_->setComponentEnabled(enabled);
     if (!enabled && pages_->currentIndex() == pageIndex) showPage(0);
+    updateTaskbarLayout();
 }
 
 void MainWindow::updateShellGeometry()

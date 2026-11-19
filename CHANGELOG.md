@@ -53,7 +53,9 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
-No unreleased changes yet.
+- Make the taskbar responsive: compact windows move Clipboard, Settings, and Sign out into a More menu and hide nonessential window/system detail while preserving keyboard shortcuts.
+- Add a Qt UI regression test for wide and compact taskbar layouts and overflow navigation.
+- Correct the Start button tooltip to match the implemented Super and Ctrl+Esc shortcuts.
 
 ## 0.2.0 - Clipboard history preview
 

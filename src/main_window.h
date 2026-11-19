@@ -11,11 +11,14 @@ class ClipboardHistoryWidget;
 class FileManagerWidget;
 class TaskManagerWidget;
 class SettingsHubWidget;
+class QAction;
 
 class QHBoxLayout;
 class QLabel;
 class QKeyEvent;
+class QMenu;
 class QProcess;
+class QScrollArea;
 class QTimer;
 class QPushButton;
 class QResizeEvent;
@@ -40,6 +43,7 @@ private:
     void cycleExternalWindow();
     void showClipboardCenter();
     void showSettingsHub();
+    void updateTaskbarLayout();
     void applyComponentVisibility(const QString &component, bool enabled);
     bool componentEnabled(const QString &component) const;
 
@@ -53,6 +57,13 @@ private:
     QPushButton *clipboardButton_ = nullptr;
     QPushButton *settingsButton_ = nullptr;
     QPushButton *signOutButton_ = nullptr;
+    QPushButton *overflowButton_ = nullptr;
+    QAction *clipboardOverflowAction_ = nullptr;
+    QAction *settingsOverflowAction_ = nullptr;
+    QAction *signOutOverflowAction_ = nullptr;
+    QScrollArea *windowSwitcher_ = nullptr;
+    QLabel *systemStatus_ = nullptr;
+    QLabel *clock_ = nullptr;
     FileManagerWidget *fileManager_ = nullptr;
     TaskManagerWidget *taskManager_ = nullptr;
     ClipboardHistoryWidget *clipboardHistory_ = nullptr;
@@ -65,4 +76,8 @@ private:
     QStringList windowOrder_;
     QString wmctrlPath_;
     int windowCursor_ = -1;
+    bool startMenuEnabled_ = true;
+    bool filesEnabled_ = true;
+    bool taskManagerEnabled_ = true;
+    bool clipboardEnabled_ = true;
 };
