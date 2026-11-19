@@ -4,8 +4,15 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
-- Restore automated GitHub Actions validation for pull requests and main pushes, including the Ubuntu VM, distro package tests, and package install/removal checks.
-- Keep CircleCI pinned-image checks manual until the private registry path is verified, and prevent an unverified check from gating every main commit.
+No unreleased changes yet.
+
+## 1.0.0-beta.2 - Responsive shell preview
+
+- Make the taskbar adapt to narrow windows, moving secondary actions into a More menu while keeping core navigation available.
+- Add a UI regression test for wide and narrow layouts, overflow navigation, and panel bounds.
+- Restore automated GitHub Actions VM and four-distro checks on pull requests and main pushes; keep private pinned-image CI manual until verified.
+- Version native packages as release 2 so beta.2 can upgrade beta.1 cleanly; validate Debian, RPM, and Arch package version metadata in CI.
+- Update the public release status and workflow artifact labels for beta.2.
 
 ## 1.0.0-beta.1 - Major public testing preview
 
