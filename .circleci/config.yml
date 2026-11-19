@@ -5,7 +5,7 @@ parameters:
     default: false
   auto_pinned_qt6_tests:
     type: boolean
-    default: true
+    default: false
   run_pinned_qt6_tests:
     type: boolean
     default: false

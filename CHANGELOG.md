@@ -2,6 +2,11 @@
 
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
+## Unreleased
+
+- Restore automated GitHub Actions validation for pull requests and main pushes, including the Ubuntu VM, distro package tests, and package install/removal checks.
+- Keep CircleCI pinned-image checks manual until the private registry path is verified, and prevent an unverified check from gating every main commit.
+
 ## 1.0.0-beta.1 - Major public testing preview
 
 - Add persistent, default-on Start menu, File Manager, Task Manager, and Clipboard feature toggles in Settings; turning off a component immediately removes its taskbar entry and blocks its shortcut route.
