@@ -1,3 +1,16 @@
+<!-- LATEST-RELEASE:START -->
+## Latest published release: v1.0.0-beta.2
+**[Release notes and downloads](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.2)** · Prerelease
+
+| Asset | Download |
+| --- | --- |
+| linwin-1.0.0-beta.2-arch-x86_64.pkg.tar.zst | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.2/linwin-1.0.0-beta.2-arch-x86_64.pkg.tar.zst) |
+| linwin-1.0.0-beta.2-debian-13.deb | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.2/linwin-1.0.0-beta.2-debian-13.deb) |
+| linwin-1.0.0-beta.2-fedora.rpm | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.2/linwin-1.0.0-beta.2-fedora.rpm) |
+| linwin-1.0.0-beta.2-ubuntu-24.04.deb | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.2/linwin-1.0.0-beta.2-ubuntu-24.04.deb) |
+| SHA256SUMS | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.2/SHA256SUMS) |
+<!-- LATEST-RELEASE:END -->
+
 # LinWin
 
 LinWin is an open-source, lightweight, all-in-one Linux desktop shell for people moving from Windows. Its goal is to make Linux feel familiar and easy from the first login, including for people who do not know Linux, terminals, or Bash.
