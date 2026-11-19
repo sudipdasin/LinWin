@@ -108,7 +108,7 @@ jobs:
                   su builder -c "cd /src/build/archsrc && makepkg -f --noconfirm --nodeps" &&
                   pkg=$(find build/archsrc -maxdepth 1 -name "linwin-[0-9]*.pkg.tar.zst" -print -quit) &&
                   test -n "$pkg" &&
-                  pacman -Qp --print-format "%v" "$pkg" | grep -Fx "1.0.0-2" &&
+                  pacman -Qp "$pkg" | grep -Fx "linwin 1.0.0-2" &&
                   pacman -U --noconfirm "$pkg" &&
                   pacman -Q linwin &&
                   pacman -R --noconfirm linwin &&
