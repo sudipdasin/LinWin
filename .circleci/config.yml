@@ -3,6 +3,9 @@ parameters:
   publish_toolchain_image:
     type: boolean
     default: false
+  auto_pinned_qt6_tests:
+    type: boolean
+    default: true
   run_pinned_qt6_tests:
     type: boolean
     default: false
@@ -88,6 +91,14 @@ workflows:
     when: << pipeline.parameters.publish_toolchain_image >>
     jobs:
       - publish-toolchain-image:
+          context: ghcr-publisher
+          filters:
+            branches:
+              only: main
+  automatic-pinned-qt6-tests:
+    when: << pipeline.parameters.auto_pinned_qt6_tests >>
+    jobs:
+      - test-with-pinned-qt6-image:
           context: ghcr-publisher
           filters:
             branches:
