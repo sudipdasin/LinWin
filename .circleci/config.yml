@@ -3,6 +3,9 @@ parameters:
   publish_toolchain_image:
     type: boolean
     default: false
+  run_pinned_qt6_tests:
+    type: boolean
+    default: false
   build_toolchain_image:
     type: boolean
     default: false
@@ -45,6 +48,26 @@ jobs:
             docker logout ghcr.io
             echo 'Publication completed; verify package is private and capture registry digest before reuse.'
 
+  test-with-pinned-qt6-image:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build and test LinWin using immutable private Qt6 image
+          no_output_timeout: 20m
+          command: |
+            set -euo pipefail
+            : "${GHCR_USERNAME:?Missing GHCR_USERNAME}"
+            : "${GHCR_TOKEN:?Missing GHCR_TOKEN}"
+            image="ghcr.io/sudipdasin/linwin-qt6-builder@sha256:6d6aa1358a0cf922bdbfa95ae118465fbdc82ea9702d04655275011bdf9cf8bf"
+            printf '%s' "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+            docker pull "${image}"
+            docker logout ghcr.io
+            docker run --rm -v "${PWD}:/workspace" -w /workspace "${image}" sh -c 'set -eu; cmake -S . -B /tmp/linwin-ci-build -DCMAKE_BUILD_TYPE=Release; cmake --build /tmp/linwin-ci-build --parallel 2; ctest --test-dir /tmp/linwin-ci-build --output-on-failure'
+
   ubuntu-smoke:
     docker:
       - image: ubuntu:24.04
@@ -65,6 +88,14 @@ workflows:
     when: << pipeline.parameters.publish_toolchain_image >>
     jobs:
       - publish-toolchain-image:
+          context: ghcr-publisher
+          filters:
+            branches:
+              only: main
+  manual-pinned-qt6-tests:
+    when: << pipeline.parameters.run_pinned_qt6_tests >>
+    jobs:
+      - test-with-pinned-qt6-image:
           context: ghcr-publisher
           filters:
             branches:
