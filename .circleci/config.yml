@@ -69,7 +69,14 @@ jobs:
             printf '%s' "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
             docker pull "${image}"
             docker logout ghcr.io
-            docker run --rm -v "${PWD}:/workspace" -w /workspace "${image}" sh -c 'set -eu; cmake -S . -B /tmp/linwin-ci-build -DCMAKE_BUILD_TYPE=Release; cmake --build /tmp/linwin-ci-build --parallel 2; ctest --test-dir /tmp/linwin-ci-build --output-on-failure'
+            # CircleCI remote Docker runs on a separate host: checkout bind mounts are not shared.
+            # Transfer the checked-out source into a stopped container instead of mounting $PWD.
+            container="$(docker create -w /workspace "${image}" sh -c 'set -eu; cmake -S . -B /tmp/linwin-ci-build -DCMAKE_BUILD_TYPE=Release; cmake --build /tmp/linwin-ci-build --parallel 2; ctest --test-dir /tmp/linwin-ci-build --output-on-failure')"
+            trap 'docker rm -f "${container}" >/dev/null 2>&1 || true' EXIT
+            docker cp "${PWD}/." "${container}:/workspace"
+            docker start -a "${container}"
+            result="$(docker inspect -f '{{.State.ExitCode}}' "${container}")"
+            exit "${result}"
 
   ubuntu-smoke:
     docker:
