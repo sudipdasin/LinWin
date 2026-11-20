@@ -83,7 +83,7 @@ jobs:
                   cpack --config build/CPackConfig.cmake -G DEB -B build &&
                   pkg=$(find build -maxdepth 1 -name "*.deb" -print -quit) &&
                   test -n "$pkg" &&
-                  dpkg-deb -f "$pkg" Version | grep -Fx "1.0.0-3" &&
+                  dpkg-deb -f "$pkg" Version | grep -Fx "1.0.0-4" &&
                   apt-get install -y "./$pkg" &&
                   dpkg-query -W linwin &&
                   apt-get remove -y linwin &&
@@ -93,7 +93,7 @@ jobs:
                   cpack --config build/CPackConfig.cmake -G RPM -B build &&
                   pkg=$(find build -maxdepth 1 -name "*.rpm" -print -quit) &&
                   test -n "$pkg" &&
-                  rpm -qp --qf "%{VERSION}-%{RELEASE}\n" "$pkg" | grep -Fx "1.0.0-3" &&
+                  rpm -qp --qf "%{VERSION}-%{RELEASE}\n" "$pkg" | grep -Fx "1.0.0-4" &&
                   dnf install -y "$pkg" &&
                   rpm -q linwin &&
                   dnf remove -y linwin &&
@@ -108,7 +108,7 @@ jobs:
                   su builder -c "cd /src/build/archsrc && makepkg -f --noconfirm --nodeps" &&
                   pkg=$(find build/archsrc -maxdepth 1 -name "linwin-[0-9]*.pkg.tar.zst" -print -quit) &&
                   test -n "$pkg" &&
-                  pacman -Qp "$pkg" | grep -Fx "linwin 1.0.0-3" &&
+                  pacman -Qp "$pkg" | grep -Fx "linwin 1.0.0-4" &&
                   pacman -U --noconfirm "$pkg" &&
                   pacman -Q linwin &&
                   pacman -R --noconfirm linwin &&
