@@ -7,6 +7,8 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QSettings>
+#include <QSlider>
+#include <QPushButton>
 #include <QRegularExpression>
 #include <QVector>
 
@@ -49,6 +51,9 @@ int main(int argc, char **argv)
 
     auto *filesToggle = widget.findChild<QCheckBox *>(QStringLiteral("componentToggle_files"));
     auto *tasksToggle = widget.findChild<QCheckBox *>(QStringLiteral("componentToggle_task-manager"));
+    auto *textScale = widget.findChild<QSlider *>(QStringLiteral("textScaleSlider"));
+    auto *textScaleValue = widget.findChild<QLabel *>(QStringLiteral("textScaleValue"));
+    auto *textScaleReset = widget.findChild<QPushButton *>(QStringLiteral("textScaleReset"));
     passed &= expect(filesToggle != nullptr && filesToggle->isChecked(),
                      "file manager should be enabled by default");
     passed &= expect(tasksToggle != nullptr && tasksToggle->isChecked(),
@@ -60,6 +65,25 @@ int main(int argc, char **argv)
     auto *reopenedFilesToggle = reopened.findChild<QCheckBox *>(QStringLiteral("componentToggle_files"));
     passed &= expect(reopenedFilesToggle != nullptr && !reopenedFilesToggle->isChecked(),
                      "saved component preferences should load when settings reopen");
+
+    passed &= expect(textScale != nullptr && textScaleValue != nullptr && textScaleReset != nullptr,
+                     "settings should expose text-size controls");
+    if (textScale != nullptr && textScaleValue != nullptr && textScaleReset != nullptr) {
+        passed &= expect(textScale->minimum() == 85 && textScale->maximum() == 150,
+                         "text scaling should stay within supported bounds");
+        textScale->setValue(125);
+        passed &= expect(textScaleValue->text() == QStringLiteral("125%")
+                         && settings.value(QStringLiteral("appearance/textScalePercent")).toInt() == 125,
+                         "text size should update its label and persist per account");
+        passed &= expect(widget.styleSheet().contains(QStringLiteral("font-size: 20px")),
+                         "text scaling should update LinWin settings typography");
+        textScaleReset->click();
+        passed &= expect(textScale->value() == 100
+                         && settings.value(QStringLiteral("appearance/textScalePercent")).toInt() == 100,
+                         "Reset should restore the standard text size");
+        passed &= expect(widget.styleSheet().contains(QStringLiteral("font-size: 16px")),
+                         "reset should restore default LinWin typography");
+    }
     settings.clear();
 
     auto *search = widget.findChild<QLineEdit *>(QStringLiteral("settingsSearch"));

@@ -43,6 +43,7 @@ private:
     void cycleExternalWindow();
     void showClipboardCenter();
     void showSettingsHub();
+    void applyTextScale(int percent);
     void updateTaskbarLayout();
     void applyComponentVisibility(const QString &component, bool enabled);
     bool componentEnabled(const QString &component) const;
@@ -80,4 +81,5 @@ private:
     bool filesEnabled_ = true;
     bool taskManagerEnabled_ = true;
     bool clipboardEnabled_ = true;
+    QString baseStyleSheet_;
 };

@@ -7,6 +7,7 @@
 #include "system_profile.h"
 #include "settings_hub_widget.h"
 #include "task_manager_widget.h"
+#include "text_scale.h"
 
 #include <QDateTime>
 #include <QCoreApplication>
@@ -151,6 +152,8 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     pages_->addWidget(settingsHub_);
     connect(settingsHub_, &SettingsHubWidget::componentEnabledChanged,
             this, &MainWindow::applyComponentVisibility);
+    connect(settingsHub_, &SettingsHubWidget::textScaleChanged,
+            this, &MainWindow::applyTextScale);
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
     startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
@@ -297,6 +300,18 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     fallbackClipboardShortcut->setContext(Qt::ApplicationShortcut);
     connect(fallbackClipboardShortcut, &QShortcut::activated, this, &MainWindow::showClipboardCenter);
 
+    const auto addTextScaleShortcut = [this](const QKeySequence &sequence, int delta, const QString &name) {
+        auto *shortcut = new QShortcut(sequence, this);
+        shortcut->setObjectName(name);
+        shortcut->setContext(Qt::ApplicationShortcut);
+        connect(shortcut, &QShortcut::activated, this, [this, delta]() {
+            settingsHub_->setTextScalePercent(delta == 0 ? 100 : settingsHub_->textScalePercent() + delta);
+        });
+    };
+    addTextScaleShortcut(QKeySequence::ZoomIn, 5, QStringLiteral("increaseTextSizeShortcut"));
+    addTextScaleShortcut(QKeySequence::ZoomOut, -5, QStringLiteral("decreaseTextSizeShortcut"));
+    addTextScaleShortcut(QKeySequence(QStringLiteral("Ctrl+0")), 0, QStringLiteral("resetTextSizeShortcut"));
+
     connect(pages_, &QStackedWidget::currentChanged, this, [this](int index) {
         homeButton_->setChecked(index == 0);
         filesButton_->setChecked(index == 1);
@@ -305,7 +320,7 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
         settingsButton_->setChecked(index == 4);
     });
 
-    setStyleSheet(QStringLiteral(
+    baseStyleSheet_ = QStringLiteral(
         "QMainWindow, QWidget { background: #f4f6fa; color: #172033; font-family: 'Sans Serif'; }"
         "#desktopArea { background: #f4f6fa; }"
         "#eyebrow { color: #3568d4; font-size: 11px; font-weight: 700; letter-spacing: 1px; }"
@@ -342,7 +357,8 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
         "#startMenuPanel { background: #ffffff; border: 1px solid #d8e0ec; border-radius: 14px; }"
         "#startMenuPanel #pageTitle { font-size: 24px; }"
         "#startMenuPanel #applicationSearch { background: #f8faff; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
-        "#startMenuPanel #primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }"));
+        "#startMenuPanel #primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }");
+    applyTextScale(settingsHub_->textScalePercent());
 
     const bool waylandSession = !qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")
         || qEnvironmentVariable("XDG_SESSION_TYPE").compare(QStringLiteral("wayland"), Qt::CaseInsensitive) == 0;
@@ -477,6 +493,12 @@ void MainWindow::showSettingsHub()
 {
     showPage(4);
     if (settingsHub_ != nullptr) settingsHub_->focusSearch();
+}
+
+void MainWindow::applyTextScale(int percent)
+{
+    if (percent < 85 || percent > 150 || baseStyleSheet_.isEmpty()) return;
+    setStyleSheet(linwinScaledStyleSheet(baseStyleSheet_, percent));
 }
 
 bool MainWindow::componentEnabled(const QString &component) const
