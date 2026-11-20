@@ -5,9 +5,12 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QStringList>
+#include <cstdio>
+#include "xfce_dependency_plan.h"
 
 #include <unistd.h>
 
@@ -63,6 +66,53 @@ bool removeSession(QString *error)
     return true;
 }
 
+bool installXfceDependencies(QString *error)
+{
+    QFile osRelease(QStringLiteral("/etc/os-release"));
+    if (!osRelease.open(QIODevice::ReadOnly)) {
+        *error = QStringLiteral("Could not detect this distribution from /etc/os-release.");
+        return false;
+    }
+    const PackageManager manager = packageManagerForOsRelease(QString::fromUtf8(osRelease.readAll()));
+    const QString managerProgram = packageManagerProgram(manager);
+    const QString program = managerProgram.isEmpty() ? QString() : QStandardPaths::findExecutable(managerProgram);
+    const QStringList packages = xfceDependencyPackages(manager);
+    const QStringList arguments = xfceDependencyInstallArguments(manager);
+    if (program.isEmpty() || packages.isEmpty() || arguments.isEmpty()) {
+        *error = QStringLiteral("Automatic XFCE dependency installation is not supported on this distribution. Use its graphical software manager to install: xfwm4, xfce4-settings, and the XFCE desktop manager package.");
+        return false;
+    }
+
+    QProcess packageProcess;
+    QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+    if (manager == PackageManager::Apt)
+        environment.insert(QStringLiteral("DEBIAN_FRONTEND"), QStringLiteral("noninteractive"));
+    packageProcess.setProcessEnvironment(environment);
+    packageProcess.setProcessChannelMode(QProcess::SeparateChannels);
+    packageProcess.start(program, arguments);
+    if (!packageProcess.waitForStarted(10000)) {
+        *error = QStringLiteral("Could not start %1: %2").arg(QFileInfo(program).fileName(), packageProcess.errorString());
+        return false;
+    }
+
+    while (packageProcess.state() != QProcess::NotRunning) {
+        packageProcess.waitForReadyRead(250);
+        const QByteArray output = packageProcess.readAllStandardOutput();
+        const QByteArray diagnostic = packageProcess.readAllStandardError();
+        if (!output.isEmpty()) { std::fwrite(output.constData(), 1, static_cast<size_t>(output.size()), stdout); std::fflush(stdout); }
+        if (!diagnostic.isEmpty()) { std::fwrite(diagnostic.constData(), 1, static_cast<size_t>(diagnostic.size()), stderr); std::fflush(stderr); }
+    }
+    const QByteArray output = packageProcess.readAllStandardOutput();
+    const QByteArray diagnostic = packageProcess.readAllStandardError();
+    if (!output.isEmpty()) { std::fwrite(output.constData(), 1, static_cast<size_t>(output.size()), stdout); std::fflush(stdout); }
+    if (!diagnostic.isEmpty()) { std::fwrite(diagnostic.constData(), 1, static_cast<size_t>(diagnostic.size()), stderr); std::fflush(stderr); }
+    if (packageProcess.exitStatus() != QProcess::NormalExit || packageProcess.exitCode() != 0) {
+        *error = QStringLiteral("The distribution package manager could not install the XFCE session components (exit code %1).").arg(packageProcess.exitCode());
+        return false;
+    }
+    return true;
+}
+
 QStringList removePackageCommand(QString *program, QString *error)
 {
     const QString id = QFileInfo(QStringLiteral("/etc/os-release")).exists()
@@ -99,6 +149,7 @@ int main(int argc, char **argv)
     }
     const QStringList args = app.arguments();
     if (args.size() != 2 || (args.at(1) != QStringLiteral("install-session")
+            && args.at(1) != QStringLiteral("install-xfce-deps")
             && args.at(1) != QStringLiteral("uninstall"))) {
         qCritical("Unsupported LinWin helper action.");
         return 64;
@@ -107,6 +158,11 @@ int main(int argc, char **argv)
     QString error;
     if (args.at(1) == QStringLiteral("install-session")) {
         if (!installSession(&error)) { qCritical().noquote() << error; return 1; }
+        return 0;
+    }
+
+    if (args.at(1) == QStringLiteral("install-xfce-deps")) {
+        if (!installXfceDependencies(&error)) { qCritical().noquote() << error; return 1; }
         return 0;
     }
 
