@@ -6,6 +6,13 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 No unreleased changes yet.
 
+## 1.0.0-beta.3 - Accessible text scaling
+
+- Add persistent LinWin text-size controls to Settings, adjustable from 85% to 150% with a one-click reset.
+- Add standard zoom-in, zoom-out, and reset shortcuts; the preference applies throughout the shell and remains scoped to LinWin.
+- Add UI regression coverage for scaling bounds, persistence, and reset behaviour.
+- Version native packages as release 3 and verify DEB, RPM, and Arch package metadata in CI.
+
 ## 1.0.0-beta.2 - Responsive shell preview
 
 - Make the taskbar adapt to narrow windows, moving secondary actions into a More menu while keeping core navigation available.

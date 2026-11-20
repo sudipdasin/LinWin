@@ -90,7 +90,8 @@ The installer must identify the host distribution, kernel, package manager, and 
 
 ### Zoom and accessibility
 
-- Offer display scaling and text-size controls with clear per-display scope where supported.
+- Implemented preview: persistent LinWin text-size control from 85% to 150% in Settings, with reset and Ctrl+Plus / Ctrl+Minus / Ctrl+0 shortcuts. This scales LinWin's text without changing host display settings.
+- Remaining: offer host display scaling with clear per-display scope where supported.
 - Provide a magnifier and keyboard-accessible controls.
 - Layouts remain usable at narrow widths and common scaling levels; text must not be clipped or rely on colour alone.
 

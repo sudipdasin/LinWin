@@ -4,7 +4,7 @@ Last reviewed: 2026-11-19
 
 ## Release state
 
-LinWin 1.0.0-beta.2 is an installable public testing preview, not a stable desktop replacement. The app can run as a normal desktop application. Its optional login-session adapter supports XFCE on X11 and keeps the user's original session available as a recovery path. Wayland and non-XFCE login sessions are not supported by the adapter.
+LinWin 1.0.0-beta.3 is an installable public testing preview, not a stable desktop replacement. The app can run as a normal desktop application. Its optional login-session adapter supports XFCE on X11 and keeps the user's original session available as a recovery path. Wayland and non-XFCE login sessions are not supported by the adapter. LinWin text scaling is adjustable from 85% to 150% and does not alter host display settings.
 
 The graphical setup flow checks for required XFCE tools and registers or removes the selectable session. It does not install missing desktop dependencies. Package upgrade, rollback, real login-manager integration, and recovery across hardware and display-manager combinations remain incomplete.
 

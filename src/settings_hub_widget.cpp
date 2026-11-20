@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "settings_hub_widget.h"
+#include "text_scale.h"
 
 #include <QFrame>
 #include <QCheckBox>
@@ -13,6 +14,7 @@
 #include <QScrollArea>
 #include <QStandardPaths>
 #include <QStyle>
+#include <QSlider>
 
 #include <algorithm>
 #include <QVBoxLayout>
@@ -143,7 +145,7 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     : QWidget(parent)
 {
     setObjectName(QStringLiteral("settingsHub"));
-    setStyleSheet(QStringLiteral(
+    baseStyleSheet_ = QStringLiteral(
         "#settingsSearch { background: white; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
         "#settingsStatus { color: #64738a; font-size: 12px; }"
         "QFrame[linwinSettingsCard=\"true\"] { background: white; border: 1px solid #e0e6ef; border-radius: 11px; }"
@@ -153,7 +155,8 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
         "#settingsAvailability[available=\"false\"] { color: #7b8493; }"
         "#settingsOpenButton { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 7px 13px; font-weight: 600; }"
         "#settingsOpenButton:disabled { background: #e8edf4; color: #788397; }"
-        "#settingsEmptyState { color: #64738a; background: white; border: 1px dashed #cfd9e8; border-radius: 10px; padding: 22px; }"));
+        "#settingsEmptyState { color: #64738a; background: white; border: 1px dashed #cfd9e8; border-radius: 10px; padding: 22px; }");
+    setStyleSheet(baseStyleSheet_);
     auto *outer = new QVBoxLayout(this);
     outer->setContentsMargins(28, 24, 28, 20);
     outer->setSpacing(12);
@@ -210,6 +213,42 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
         });
     }
     outer->addWidget(componentFrame);
+
+    auto *textSizeRow = new QHBoxLayout;
+    auto *textSizeLabel = new QLabel(tr("LinWin text size"), this);
+    textSizeLabel->setObjectName(QStringLiteral("textScaleLabel"));
+    textScaleSlider_ = new QSlider(Qt::Horizontal, this);
+    textScaleSlider_->setObjectName(QStringLiteral("textScaleSlider"));
+    textScaleSlider_->setRange(85, 150);
+    textScaleSlider_->setSingleStep(5);
+    textScaleSlider_->setPageStep(10);
+    textScaleSlider_->setTickPosition(QSlider::TicksBelow);
+    textScaleSlider_->setTickInterval(5);
+    textScaleSlider_->setAccessibleName(tr("LinWin text size percentage"));
+    textScaleValue_ = new QLabel(this);
+    textScaleValue_->setObjectName(QStringLiteral("textScaleValue"));
+    textScaleValue_->setMinimumWidth(48);
+    auto *resetTextSize = new QPushButton(tr("Reset"), this);
+    resetTextSize->setObjectName(QStringLiteral("textScaleReset"));
+    resetTextSize->setAccessibleName(tr("Reset LinWin text size to 100 percent"));
+    QSettings appearanceSettings;
+    textScaleSlider_->setValue(qBound(85, appearanceSettings.value(QStringLiteral("appearance/textScalePercent"), 100).toInt(), 150));
+    textSizeRow->addWidget(textSizeLabel);
+    textSizeRow->addWidget(textScaleSlider_, 1);
+    textSizeRow->addWidget(textScaleValue_);
+    textSizeRow->addWidget(resetTextSize);
+    outer->addLayout(textSizeRow);
+    const auto updateTextSize = [this](int percent) {
+        textScaleValue_->setText(tr("%1%").arg(percent));
+        updateTextScaleStylesheet(percent);
+        QSettings saved;
+        saved.setValue(QStringLiteral("appearance/textScalePercent"), percent);
+        saved.sync();
+        emit textScaleChanged(percent);
+    };
+    connect(textScaleSlider_, &QSlider::valueChanged, this, updateTextSize);
+    connect(resetTextSize, &QPushButton::clicked, this, [this]() { setTextScalePercent(100); });
+    updateTextSize(textScaleSlider_->value());
 
     search_ = new QLineEdit(this);
     search_->setObjectName(QStringLiteral("settingsSearch"));
@@ -304,6 +343,22 @@ void SettingsHubWidget::focusSearch()
 {
     search_->setFocus(Qt::ShortcutFocusReason);
     search_->selectAll();
+}
+
+int SettingsHubWidget::textScalePercent() const
+{
+    return textScaleSlider_ != nullptr ? textScaleSlider_->value() : 100;
+}
+
+void SettingsHubWidget::setTextScalePercent(int percent)
+{
+    if (textScaleSlider_ == nullptr) return;
+    textScaleSlider_->setValue(qBound(85, percent, 150));
+}
+
+void SettingsHubWidget::updateTextScaleStylesheet(int percent)
+{
+    setStyleSheet(linwinScaledStyleSheet(baseStyleSheet_, percent));
 }
 
 void SettingsHubWidget::resizeEvent(QResizeEvent *event)
