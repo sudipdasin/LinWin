@@ -23,4 +23,5 @@ private:
     QLabel *result_ = nullptr;
     QProcess *helperProcess_ = nullptr;
     QString helperOutput_;
+    QString pendingAction_;
 };

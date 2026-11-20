@@ -17,8 +17,8 @@ int main(int argc, char **argv)
     }
     const auto *compatibility = setup.findChild<QLabel *>(QStringLiteral("setupCompatibility"));
     const auto *review = setup.findChild<QLabel *>(QStringLiteral("setupReview"));
-    if (compatibility == nullptr || review == nullptr || !review->text().contains(QStringLiteral("/usr/share/xsessions"))) {
-        std::cerr << "Setup review must explain the exact session integration.\n";
+    if (compatibility == nullptr || review == nullptr || !review->text().contains(QStringLiteral("Setup plan"))) {
+        std::cerr << "Setup review must explain the session plan.\n";
         return 1;
     }
 

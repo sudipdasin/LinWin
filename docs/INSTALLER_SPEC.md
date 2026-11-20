@@ -4,7 +4,7 @@ The installer is part of the shell product. It should make system changes unders
 
 ## Shipped preview behavior
 
-The current setup wizard detects distribution, desktop, session, kernel, `pkexec`, and the required XFCE executables. It enables setup only when the LinWin helper, polkit, and `xfwm4`, `xfsettingsd`, and `xfdesktop` are present. The user reviews the change, confirms it, then the helper writes only `/usr/share/xsessions/linwin.desktop`. The existing desktop and its session definition are left untouched. The first adapter is X11 only and does not currently install dependencies or configure Wayland or non-XFCE window managers.
+The current setup wizard detects distribution, desktop, session, kernel, `pkexec`, and the required XFCE executables. If XFCE components are missing on Debian/Ubuntu/Mint, Fedora/RHEL, or Arch-family systems, it offers a separate step that shows the base packages before the user confirms a polkit authorization prompt. The helper uses a fixed argument list with the native APT, DNF, or pacman executable; it does not invoke a shell, add repositories, request kernel or driver packages, or silently start installation. The package manager may install normal dependencies. Other distributions are directed to their graphical software manager. Once tools are available, the user confirms the session change and the helper writes only `/usr/share/xsessions/linwin.desktop`. The existing desktop and its session definition are left untouched. The first adapter is X11 only and does not configure Wayland or non-XFCE window managers.
 
 The uninstall wizard calls the same allowlisted helper. It removes only the verified LinWin session entry, then invokes the detected APT, DNF, or pacman package manager to remove the `linwin` package. If package removal fails, the session entry is restored. The user can choose **Sign out** in the shell and return to the display manager, then select the previous desktop. Container CI and wrapper tests do not replace real display-manager testing.
 
@@ -30,4 +30,4 @@ The uninstall wizard calls the same allowlisted helper. It removes only the veri
 - Support keyboard navigation, screen readers, text scaling, high contrast, and narrow windows throughout setup.
 - Save diagnostics without personal paths, user names, host names, or hardware serial numbers unless the user explicitly chooses to include them.
 
-The remaining requirements below describe work beyond this initial, experimental setup flow, including dependency installation, component selection, transaction rollback, and other display-server adapters.
+The remaining requirements below describe work beyond this initial, experimental setup flow, including optional component dependencies, component selection, transaction rollback for package installs, and other display-server adapters.

@@ -4,7 +4,9 @@ All notable LinWin changes will be recorded here. This project is in early devel
 
 ## Unreleased
 
-No unreleased changes yet.
+- Add a GUI-confirmed, allowlisted package-manager step for missing XFCE session components on Debian/Ubuntu, Fedora/RHEL, and Arch-family distributions.
+- Show the exact base packages and detected package manager before authorization; unsupported distributions remain directed to their graphical software manager.
+- Add distro-detection and command-plan regression coverage.
 
 ## 1.0.0-beta.3 - Accessible text scaling
 

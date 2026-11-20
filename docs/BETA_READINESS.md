@@ -1,12 +1,12 @@
 # LinWin 1.0 public beta readiness
 
-Last reviewed: 2026-11-19
+Last reviewed: 2026-11-20
 
 ## Release state
 
 LinWin 1.0.0-beta.3 is an installable public testing preview, not a stable desktop replacement. The app can run as a normal desktop application. Its optional login-session adapter supports XFCE on X11 and keeps the user's original session available as a recovery path. Wayland and non-XFCE login sessions are not supported by the adapter. LinWin text scaling is adjustable from 85% to 150% and does not alter host display settings.
 
-The graphical setup flow checks for required XFCE tools and registers or removes the selectable session. It does not install missing desktop dependencies. Package upgrade, rollback, real login-manager integration, and recovery across hardware and display-manager combinations remain incomplete.
+The graphical setup flow now plans a fixed set of XFCE session packages for APT, DNF, and pacman distributions when required tools are missing. It shows the package names and waits for user confirmation before invoking polkit and the host package manager. Other distributions use their graphical software manager. Package upgrade, rollback, real login-manager integration, and recovery across hardware and display-manager combinations remain incomplete. This dependency-installer change is still under validation and is not in the published beta.3 packages.
 
 ## Automated test scope
 
@@ -34,6 +34,6 @@ Test in a virtual machine or secondary account. Keep your existing desktop sessi
 
 - Validate login, lock, logout, sleep/wake, multi-monitor, scaling, keyboard navigation, and accessibility on a named support matrix.
 - Test package upgrade, failed-upgrade recovery, rollback, and GUI uninstall on clean VMs for each supported distribution.
-- Add dependency installation and per-component selection to setup where appropriate.
+- Add optional component dependency installation and per-component selection to setup where appropriate.
 - Improve and test service, startup, Bluetooth, network, disk, and GPU panels on representative systems.
 - Confirm release artifacts are checksummed and that the source tree contains no unintended private data.

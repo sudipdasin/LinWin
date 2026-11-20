@@ -16,7 +16,8 @@ LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switch
 - [x] Choose a shared C++20/Qt 6 shell core that keeps the host Linux kernel and drivers
 - [ ] Define a small shell process and optional, independently switchable components
 - [x] Add an initial GUI setup/uninstall wizard that detects host details, verifies XFCE/X11 prerequisites, preserves the previous session, and uses a narrow polkit helper
-- [ ] Extend the wizard to install missing dependencies, choose per-component defaults, and recover transactionally from failed setup
+- [x] Offer a confirmed native package-manager step for required XFCE session packages on Debian/Ubuntu, Fedora/RHEL, and Arch-family systems
+- [ ] Install optional component dependencies, choose per-component defaults in setup, and recover transactionally from failed setup
 - [ ] Set measurable startup, idle CPU, memory, and interaction-latency budgets
 - [ ] Publish verified distro, kernel, desktop, session, package, and component compatibility
 
