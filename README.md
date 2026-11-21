@@ -40,6 +40,22 @@ LinWin aims to replace the shell layer on multiple distributions and desktop env
 
 The first installable shell session targets X11 with XFCE session tools on Ubuntu/Debian-family systems, Fedora, and Arch x86_64. Mint Xfce can use the Ubuntu/Debian package when dependencies are available. The other listed distributions and desktops remain goals; package availability alone does not mean their login session is supported. Wayland support requires compositor-specific adapters and is not included in this preview.
 
+## Install and test on XFCE
+
+Download the package for your Linux distribution. These files install the LinWin application and its launcher; Linux executables do not use the Windows `.exe` extension.
+
+| Distribution | Download |
+| --- | --- |
+| Ubuntu 24.04, Ubuntu-based Linux Mint | [Download the Ubuntu .deb](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/linwin-1.0.0-beta.6-ubuntu-24.04.deb) |
+| Debian 13 | [Download the Debian .deb](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/linwin-1.0.0-beta.6-debian-13.deb) |
+| Fedora | [Download the Fedora .rpm](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/linwin-1.0.0-beta.6-fedora.rpm) |
+| Arch Linux x86_64 | [Download the Arch package](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/linwin-1.0.0-beta.6-arch-x86_64.pkg.tar.zst) |
+| Any supported package above | [Download the all-packages ZIP](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/LinWin-1.0.0-beta.6-linux-packages.zip) |
+
+To test the shell session, install the package using your graphical software installer, open **LinWin Setup**, choose **Install LinWin session**, then log out and select **LinWin (X11)** from your login screen's session menu. Your existing XFCE session remains available so you can switch back. The setup wizard can offer the required XFCE session packages when they are missing.
+
+Use the [release page](https://github.com/sudipdasin/LinWin/releases) for the current beta and its checksums. The download list at the top of this page updates when a new release is published.
+
 ## Install the beta application preview
 
 Download the package for your distribution from the [latest LinWin prerelease](https://github.com/sudipdasin/LinWin/releases):
