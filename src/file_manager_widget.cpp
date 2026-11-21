@@ -350,12 +350,23 @@ void FileManagerWidget::populatePlaces()
     };
     auto addPlace = [this, &knownPaths](const QString &label, const QString &rawPath, bool pinned = false) {
         const QString path = QDir::cleanPath(QDir::fromNativeSeparators(rawPath));
-        if (path.isEmpty() || knownPaths.contains(path)) return;
+        if (path.isEmpty()) return;
         const QFileInfo info(path);
         if (!info.exists() || !info.isDir() || !info.isReadable()) return;
-        knownPaths.insert(path);
+        const QString resolvedPath = info.canonicalFilePath().isEmpty() ? info.absoluteFilePath() : info.canonicalFilePath();
+        if (knownPaths.contains(resolvedPath)) {
+            if (pinned) {
+                for (int i = 0; i < places_->count(); ++i) {
+                    QListWidgetItem *existing = places_->item(i);
+                    if (existing->data(Qt::UserRole).toString() == resolvedPath)
+                        existing->setData(Qt::UserRole + 1, true);
+                }
+            }
+            return;
+        }
+        knownPaths.insert(resolvedPath);
         auto *item = new QListWidgetItem(label, places_);
-        item->setData(Qt::UserRole, info.canonicalFilePath().isEmpty() ? info.absoluteFilePath() : info.canonicalFilePath());
+        item->setData(Qt::UserRole, resolvedPath);
         item->setData(Qt::UserRole + 1, pinned);
         item->setIcon(QFileIconProvider().icon(QFileIconProvider::Folder));
         item->setToolTip(path);
