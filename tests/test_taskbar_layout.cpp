@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
     auto *more = window.findChild<QPushButton *>(QStringLiteral("taskbarOverflowButton"));
     auto *workspaceButton = window.findChild<QPushButton *>(QStringLiteral("workspaceButton"));
-    auto *desktopButton = window.findChild<QPushButton *>(QStringLiteral("navigationButton"));
+    auto *desktopButton = window.findChild<QPushButton *>(QStringLiteral("desktopButton"));
     QPushButton *clipboard = nullptr;
     QPushButton *settingsButton = nullptr;
     for (auto *button : window.findChildren<QPushButton *>()) {
@@ -86,9 +86,6 @@ int main(int argc, char **argv)
 
     window.resize(480, 600);
     app.processEvents();
-    qCritical() << "compact state" << window.width() << taskbar->width() << more->isVisible()
-            << workspaceButton->isHidden() << desktopButton->isHidden()
-            << clipboard->isHidden() << settingsButton->isHidden()
             << returnDesktop->isHidden() << closeLinWin->isVisible()
             << switcher->isHidden() << systemStatus->isHidden();
     if (!require(more->isVisible() && workspaceButton->isHidden() && desktopButton->isHidden()
