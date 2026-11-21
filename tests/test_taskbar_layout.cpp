@@ -86,8 +86,6 @@ int main(int argc, char **argv)
 
     window.resize(480, 600);
     app.processEvents();
-            << returnDesktop->isHidden() << closeLinWin->isVisible()
-            << switcher->isHidden() << systemStatus->isHidden();
     if (!require(more->isVisible() && workspaceButton->isHidden() && desktopButton->isHidden()
                      && clipboard->isHidden() && settingsButton->isHidden()
                      && returnDesktop->isHidden() && closeLinWin->isVisible()
