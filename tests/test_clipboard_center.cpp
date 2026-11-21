@@ -5,10 +5,13 @@
 #include <QCheckBox>
 #include <QClipboard>
 #include <QCoreApplication>
+#include <QDialog>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
 #include <QSettings>
 #include <QMetaObject>
+#include <QPointer>
 
 #include <iostream>
 
@@ -24,7 +27,7 @@ int main(int argc, char **argv)
     const QStringList required{
         QStringLiteral("captureClipboard"), QStringLiteral("middleClickPaste"),
         QStringLiteral("clipboardSearch"), QStringLiteral("clipboardEntries"),
-        QStringLiteral("pinClipboardItem")
+        QStringLiteral("pinClipboardItem"), QStringLiteral("clipboardQuickPick")
     };
     for (const QString &name : required) {
         if (widget.findChild<QWidget *>(name) == nullptr) {
@@ -50,6 +53,37 @@ int main(int argc, char **argv)
     const int savedCount = history->count();
     if (savedCount != 1) {
         std::cerr << "Enabled clipboard history should capture a new text clip\n";
+        return 1;
+    }
+    widget.showQuickPicker(&widget);
+    application.processEvents();
+    QPointer<QDialog> picker = widget.findChild<QDialog *>(QStringLiteral("clipboardQuickPicker"));
+    auto *quickSearch = widget.findChild<QLineEdit *>(QStringLiteral("clipboardQuickSearch"));
+    auto *quickEntries = widget.findChild<QListWidget *>(QStringLiteral("clipboardQuickEntries"));
+    if (picker == nullptr || !picker->isVisible() || quickSearch == nullptr
+        || quickEntries == nullptr || quickEntries->count() != 1) {
+        std::cerr << "Super+V quick picker should expose the saved clipboard item\n";
+        return 1;
+    }
+    quickSearch->setText(QStringLiteral("missing"));
+    if (!quickEntries->item(0)->isHidden()) {
+        std::cerr << "Quick picker search should filter clipboard items\n";
+        return 1;
+    }
+    quickSearch->setText(QStringLiteral("first"));
+    if (quickEntries->item(0)->isHidden()) {
+        std::cerr << "Quick picker search should restore matching clipboard items\n";
+        return 1;
+    }
+    if (!QMetaObject::invokeMethod(&widget, "copyQuickPickEntry", Qt::DirectConnection,
+                                   Q_ARG(QListWidgetItem *, quickEntries->item(0)))) {
+        std::cerr << "Quick picker should activate a selected clipboard item\n";
+        return 1;
+    }
+    application.processEvents();
+    if (QApplication::clipboard()->text(QClipboard::Clipboard) != QStringLiteral("first clip")
+        || (picker != nullptr && picker->isVisible())) {
+        std::cerr << "Choosing a quick-pick item should copy it and close the popup\n";
         return 1;
     }
     widget.setComponentEnabled(false);

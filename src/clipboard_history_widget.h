@@ -6,6 +6,7 @@
 
 class QCheckBox;
 class QClipboard;
+class QDialog;
 class QLabel;
 class QLineEdit;
 class QListWidget;
@@ -20,6 +21,7 @@ public:
     explicit ClipboardHistoryWidget(QWidget *parent = nullptr);
     void focusSearch();
     void setComponentEnabled(bool enabled);
+    void showQuickPicker(QWidget *anchor = nullptr);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -30,6 +32,7 @@ private slots:
     void removeSelectedEntry();
     void clearHistory();
     void toggleSelectedPin();
+    void copyQuickPickEntry(QListWidgetItem *item);
     void updateMiddleClickPreference(bool enabled);
     void filterEntries(const QString &query);
 
@@ -49,4 +52,5 @@ private:
     QStringList history_;
     QStringList pinned_;
     bool componentEnabled_ = true;
+    QDialog *quickPicker_ = nullptr;
 };

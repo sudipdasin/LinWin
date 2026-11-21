@@ -2,7 +2,15 @@
 
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
-## Unreleased
+## 1.0.0-beta.5 - Clipboard quick picker
+
+- Add a searchable, keyboard-friendly quick picker for pinned and recent clipboard text, opened with Super+V or Ctrl+Alt+V while LinWin is active.
+- Copy a selected clip into the system clipboard from the picker, then paste it with Ctrl+V; keep the full clipboard center available from the taskbar.
+- Explain middle-click selection paste in plain language, default it off in LinWin fields, and clarify that the preference does not change other applications.
+- Add regression coverage for picker visibility, search, selection, copy, and dismissal.
+- Version native packages as release 5 and validate DEB, RPM, and Arch metadata in CI.
+
+## 1.0.0-beta.4 - Guided XFCE session dependencies
 
 - Add a GUI-confirmed, allowlisted package-manager step for missing XFCE session components on Debian/Ubuntu, Fedora/RHEL, and Arch-family distributions.
 - Show the exact base packages and detected package manager before authorization; unsupported distributions remain directed to their graphical software manager.

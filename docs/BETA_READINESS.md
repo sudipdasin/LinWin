@@ -1,12 +1,12 @@
 # LinWin 1.0 public beta readiness
 
-Last reviewed: 2026-11-20
+Last reviewed: 2026-11-21
 
 ## Release state
 
-LinWin 1.0.0-beta.3 is an installable public testing preview, not a stable desktop replacement. The app can run as a normal desktop application. Its optional login-session adapter supports XFCE on X11 and keeps the user's original session available as a recovery path. Wayland and non-XFCE login sessions are not supported by the adapter. LinWin text scaling is adjustable from 85% to 150% and does not alter host display settings.
+LinWin 1.0.0-beta.4 is the current installable public preview. Beta.5 adds a searchable clipboard quick picker and remains an experimental beta, not a stable desktop replacement. The app can run as a normal desktop application. Its optional login-session adapter supports XFCE on X11 and keeps the user's original session available as a recovery path. Wayland and non-XFCE login sessions are not supported by the adapter. LinWin text scaling is adjustable from 85% to 150% and does not alter host display settings.
 
-The graphical setup flow now plans a fixed set of XFCE session packages for APT, DNF, and pacman distributions when required tools are missing. It shows the package names and waits for user confirmation before invoking polkit and the host package manager. Other distributions use their graphical software manager. Package upgrade, rollback, real login-manager integration, and recovery across hardware and display-manager combinations remain incomplete. This dependency-installer change is still under validation and is not in the published beta.3 packages.
+The graphical setup flow now plans a fixed set of XFCE session packages for APT, DNF, and pacman distributions when required tools are missing. It shows the package names and waits for user confirmation before invoking polkit and the host package manager. Other distributions use their graphical software manager. The package manager may install required dependencies as well as the disclosed base packages. Package upgrade, rollback, and recovery across hardware and display-manager combinations remain incomplete.
 
 ## Automated test scope
 
@@ -20,7 +20,7 @@ The private LinWin Pro mirror is intended to import a public `main` revision onl
 | --- | --- | --- |
 | Start, taskbar, and shortcuts | Familiar Start-style launcher, pinned apps, responsive taskbar overflow, and common keyboard shortcuts | Window-management behavior varies by desktop and session |
 | Files | Browse, rename, copy/cut/paste, trash, shortcuts, and drag-and-drop | Cross-toolkit drag-and-drop and unusual mount types need broader testing |
-| Clipboard | Optional local text history and LinWin-scoped paste behavior | Saved text is not encrypted; clipboard integration varies by session |
+| Clipboard | Searchable quick picker for pinned/recent text; optional local history; opt-in middle-click paste within LinWin | Saved text is not encrypted; picker shortcuts work while LinWin is active; other apps retain their own pointer settings |
 | Task Manager | Live process/resource views and same-user task actions | Network, disk, Bluetooth, startup, services, and GPU panels are experimental and may be unavailable on some systems; this is not yet equivalent to Windows Task Manager |
 | Window switching | X11 window listing and in-app Alt+Tab when `wmctrl` is installed; host compositor switcher otherwise | No compositor-independent window-control layer |
 | Settings and devices | Opens available host tools and reads selected system interfaces | Depends on distro packages, permissions, services, hardware, and desktop session |
