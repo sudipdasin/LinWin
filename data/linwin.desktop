@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=LinWin
-Comment=Familiar Linux desktop application preview
+Comment=Windows-style desktop overlay for Linux
 Exec=linwin
 Icon=linwin
 Terminal=false
