@@ -19,7 +19,7 @@ The private LinWin Pro mirror is intended to import a public `main` revision onl
 | Area | Current behavior | Remaining limits |
 | --- | --- | --- |
 | Start, taskbar, and shortcuts | Familiar Start-style launcher, pinned apps, responsive taskbar overflow, and common keyboard shortcuts | Window-management behavior varies by desktop and session |
-| Files | Browse, rename, copy/cut/paste, trash, shortcuts, drag-and-drop, Quick access pins, standard folders, mounted removable media, and name filtering | Mounted media is discovered in `/media`, `/run/media`, and `/mnt`; search filters names in the current folder only; cross-toolkit drag-and-drop needs broader testing |
+| Files | Browse, rename, copy/cut/paste, trash, shortcuts, drag-and-drop, Quick access pins, standard folders, mounted removable media, and name filtering | Mounted media is discovered in `/media`, `/run/media`, and `/mnt`; search filters names in the current folder only; Quick access pins are local to the current user account; cross-toolkit drag-and-drop needs broader testing |
 | Clipboard | Searchable quick picker for pinned/recent text; optional local history; opt-in middle-click paste within LinWin | Saved text is not encrypted; picker shortcuts work while LinWin is active; other apps retain their own pointer settings |
 | Task Manager | Live process/resource views and same-user task actions | Network, disk, Bluetooth, startup, services, and GPU panels are experimental and may be unavailable on some systems; this is not yet equivalent to Windows Task Manager |
 | Window switching | X11 window listing and in-app Alt+Tab when `wmctrl` is installed; host compositor switcher otherwise | No compositor-independent window-control layer |
