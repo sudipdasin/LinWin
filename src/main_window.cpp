@@ -29,7 +29,9 @@
 #include <QResizeEvent>
 #include <QScrollArea>
 #include <QStackedWidget>
+#include <QStyle>
 #include <QTimer>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -62,12 +64,16 @@ QPushButton *makePanelButton(const QString &text, const QString &name, QWidget *
 }
 }
 
-MainWindow::MainWindow(bool shellMode, QWidget *parent)
-    : QMainWindow(parent)
+MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
+    : QMainWindow(parent), overlayMode_(overlayMode), shellSessionMode_(shellSessionMode)
 {
-    setWindowTitle(shellMode ? QStringLiteral("LinWin Desktop") : QStringLiteral("LinWin — shell preview"));
-    setMinimumSize(480, 420);
-    resize(1180, 760);
+    setWindowTitle(QStringLiteral("LinWin Desktop"));
+    if (overlayMode_) {
+        setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+    } else {
+        setMinimumSize(480, 420);
+        resize(1180, 760);
+    }
 
     const SystemProfile profile = SystemProfile::detect();
     auto *root = new QWidget(this);
@@ -83,7 +89,7 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     pages_ = new QStackedWidget(desktopArea_);
     pages_->setObjectName(QStringLiteral("shellPages"));
 
-    auto *scroll = new QScrollArea;
+    auto *scroll = new QScrollArea(pages_);
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     auto *content = new QWidget(scroll);
@@ -119,10 +125,10 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
 
     auto *statusHeading = new QLabel(QStringLiteral("Project status"), content);
     statusHeading->setObjectName(QStringLiteral("sectionTitle"));
-    auto *status = new QLabel(shellMode ? QStringLiteral("LinWin desktop session is active")
+    auto *status = new QLabel(shellSessionMode_ ? QStringLiteral("LinWin desktop session is active")
                                         : QStringLiteral("LinWin desktop shell preview"), content);
     status->setObjectName(QStringLiteral("statusBadge"));
-    auto *statusDescription = new QLabel(shellMode
+    auto *statusDescription = new QLabel(shellSessionMode_
         ? QStringLiteral("You are using LinWin as an X11 desktop session with the XFCE window manager. Your previous desktop remains available in the login session selector. Choose Sign out to return to that selector.")
         : QStringLiteral("The taskbar, searchable Start menu, file manager, and task manager are still evolving. Launch LinWin Setup to check whether this system can run the current XFCE/X11 session integration."), content);
     statusDescription->setObjectName(QStringLiteral("intro"));
@@ -142,7 +148,38 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     layout->addStretch();
     scroll->setWidget(content);
 
-    pages_->addWidget(scroll);
+    if (overlayMode_) {
+        auto *desktop = new QWidget(pages_);
+        desktop->setObjectName(QStringLiteral("windowsDesktop"));
+        auto *desktopLayout = new QVBoxLayout(desktop);
+        desktopLayout->setContentsMargins(20, 20, 20, 20);
+        desktopLayout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+        auto *shortcutColumn = new QVBoxLayout;
+        shortcutColumn->setSpacing(8);
+        const auto addDesktopShortcut = [this, desktop, shortcutColumn](const QString &text,
+                                                                        QStyle::StandardPixmap icon,
+                                                                        int pageIndex) {
+            auto *shortcut = new QToolButton(desktop);
+            shortcut->setObjectName(QStringLiteral("desktopShortcut"));
+            shortcut->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+            shortcut->setIcon(style()->standardIcon(icon));
+            shortcut->setIconSize(QSize(40, 40));
+            shortcut->setText(text);
+            shortcut->setFixedSize(92, 82);
+            shortcut->setFocusPolicy(Qt::StrongFocus);
+            connect(shortcut, &QToolButton::clicked, this, [this, pageIndex]() { showPage(pageIndex); });
+            shortcutColumn->addWidget(shortcut, 0, Qt::AlignLeft);
+        };
+        addDesktopShortcut(tr("Files"), QStyle::SP_DirHomeIcon, 1);
+        addDesktopShortcut(tr("Task Manager"), QStyle::SP_ComputerIcon, 2);
+        addDesktopShortcut(tr("Settings"), QStyle::SP_FileDialogDetailedView, 4);
+        desktopLayout->addLayout(shortcutColumn);
+        desktopLayout->addStretch();
+        pages_->addWidget(desktop);
+    } else {
+        scroll->hide();
+        pages_->addWidget(scroll);
+    }
     fileManager_ = new FileManagerWidget(pages_);
     pages_->addWidget(fileManager_);
     taskManager_ = new TaskManagerWidget(pages_);
@@ -170,21 +207,34 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
 
     startButton_ = makePanelButton(QStringLiteral("⊞  Start"), QStringLiteral("startButton"), taskbar);
     startButton_->setToolTip(tr("Open the app menu (Super or Ctrl+Esc)"));
-    homeButton_ = makePanelButton(QStringLiteral("Home"), QStringLiteral("navigationButton"), taskbar);
+    homeButton_ = makePanelButton(QStringLiteral("Desktop"), QStringLiteral("navigationButton"), taskbar);
     filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
     tasksButton_ = makePanelButton(QStringLiteral("Tasks"), QStringLiteral("navigationButton"), taskbar);
+    tasksButton_->setToolTip(tr("Open Task Manager (Ctrl+Shift+Esc)"));
     clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
     settingsButton_ = makePanelButton(QStringLiteral("Settings"), QStringLiteral("navigationButton"), taskbar);
-    if (shellMode) {
-        signOutButton_ = makePanelButton(QStringLiteral("Sign out"), QStringLiteral("signOutButton"), taskbar);
-        signOutButton_->setToolTip(tr("End the LinWin session and return to the login screen"));
+    if (overlayMode_) {
+        signOutButton_ = makePanelButton(shellSessionMode_ ? tr("Sign out") : tr("Linux desktop"),
+                                        QStringLiteral("returnDesktopButton"), taskbar);
+        signOutButton_->setToolTip(shellSessionMode_
+            ? tr("End the LinWin session and return to the login screen")
+            : tr("Switch back to the Linux desktop; LinWin will stay open in the taskbar"));
     }
+    closeButton_ = makePanelButton(QStringLiteral("×"), QStringLiteral("closeLinWinButton"), taskbar);
+    closeButton_->setToolTip(tr("Close LinWin and return to the Linux desktop"));
     overflowButton_ = makePanelButton(tr("More"), QStringLiteral("taskbarOverflowButton"), taskbar);
     overflowButton_->setToolTip(tr("Open additional shell actions"));
     auto *overflowMenu = new QMenu(overflowButton_);
     clipboardOverflowAction_ = overflowMenu->addAction(tr("Clipboard"));
     settingsOverflowAction_ = overflowMenu->addAction(tr("Settings"));
-    if (shellMode) signOutOverflowAction_ = overflowMenu->addAction(tr("Sign out"));
+    desktopOverflowAction_ = overflowMenu->addAction(tr("Desktop"));
+    if (overlayMode_) {
+        if (shellSessionMode_)
+            signOutOverflowAction_ = overflowMenu->addAction(tr("Sign out of LinWin"));
+        else
+            returnDesktopOverflowAction_ = overflowMenu->addAction(tr("Switch to Linux desktop"));
+    }
+    closeOverflowAction_ = overflowMenu->addAction(tr("Close LinWin"));
     workspaceOverflowAction_ = overflowMenu->addAction(tr("Virtual desktops…"));
     overflowButton_->setMenu(overflowMenu);
     workspaceMenu_ = new QMenu(this);
@@ -245,6 +295,7 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     taskbarLayout->addWidget(systemStatus_);
     taskbarLayout->addSpacing(14);
     taskbarLayout->addWidget(clock_);
+    taskbarLayout->addWidget(closeButton_);
     rootLayout->addWidget(taskbar);
     setCentralWidget(root);
     updateTaskbarLayout();
@@ -264,20 +315,28 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     connect(settingsButton_, &QPushButton::clicked, this, &MainWindow::showSettingsHub);
     connect(clipboardOverflowAction_, &QAction::triggered, this, &MainWindow::showClipboardCenter);
     connect(settingsOverflowAction_, &QAction::triggered, this, &MainWindow::showSettingsHub);
+    connect(desktopOverflowAction_, &QAction::triggered, this, [this]() { showPage(0); });
     connect(workspaceOverflowAction_, &QAction::triggered, this, [this]() {
         if (workspaceMenu_ != nullptr && overflowButton_ != nullptr)
             workspaceMenu_->popup(overflowButton_->mapToGlobal(QPoint(0, overflowButton_->height())));
     });
     if (signOutButton_ != nullptr) {
-        const auto requestSignOut = [this]() {
-            if (QMessageBox::question(this, tr("Sign out of LinWin?"),
-                    tr("Your applications will close and the login screen will appear. Choose your previous desktop there to return to it."),
-                    QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes)
-                close();
-        };
-        connect(signOutButton_, &QPushButton::clicked, this, requestSignOut);
-        connect(signOutOverflowAction_, &QAction::triggered, this, requestSignOut);
+        if (shellSessionMode_) {
+            const auto requestSignOut = [this]() {
+                if (QMessageBox::question(this, tr("Sign out of LinWin?"),
+                        tr("Your applications will close and the login screen will appear. Choose your previous desktop there to return to it."),
+                        QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes)
+                    close();
+            };
+            connect(signOutButton_, &QPushButton::clicked, this, requestSignOut);
+            connect(signOutOverflowAction_, &QAction::triggered, this, requestSignOut);
+        } else {
+            connect(signOutButton_, &QPushButton::clicked, this, &MainWindow::returnToLinuxDesktop);
+            connect(returnDesktopOverflowAction_, &QAction::triggered, this, &MainWindow::returnToLinuxDesktop);
+        }
     }
+    connect(closeButton_, &QPushButton::clicked, this, &QWidget::close);
+    connect(closeOverflowAction_, &QAction::triggered, this, &QWidget::close);
     auto *settingsShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+,")), this);
     settingsShortcut->setObjectName(QStringLiteral("settingsHubShortcut"));
     settingsShortcut->setContext(Qt::ApplicationShortcut);
@@ -294,6 +353,12 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     connect(startFallbackShortcut, &QShortcut::activated, this, [this]() {
         if (componentEnabled(QStringLiteral("start-menu"))) startButton_->toggle();
     });
+    if (overlayMode_ && !shellSessionMode_) {
+        auto *showLinuxDesktopShortcut = new QShortcut(QKeySequence(QStringLiteral("Meta+D")), this);
+        showLinuxDesktopShortcut->setObjectName(QStringLiteral("showLinuxDesktopShortcut"));
+        showLinuxDesktopShortcut->setContext(Qt::ApplicationShortcut);
+        connect(showLinuxDesktopShortcut, &QShortcut::activated, this, &MainWindow::returnToLinuxDesktop);
+    }
     auto *filesShortcut = new QShortcut(QKeySequence(QStringLiteral("Meta+E")), this);
     filesShortcut->setObjectName(QStringLiteral("openFilesShortcut"));
     filesShortcut->setContext(Qt::ApplicationShortcut);
@@ -334,6 +399,9 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     baseStyleSheet_ = QStringLiteral(
         "QMainWindow, QWidget { background: #f4f6fa; color: #172033; font-family: 'Sans Serif'; }"
         "#desktopArea { background: #f4f6fa; }"
+        "#windowsDesktop { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #0b4c9e, stop:0.55 #2478c9, stop:1 #77b9df); }"
+        "#desktopShortcut { background: transparent; color: white; border: 1px solid transparent; border-radius: 5px; padding: 4px; }"
+        "#desktopShortcut:hover { background: rgba(255,255,255,28); border-color: rgba(255,255,255,65); }"
         "#eyebrow { color: #3568d4; font-size: 11px; font-weight: 700; letter-spacing: 1px; }"
         "#pageTitle { color: #111a2b; font-size: 30px; font-weight: 700; }"
         "#sectionTitle { color: #172033; font-size: 18px; font-weight: 650; margin-top: 6px; }"
@@ -648,6 +716,7 @@ void MainWindow::updateTaskbarLayout()
     const bool hideWindowDetails = width() < 920;
 
     if (startButton_ != nullptr) startButton_->setVisible(startMenuEnabled_);
+    if (homeButton_ != nullptr) homeButton_->setVisible(!compact);
     if (filesButton_ != nullptr) filesButton_->setVisible(filesEnabled_);
     if (tasksButton_ != nullptr) tasksButton_->setVisible(taskManagerEnabled_);
     if (clipboardButton_ != nullptr) clipboardButton_->setVisible(clipboardEnabled_ && !compact);
@@ -660,6 +729,8 @@ void MainWindow::updateTaskbarLayout()
         clipboardOverflowAction_->setVisible(compact && clipboardEnabled_);
     if (settingsOverflowAction_ != nullptr)
         settingsOverflowAction_->setVisible(compact);
+    if (desktopOverflowAction_ != nullptr)
+        desktopOverflowAction_->setVisible(compact);
     if (signOutOverflowAction_ != nullptr)
         signOutOverflowAction_->setVisible(compact);
     if (workspaceOverflowAction_ != nullptr)
@@ -667,6 +738,12 @@ void MainWindow::updateTaskbarLayout()
 
     if (windowSwitcher_ != nullptr) windowSwitcher_->setVisible(!hideWindowDetails);
     if (systemStatus_ != nullptr) systemStatus_->setVisible(!hideWindowDetails);
+}
+
+void MainWindow::returnToLinuxDesktop()
+{
+    if (shellSessionMode_) return;
+    showMinimized();
 }
 
 void MainWindow::applyComponentVisibility(const QString &component, bool enabled)
