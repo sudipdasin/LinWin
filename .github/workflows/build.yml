@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   ubuntu-vm:
@@ -35,6 +40,11 @@ jobs:
         run: |
           status=0
           timeout 5s xvfb-run -a env XDG_SESSION_TYPE=x11 ./build/linwin --shell || status=$?
+          test "$status" -eq 124
+      - name: Launch the default desktop overlay under a virtual X server
+        run: |
+          status=0
+          timeout 5s xvfb-run -a env XDG_SESSION_TYPE=x11 ./build/linwin || status=$?
           test "$status" -eq 124
 
   distro-build:
@@ -83,7 +93,7 @@ jobs:
                   cpack --config build/CPackConfig.cmake -G DEB -B build &&
                   pkg=$(find build -maxdepth 1 -name "*.deb" -print -quit) &&
                   test -n "$pkg" &&
-                  dpkg-deb -f "$pkg" Version | grep -Fx "1.0.0-7" &&
+                  dpkg-deb -f "$pkg" Version | grep -Fx "1.0.0-8" &&
                   apt-get install -y "./$pkg" &&
                   dpkg-query -W linwin &&
                   apt-get remove -y linwin &&
@@ -93,7 +103,7 @@ jobs:
                   cpack --config build/CPackConfig.cmake -G RPM -B build &&
                   pkg=$(find build -maxdepth 1 -name "*.rpm" -print -quit) &&
                   test -n "$pkg" &&
-                  rpm -qp --qf "%{VERSION}-%{RELEASE}\n" "$pkg" | grep -Fx "1.0.0-7" &&
+                  rpm -qp --qf "%{VERSION}-%{RELEASE}\n" "$pkg" | grep -Fx "1.0.0-8" &&
                   dnf install -y "$pkg" &&
                   rpm -q linwin &&
                   dnf remove -y linwin &&
@@ -108,7 +118,7 @@ jobs:
                   su builder -c "cd /src/build/archsrc && makepkg -f --noconfirm --nodeps" &&
                   pkg=$(find build/archsrc -maxdepth 1 -name "linwin-[0-9]*.pkg.tar.zst" -print -quit) &&
                   test -n "$pkg" &&
-                  pacman -Qp "$pkg" | grep -Fx "linwin 1.0.0-7" &&
+                  pacman -Qp "$pkg" | grep -Fx "linwin 1.0.0-8" &&
                   pacman -U --noconfirm "$pkg" &&
                   pacman -Q linwin &&
                   pacman -R --noconfirm linwin &&
@@ -116,11 +126,60 @@ jobs:
                   ;;
                 *) echo "Unknown package target: $LINWIN_PACKAGE"; exit 2 ;;
               esac &&
-              sha256sum build/release/* > build/release/SHA256SUMS'
+              case "${{ matrix.platform }}" in
+                ubuntu-24.04) name="linwin-1.0.0-beta.8-ubuntu-24.04.deb" ;;
+                debian-13) name="linwin-1.0.0-beta.8-debian-13.deb" ;;
+                fedora) name="linwin-1.0.0-beta.8-fedora.rpm" ;;
+                arch-x86_64) name="linwin-1.0.0-beta.8-arch-x86_64.pkg.tar.zst" ;;
+                *) echo "Unknown release asset platform"; exit 2 ;;
+              esac &&
+              pkg=$(find build/release -maxdepth 1 -type f ! -name SHA256SUMS -print -quit) &&
+              mv "$pkg" "build/release/$name" &&
+              sha256sum build/release/linwin-* > build/release/SHA256SUMS'
       - name: Upload installable beta package
         uses: actions/upload-artifact@v4
         with:
-          name: linwin-${{ matrix.platform }}-1.0.0-beta.7
+          name: linwin-${{ matrix.platform }}-1.0.0-beta.8
           path: build/release/*
           if-no-files-found: error
           retention-days: 7
+
+  publish-release-assets:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [ubuntu-vm, distro-build]
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - name: Download distro packages
+        uses: actions/download-artifact@v4
+        with:
+          path: release-input
+      - name: Assemble release downloads and checksums
+        run: |
+          mkdir -p release
+          find release-input -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' \) -exec cp {} release/ \;
+          test "$(find release -maxdepth 1 -type f | wc -l)" -eq 4
+          (cd release && sha256sum linwin-* > SHA256SUMS)
+          python3 - <<'PY'
+          import pathlib
+          import zipfile
+
+          root = pathlib.Path("release")
+          archive = root / "LinWin-1.0.0-beta.8-linux-packages.zip"
+          with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as out:
+              for path in sorted(root.glob("linwin-*")):
+                  out.write(path, path.name)
+              out.write(root / "SHA256SUMS", "SHA256SUMS")
+          PY
+      - name: Attach packages to the published prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" release/* --clobber
+      - name: Refresh the README download table
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run latest-release-homepage.yml --ref main
