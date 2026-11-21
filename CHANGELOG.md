@@ -2,6 +2,14 @@
 
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
+## 1.0.0-beta.6 - Virtual desktop control
+
+- Add a taskbar workspace menu that shows the active X11 virtual desktop, switches among existing desktops, and adds desktops without using a terminal.
+- Mirror the desktop menu in the responsive taskbar overflow and keep the controls disabled with a clear explanation when `wmctrl` or X11 workspace support is unavailable.
+- Parse desktop names and active state from the window manager, with friendly labels for unnamed workspaces and a conservative 16-desktop add limit.
+- Add regression checks for workspace parsing and taskbar access at wide and narrow sizes.
+- Version native packages as release 6 and validate DEB, RPM, and Arch metadata in CI.
+
 ## 1.0.0-beta.5 - Clipboard quick picker
 
 - Add a searchable, keyboard-friendly quick picker for pinned and recent clipboard text, opened with Super+V or Ctrl+Alt+V while LinWin is active.

@@ -10,6 +10,7 @@
 #include "text_scale.h"
 
 #include <QDateTime>
+#include <algorithm>
 #include <QCoreApplication>
 #include <QKeySequence>
 #include <QProcess>
@@ -184,7 +185,12 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     clipboardOverflowAction_ = overflowMenu->addAction(tr("Clipboard"));
     settingsOverflowAction_ = overflowMenu->addAction(tr("Settings"));
     if (shellMode) signOutOverflowAction_ = overflowMenu->addAction(tr("Sign out"));
+    workspaceOverflowAction_ = overflowMenu->addAction(tr("Virtual desktops…"));
     overflowButton_->setMenu(overflowMenu);
+    workspaceMenu_ = new QMenu(this);
+    workspaceButton_ = makePanelButton(tr("Desktop 1  ▾"), QStringLiteral("workspaceButton"), taskbar);
+    workspaceButton_->setToolTip(tr("Switch or add virtual desktops"));
+    workspaceButton_->setMenu(workspaceMenu_);
     homeButton_->setChecked(true);
     for (const QString &component : {QStringLiteral("start-menu"), QStringLiteral("files"),
                                      QStringLiteral("task-manager"), QStringLiteral("clipboard")})
@@ -234,6 +240,7 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     if (signOutButton_ != nullptr)
         taskbarLayout->addWidget(signOutButton_);
     taskbarLayout->addWidget(overflowButton_);
+    taskbarLayout->addWidget(workspaceButton_);
     taskbarLayout->addWidget(windowScroll, 1);
     taskbarLayout->addWidget(systemStatus_);
     taskbarLayout->addSpacing(14);
@@ -257,6 +264,10 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     connect(settingsButton_, &QPushButton::clicked, this, &MainWindow::showSettingsHub);
     connect(clipboardOverflowAction_, &QAction::triggered, this, &MainWindow::showClipboardCenter);
     connect(settingsOverflowAction_, &QAction::triggered, this, &MainWindow::showSettingsHub);
+    connect(workspaceOverflowAction_, &QAction::triggered, this, [this]() {
+        if (workspaceMenu_ != nullptr && overflowButton_ != nullptr)
+            workspaceMenu_->popup(overflowButton_->mapToGlobal(QPoint(0, overflowButton_->height())));
+    });
     if (signOutButton_ != nullptr) {
         const auto requestSignOut = [this]() {
             if (QMessageBox::question(this, tr("Sign out of LinWin?"),
@@ -366,8 +377,12 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     if (waylandSession) {
         windowSwitcherStatus_->setText(tr("Open windows are managed by your Wayland desktop."));
         windowSwitcherStatus_->setToolTip(tr("Global window listing and activation require a compositor-specific adapter."));
+        workspaceButton_->setEnabled(false);
+        workspaceButton_->setToolTip(tr("Virtual desktop controls are provided by your Wayland desktop."));
     } else if (wmctrlPath_.isEmpty()) {
         windowSwitcherStatus_->setText(tr("Install wmctrl to enable X11 app switching."));
+        workspaceButton_->setEnabled(false);
+        workspaceButton_->setToolTip(tr("Install wmctrl to enable virtual desktop controls in LinWin."));
     } else {
         windowSwitcherStatus_->hide();
         windowListProcess_ = new QProcess(this);
@@ -387,6 +402,35 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
         auto *switchShortcut = new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Tab), this);
         switchShortcut->setContext(Qt::ApplicationShortcut);
         connect(switchShortcut, &QShortcut::activated, this, &MainWindow::cycleExternalWindow);
+
+        workspaceSupportAvailable_ = true;
+        workspaceListProcess_ = new QProcess(this);
+        connect(workspaceListProcess_, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+                [this](int code, QProcess::ExitStatus processStatus) {
+            if (processStatus == QProcess::NormalExit && code == 0) {
+                updateWorkspaces(QString::fromLocal8Bit(workspaceListProcess_->readAllStandardOutput()));
+            } else if (workspaceButton_ != nullptr) {
+                workspaceButton_->setEnabled(false);
+                workspaceButton_->setToolTip(tr("The X11 window manager could not list virtual desktops."));
+                if (workspaceOverflowAction_ != nullptr) workspaceOverflowAction_->setEnabled(false);
+            }
+        });
+        workspaceCommandProcess_ = new QProcess(this);
+        connect(workspaceCommandProcess_, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+                [this](int code, QProcess::ExitStatus processStatus) {
+            if (processStatus != QProcess::NormalExit || code != 0) {
+                if (workspaceButton_ != nullptr)
+                    workspaceButton_->setToolTip(tr("The desktop change failed. Check that your X11 window manager supports virtual desktops."));
+                return;
+            }
+            refreshWorkspaces();
+        });
+        workspaceRefreshTimer_ = new QTimer(this);
+        workspaceRefreshTimer_->setInterval(2500);
+        connect(workspaceRefreshTimer_, &QTimer::timeout, this, &MainWindow::refreshWorkspaces);
+        workspaceRefreshTimer_->start();
+        connect(workspaceMenu_, &QMenu::aboutToShow, this, &MainWindow::refreshWorkspaces);
+        refreshWorkspaces();
     }
 
     updateShellGeometry();
@@ -453,6 +497,91 @@ void MainWindow::cycleExternalWindow()
     activateExternalWindow(windowOrder_.at(windowCursor_));
 }
 
+void MainWindow::refreshWorkspaces()
+{
+    if (!workspaceSupportAvailable_ || workspaceListProcess_ == nullptr
+        || workspaceListProcess_->state() != QProcess::NotRunning)
+        return;
+    workspaceListProcess_->start(wmctrlPath_, {QStringLiteral("-d")});
+}
+
+void MainWindow::updateWorkspaces(const QString &output)
+{
+    const QList<WorkspaceInfo> refreshed = parseWorkspaceList(output);
+    if (refreshed.isEmpty()) {
+        workspaceButton_->setEnabled(false);
+        workspaceButton_->setText(tr("Desktops"));
+        workspaceButton_->setToolTip(tr("No virtual desktops were reported by the X11 window manager."));
+        if (workspaceOverflowAction_ != nullptr) workspaceOverflowAction_->setEnabled(false);
+        return;
+    }
+
+    bool changed = refreshed.size() != workspaces_.size();
+    if (!changed) {
+        for (qsizetype i = 0; i < refreshed.size(); ++i) {
+            if (refreshed.at(i).index != workspaces_.at(i).index
+                || refreshed.at(i).name != workspaces_.at(i).name
+                || refreshed.at(i).current != workspaces_.at(i).current) {
+                changed = true;
+                break;
+            }
+        }
+    }
+    workspaces_ = refreshed;
+    workspaceButton_->setEnabled(true);
+    if (workspaceOverflowAction_ != nullptr) workspaceOverflowAction_->setEnabled(true);
+    const auto current = std::find_if(workspaces_.cbegin(), workspaces_.cend(),
+                                     [](const WorkspaceInfo &workspace) { return workspace.current; });
+    const WorkspaceInfo &selected = current != workspaces_.cend() ? *current : workspaces_.first();
+    workspaceButton_->setText(selected.name + QStringLiteral("  ▾"));
+    workspaceButton_->setToolTip(tr("Current virtual desktop: %1. Open the menu to switch or add desktops.")
+                                     .arg(selected.name));
+    if (changed) rebuildWorkspaceMenu();
+}
+
+void MainWindow::rebuildWorkspaceMenu()
+{
+    if (workspaceMenu_ == nullptr) return;
+    workspaceMenu_->clear();
+    for (const WorkspaceInfo &workspace : workspaces_) {
+        auto *action = workspaceMenu_->addAction(workspace.name);
+        action->setCheckable(true);
+        action->setChecked(workspace.current);
+        action->setEnabled(!workspace.current);
+        connect(action, &QAction::triggered, this, [this, index = workspace.index]() {
+            switchToWorkspace(index);
+        });
+    }
+    if (!workspaces_.isEmpty()) workspaceMenu_->addSeparator();
+    auto *addDesktop = workspaceMenu_->addAction(tr("＋  New desktop"));
+    addDesktop->setEnabled(workspaces_.size() < 16);
+    addDesktop->setToolTip(workspaces_.size() < 16
+        ? tr("Add a virtual desktop in your X11 session")
+        : tr("LinWin limits this menu to 16 virtual desktops"));
+    connect(addDesktop, &QAction::triggered, this, &MainWindow::createWorkspace);
+}
+
+void MainWindow::switchToWorkspace(int index)
+{
+    if (!workspaceSupportAvailable_ || workspaceCommandProcess_ == nullptr
+        || workspaceCommandProcess_->state() != QProcess::NotRunning)
+        return;
+    const bool exists = std::any_of(workspaces_.cbegin(), workspaces_.cend(),
+                                    [index](const WorkspaceInfo &workspace) { return workspace.index == index; });
+    if (!exists) return;
+    workspaceCommandProcess_->start(wmctrlPath_, {QStringLiteral("-s"), QString::number(index)});
+}
+
+void MainWindow::createWorkspace()
+{
+    if (!workspaceSupportAvailable_ || workspaceCommandProcess_ == nullptr
+        || workspaceCommandProcess_->state() != QProcess::NotRunning || workspaces_.isEmpty()
+        || workspaces_.size() >= 16)
+        return;
+    workspaceCommandProcess_->start(wmctrlPath_,
+                                    {QStringLiteral("-n"), QString::number(workspaces_.size() + 1)});
+}
+
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
@@ -515,7 +644,7 @@ bool MainWindow::componentEnabled(const QString &component) const
 
 void MainWindow::updateTaskbarLayout()
 {
-    const bool compact = width() < 780;
+    const bool compact = width() < 920;
     const bool hideWindowDetails = width() < 920;
 
     if (startButton_ != nullptr) startButton_->setVisible(startMenuEnabled_);
@@ -525,6 +654,7 @@ void MainWindow::updateTaskbarLayout()
     if (settingsButton_ != nullptr) settingsButton_->setVisible(!compact);
     if (signOutButton_ != nullptr) signOutButton_->setVisible(!compact);
     if (overflowButton_ != nullptr) overflowButton_->setVisible(compact);
+    if (workspaceButton_ != nullptr) workspaceButton_->setVisible(!compact);
 
     if (clipboardOverflowAction_ != nullptr)
         clipboardOverflowAction_->setVisible(compact && clipboardEnabled_);
@@ -532,6 +662,8 @@ void MainWindow::updateTaskbarLayout()
         settingsOverflowAction_->setVisible(compact);
     if (signOutOverflowAction_ != nullptr)
         signOutOverflowAction_->setVisible(compact);
+    if (workspaceOverflowAction_ != nullptr)
+        workspaceOverflowAction_->setVisible(compact && workspaceSupportAvailable_);
 
     if (windowSwitcher_ != nullptr) windowSwitcher_->setVisible(!hideWindowDetails);
     if (systemStatus_ != nullptr) systemStatus_->setVisible(!hideWindowDetails);
