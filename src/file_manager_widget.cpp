@@ -349,6 +349,7 @@ void FileManagerWidget::populatePlaces()
         item->setForeground(palette().color(QPalette::Disabled, QPalette::Text));
     };
     auto addPlace = [this, &knownPaths](const QString &label, const QString &rawPath, bool pinned = false) {
+        if (rawPath.trimmed().isEmpty()) return;
         const QString path = QDir::cleanPath(QDir::fromNativeSeparators(rawPath));
         if (path.isEmpty()) return;
         const QFileInfo info(path);
