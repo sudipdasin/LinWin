@@ -42,6 +42,7 @@ private:
     void activateExternalWindow(const QString &id);
     void cycleExternalWindow();
     void showClipboardCenter();
+    void showClipboardQuickPicker();
     void showSettingsHub();
     void applyTextScale(int percent);
     void updateTaskbarLayout();

@@ -13,12 +13,12 @@ This document turns the project goal into observable user behaviour. LinWin is i
 - **End task** sends SIGTERM after confirmation; **Force stop** sends SIGKILL after a separate data-loss warning. Both actions are limited to the current user's processes, recheck process identity before signalling, and do not request elevated privileges.
 - The Settings page searches display, network, Bluetooth, sound, printers, power, accessibility, appearance, users/accounts, updates/software, and date/time. It detects known native tools, opens them directly without a shell or elevation, and marks categories unavailable when no supported tool is installed. Ctrl+, opens Settings and focuses search. The page links to host tools; it does not write system configuration itself.
 - The Clipboard page provides opt-in text capture while LinWin is open, search, copy, remove, pin/unpin, and clear actions. It stores up to 50 recent plus 50 pinned text clips in local Qt application settings.
-- Super+V and Ctrl+Alt+V open Clipboard and focus search while LinWin is active; these are not global desktop hotkeys.
-- Middle-click paste is opt-in inside LinWin text fields and does not change behavior in other applications or the desktop. Clipboard capture defaults to off, and saved text is not encrypted. Image/file clips and background capture are not supported yet; compositor permissions may limit access.
+- Super+V and Ctrl+Alt+V open a searchable picker of saved clips while LinWin is active; choosing a clip copies it to the system clipboard, ready to paste with Ctrl+V. These are not global desktop hotkeys.
+- Middle-click paste is off by default in LinWin text fields to avoid accidental insertion. Opting in does not change behavior in other applications or the desktop. Clipboard capture defaults to off, and saved text is not encrypted. Image/file clips and background capture are not supported yet; compositor permissions may limit access.
 - LinWin can launch in a selectable X11 login session when XFCE's `xfwm4`, `xfsettingsd`, and `xfdesktop` tools are installed. The first GUI setup wizard registers that session without replacing the user's existing session; its uninstall flow removes the session and package through a narrow polkit helper. Wayland and other window managers are not supported by this adapter.
 - The file manager is an initial preview: large copies can take time, cross-device cut/move may fail with an explanation, and operation progress, undo, advanced conflict handling, and broad compositor testing remain future work.
 - The task manager remains a feature preview. The Experimental tab groups hardware/service-dependent Network, Disk, Bluetooth, Startup apps, Services, and GPU panels; desktop app/window grouping, broad startup/service management, and authorized control of other users' system processes are not implemented.
-- The setup wizard does not yet install missing XFCE dependencies or offer per-component toggles. It verifies the prerequisites and tells the user what is missing; the host distribution's software manager remains responsible for installing those desktop packages.
+- The setup wizard offers a confirmed, fixed package list for missing XFCE session components on supported APT, DNF, and pacman systems, then invokes the host package manager through system authorization. Other distributions use their graphical software manager. Per-component toggles remain in LinWin Settings.
 
 ## Product goals
 
@@ -82,7 +82,8 @@ The installer must identify the host distribution, kernel, package manager, and 
 ### Clipboard and pointer behaviour
 
 - Implemented preview: opt-in text history with search, copy, removal, pinned items, clear-history, and bounded local storage.
-- Implemented preview: Super+V / Ctrl+Alt+V quick-open while LinWin is active and an opt-in middle-click paste preference for LinWin text fields; other applications are unchanged.
+- Implemented preview: Super+V / Ctrl+Alt+V opens a searchable picker while LinWin is active. Selecting an item copies it; paste into the target app with Ctrl+V. The full history center remains available from the taskbar.
+- Middle-click paste is off by default in LinWin fields to prevent accidental wheel-click inserts; opting in affects LinWin text fields only, leaving other apps unchanged.
 - Remaining: image/file content where supported, background capture adapters, and finer privacy controls.
 - Explicit `Ctrl+C`/`Ctrl+V` clipboard use is the default mental model.
 - Middle-click selection paste is a visible, opt-in preference; changing it must not disable middle-click link/tab actions in applications.

@@ -294,11 +294,11 @@ MainWindow::MainWindow(bool shellMode, QWidget *parent)
     auto *superClipboardShortcut = new QShortcut(QKeySequence(Qt::META | Qt::Key_V), this);
     superClipboardShortcut->setObjectName(QStringLiteral("clipboardSuperVShortcut"));
     superClipboardShortcut->setContext(Qt::ApplicationShortcut);
-    connect(superClipboardShortcut, &QShortcut::activated, this, &MainWindow::showClipboardCenter);
+    connect(superClipboardShortcut, &QShortcut::activated, this, &MainWindow::showClipboardQuickPicker);
     auto *fallbackClipboardShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+V")), this);
     fallbackClipboardShortcut->setObjectName(QStringLiteral("clipboardFallbackShortcut"));
     fallbackClipboardShortcut->setContext(Qt::ApplicationShortcut);
-    connect(fallbackClipboardShortcut, &QShortcut::activated, this, &MainWindow::showClipboardCenter);
+    connect(fallbackClipboardShortcut, &QShortcut::activated, this, &MainWindow::showClipboardQuickPicker);
 
     const auto addTextScaleShortcut = [this](const QKeySequence &sequence, int delta, const QString &name) {
         auto *shortcut = new QShortcut(sequence, this);
@@ -487,6 +487,12 @@ void MainWindow::showClipboardCenter()
     if (!componentEnabled(QStringLiteral("clipboard"))) return;
     showPage(3);
     if (clipboardHistory_ != nullptr) clipboardHistory_->focusSearch();
+}
+
+void MainWindow::showClipboardQuickPicker()
+{
+    if (!componentEnabled(QStringLiteral("clipboard")) || clipboardHistory_ == nullptr) return;
+    clipboardHistory_->showQuickPicker(this);
 }
 
 void MainWindow::showSettingsHub()

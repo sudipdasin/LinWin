@@ -5,6 +5,7 @@
 #include <QClipboard>
 #include <QAbstractItemView>
 #include <QApplication>
+#include <QDialog>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -13,6 +14,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QPlainTextEdit>
+#include <QScreen>
 #include <QTextEdit>
 #include <QShortcut>
 #include <QPushButton>
@@ -65,8 +67,16 @@ ClipboardHistoryWidget::ClipboardHistoryWidget(QWidget *parent)
     captureCheckBox_->setObjectName(QStringLiteral("captureClipboard"));
 
     middleClickPasteCheckBox_ = new QCheckBox(
-        tr("Allow middle-click paste in LinWin text fields (Linux selected text)"), this);
+        tr("Paste selected text when I middle-click in LinWin"), this);
     middleClickPasteCheckBox_->setObjectName(QStringLiteral("middleClickPaste"));
+    middleClickPasteCheckBox_->setToolTip(
+        tr("Linux desktop apps may use the middle button to paste separately selected text. "
+           "This preference affects LinWin text fields only; it does not change other apps."));
+    auto *middleClickHelp = new QLabel(
+        tr("Off by default to prevent accidental text insertion when pressing the scroll wheel. "
+           "This does not change middle-click behavior in browsers or other desktop apps."), this);
+    middleClickHelp->setObjectName(QStringLiteral("middleClickHelp"));
+    middleClickHelp->setWordWrap(true);
 
     searchField_ = new QLineEdit(this);
     searchField_->setObjectName(QStringLiteral("clipboardSearch"));
@@ -79,6 +89,8 @@ ClipboardHistoryWidget::ClipboardHistoryWidget(QWidget *parent)
     historyList_->setUniformItemSizes(true);
 
     auto *actions = new QHBoxLayout;
+    auto *quickPickButton = new QPushButton(tr("Quick paste…"), this);
+    quickPickButton->setObjectName(QStringLiteral("clipboardQuickPick"));
     auto *copyButton = new QPushButton(tr("Copy selected"), this);
     pinButton_ = new QPushButton(tr("Pin"), this);
     pinButton_->setObjectName(QStringLiteral("pinClipboardItem"));
@@ -86,6 +98,7 @@ ClipboardHistoryWidget::ClipboardHistoryWidget(QWidget *parent)
     auto *removeButton = new QPushButton(tr("Remove"), this);
     auto *clearButton = new QPushButton(tr("Clear history"), this);
     copyButton->setObjectName(QStringLiteral("primaryAction"));
+    actions->addWidget(quickPickButton);
     actions->addWidget(copyButton);
     actions->addWidget(pinButton_);
     actions->addWidget(removeButton);
@@ -101,6 +114,7 @@ ClipboardHistoryWidget::ClipboardHistoryWidget(QWidget *parent)
     layout->addWidget(privacyNote);
     layout->addWidget(captureCheckBox_);
     layout->addWidget(middleClickPasteCheckBox_);
+    layout->addWidget(middleClickHelp);
     layout->addWidget(searchField_);
     layout->addWidget(historyList_, 1);
     layout->addLayout(actions);
@@ -129,6 +143,7 @@ ClipboardHistoryWidget::ClipboardHistoryWidget(QWidget *parent)
             this, &ClipboardHistoryWidget::filterEntries);
     connect(copyButton, &QPushButton::clicked,
             this, &ClipboardHistoryWidget::copySelectedEntry);
+    connect(quickPickButton, &QPushButton::clicked, this, [this]() { showQuickPicker(this); });
     connect(removeButton, &QPushButton::clicked,
             this, &ClipboardHistoryWidget::removeSelectedEntry);
     connect(pinButton_, &QPushButton::clicked,
@@ -243,6 +258,92 @@ void ClipboardHistoryWidget::toggleSelectedPin()
     refreshList();
 }
 
+void ClipboardHistoryWidget::showQuickPicker(QWidget *anchor)
+{
+    if (!componentEnabled_ || quickPicker_ != nullptr) return;
+
+    auto *picker = new QDialog(this, Qt::Popup | Qt::FramelessWindowHint);
+    quickPicker_ = picker;
+    picker->setObjectName(QStringLiteral("clipboardQuickPicker"));
+    picker->setAttribute(Qt::WA_DeleteOnClose);
+    picker->setWindowTitle(tr("Clipboard quick paste"));
+    picker->setFixedSize(440, 420);
+
+    auto *layout = new QVBoxLayout(picker);
+    layout->setContentsMargins(18, 16, 18, 16);
+    layout->setSpacing(10);
+    auto *title = new QLabel(tr("Clipboard"), picker);
+    title->setObjectName(QStringLiteral("pageTitle"));
+    auto *hint = new QLabel(tr("Choose a clip to copy it. Then paste with Ctrl+V."), picker);
+    hint->setWordWrap(true);
+    auto *search = new QLineEdit(picker);
+    search->setObjectName(QStringLiteral("clipboardQuickSearch"));
+    search->setPlaceholderText(tr("Search recent and pinned text"));
+    search->setClearButtonEnabled(true);
+    search->setAccessibleName(tr("Search clipboard clips"));
+    auto *list = new QListWidget(picker);
+    list->setObjectName(QStringLiteral("clipboardQuickEntries"));
+    list->setAccessibleName(tr("Recent and pinned clipboard clips"));
+    list->setSelectionMode(QAbstractItemView::SingleSelection);
+    list->setUniformItemSizes(true);
+
+    for (const QString &text : pinned_) {
+        auto *item = new QListWidgetItem(tr("★ Pinned · %1").arg(previewText(text)), list);
+        item->setData(Qt::UserRole, text);
+        item->setToolTip(text);
+    }
+    for (const QString &text : history_) {
+        auto *item = new QListWidgetItem(previewText(text), list);
+        item->setData(Qt::UserRole, text);
+        item->setToolTip(text);
+    }
+    if (list->count() == 0) {
+        auto *empty = new QListWidgetItem(tr("No saved clips. Enable history in Clipboard settings."), list);
+        empty->setFlags(Qt::NoItemFlags);
+    } else {
+        list->setCurrentRow(0);
+    }
+
+    connect(search, &QLineEdit::textChanged, this, [list](const QString &query) {
+        const QString needle = query.trimmed();
+        for (int row = 0; row < list->count(); ++row) {
+            auto *item = list->item(row);
+            item->setHidden(!item->data(Qt::UserRole).toString().contains(needle, Qt::CaseInsensitive));
+        }
+    });
+    connect(list, &QListWidget::itemActivated, this, &ClipboardHistoryWidget::copyQuickPickEntry);
+    connect(list, &QListWidget::itemClicked, this, &ClipboardHistoryWidget::copyQuickPickEntry);
+    connect(search, &QLineEdit::returnPressed, list, [list]() {
+        if (list->currentItem() != nullptr) emit list->itemActivated(list->currentItem());
+    });
+
+    layout->addWidget(title);
+    layout->addWidget(hint);
+    layout->addWidget(search);
+    layout->addWidget(list, 1);
+    connect(picker, &QObject::destroyed, this, [this]() { quickPicker_ = nullptr; });
+
+    QWidget *positionAnchor = anchor != nullptr ? anchor : this;
+    if (positionAnchor != nullptr && positionAnchor->screen() != nullptr) {
+        const QRect bounds = positionAnchor->screen()->availableGeometry();
+        QPoint position = positionAnchor->mapToGlobal(positionAnchor->rect().center())
+            - QPoint(picker->width() / 2, picker->height() / 2);
+        position.setX(qBound(bounds.left(), position.x(), bounds.right() - picker->width() + 1));
+        position.setY(qBound(bounds.top(), position.y(), bounds.bottom() - picker->height() + 1));
+        picker->move(position);
+    }
+    picker->show();
+    search->setFocus(Qt::PopupFocusReason);
+}
+
+void ClipboardHistoryWidget::copyQuickPickEntry(QListWidgetItem *item)
+{
+    if (item == nullptr || clipboard_ == nullptr || !item->data(Qt::UserRole).isValid()) return;
+    clipboard_->setText(item->data(Qt::UserRole).toString(), QClipboard::Clipboard);
+    statusLabel_->setText(tr("Copied the selected clip. Paste it with Ctrl+V."));
+    if (quickPicker_ != nullptr) quickPicker_->close();
+}
+
 void ClipboardHistoryWidget::filterEntries(const QString &query)
 {
     const QString needle = query.trimmed();
@@ -326,6 +427,7 @@ void ClipboardHistoryWidget::setComponentEnabled(bool enabled)
 {
     componentEnabled_ = enabled;
     setEnabled(enabled);
+    if (!enabled && quickPicker_ != nullptr) quickPicker_->close();
     if (!enabled && captureCheckBox_->isChecked())
         statusLabel_->setText(tr("Clipboard history is hidden in LinWin Settings; capture is paused until it is enabled again."));
 }
