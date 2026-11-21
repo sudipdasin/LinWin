@@ -1,14 +1,16 @@
 <!-- LATEST-RELEASE:START -->
-## Latest published release: v1.0.0-beta.4
-**[Release notes and downloads](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.4)** · Prerelease
+## Latest published release: v1.0.0-beta.5
+**[Release notes and downloads](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.5)** · Prerelease
 
 | Asset | Download |
 | --- | --- |
-| linwin-1.0.0-beta.4-arch-x86_64.pkg.tar.zst | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.4/linwin-1.0.0-beta.4-arch-x86_64.pkg.tar.zst) |
-| linwin-1.0.0-beta.4-debian-13.deb | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.4/linwin-1.0.0-beta.4-debian-13.deb) |
-| linwin-1.0.0-beta.4-fedora.rpm | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.4/linwin-1.0.0-beta.4-fedora.rpm) |
-| linwin-1.0.0-beta.4-ubuntu-24.04.deb | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.4/linwin-1.0.0-beta.4-ubuntu-24.04.deb) |
-| SHA256SUMS | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.4/SHA256SUMS) |
+| linwin-1.0.0-beta.5-arch-x86_64.pkg.tar.zst | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.5/linwin-1.0.0-beta.5-arch-x86_64.pkg.tar.zst) |
+| linwin-1.0.0-beta.5-debian-13.deb | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.5/linwin-1.0.0-beta.5-debian-13.deb) |
+| linwin-1.0.0-beta.5-fedora.rpm | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.5/linwin-1.0.0-beta.5-fedora.rpm) |
+| LinWin-1.0.0-beta.5-linux-packages.zip | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.5/LinWin-1.0.0-beta.5-linux-packages.zip) |
+| LinWin-1.0.0-beta.5-linux-packages.zip.sha256 | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.5/LinWin-1.0.0-beta.5-linux-packages.zip.sha256) |
+| linwin-1.0.0-beta.5-ubuntu-24.04.deb | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.5/linwin-1.0.0-beta.5-ubuntu-24.04.deb) |
+| SHA256SUMS | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.5/SHA256SUMS) |
 <!-- LATEST-RELEASE:END -->
 
 # LinWin
