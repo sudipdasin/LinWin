@@ -20,10 +20,12 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     QCommandLineOption setupOption(QStringLiteral("setup"), QStringLiteral("Open the graphical LinWin setup wizard."));
     QCommandLineOption uninstallOption(QStringLiteral("uninstall"), QStringLiteral("Open the graphical LinWin uninstall wizard."));
-    QCommandLineOption shellOption(QStringLiteral("shell"), QStringLiteral("Run LinWin as the full-screen desktop shell."));
+    QCommandLineOption shellOption(QStringLiteral("shell"), QStringLiteral("Run LinWin as the selectable X11 desktop session."));
+    QCommandLineOption windowOption(QStringLiteral("window"), QStringLiteral("Open LinWin in a normal window instead of covering the desktop."));
     parser.addOption(setupOption);
     parser.addOption(uninstallOption);
     parser.addOption(shellOption);
+    parser.addOption(windowOption);
     parser.process(app);
 
     if (parser.isSet(setupOption) || parser.isSet(uninstallOption)) {
@@ -32,8 +34,10 @@ int main(int argc, char *argv[])
         return app.exec();
     }
 
-    MainWindow window(parser.isSet(shellOption));
-    if (parser.isSet(shellOption))
+    const bool shellSession = parser.isSet(shellOption);
+    const bool overlayMode = shellSession || !parser.isSet(windowOption);
+    MainWindow window(overlayMode, shellSession);
+    if (overlayMode)
         window.showFullScreen();
     else
         window.show();
