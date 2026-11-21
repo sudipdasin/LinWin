@@ -2,6 +2,14 @@
 
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
+## 1.0.0-beta.7 - Quick Access file workspace
+
+- Add a familiar Places sidebar with Home, standard personal folders, Computer, and detected removable or separately mounted volumes.
+- Let users pin up to 20 frequently used folders in Quick access and remove them from the sidebar context menu; pins persist per user.
+- Add instant name filtering for the current folder without changing the active location.
+- Add Qt UI coverage for common locations, pin and unpin behavior, and filename filtering.
+- Version native packages as release 7 and verify their metadata and install/remove flow across supported distro builds.
+
 ## 1.0.0-beta.6 - Virtual desktop control
 
 - Add a taskbar workspace menu that shows the active X11 virtual desktop, switches among existing desktops, and adds desktops without using a terminal.
