@@ -68,10 +68,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     : QMainWindow(parent), overlayMode_(overlayMode), shellSessionMode_(shellSessionMode)
 {
     setWindowTitle(QStringLiteral("LinWin Desktop"));
+    setMinimumSize(480, 420);
     if (overlayMode_) {
         setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     } else {
-        setMinimumSize(480, 420);
         resize(1180, 760);
     }
 
@@ -207,7 +207,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
 
     startButton_ = makePanelButton(QStringLiteral("⊞  Start"), QStringLiteral("startButton"), taskbar);
     startButton_->setToolTip(tr("Open the app menu (Super or Ctrl+Esc)"));
-    homeButton_ = makePanelButton(QStringLiteral("Desktop"), QStringLiteral("navigationButton"), taskbar);
+    homeButton_ = makePanelButton(QStringLiteral("Desktop"), QStringLiteral("desktopButton"), taskbar);
     filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
     tasksButton_ = makePanelButton(QStringLiteral("Tasks"), QStringLiteral("navigationButton"), taskbar);
     tasksButton_->setToolTip(tr("Open Task Manager (Ctrl+Shift+Esc)"));
