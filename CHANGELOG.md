@@ -2,6 +2,15 @@
 
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
+## 1.0.0-beta.8 - Full-screen desktop overlay
+
+- Launch LinWin by default as a borderless full-screen overlay that covers the existing desktop and panel; retain `linwin --window` for a normal development window.
+- Replace the overlay's generic dashboard landing page with a desktop workspace, a blue wallpaper treatment, and shortcuts to Files, Task Manager, and Settings.
+- Add visible close and switch-back controls, a compact taskbar menu route, and Meta+D to minimize LinWin and reveal the existing Linux desktop without ending the app.
+- Attach distro packages, a combined archive, and SHA256SUMS to published beta releases from the verified CI build outputs.
+- Add UI regression coverage for overlay/window mode, taskbar controls, switch-back, and close behavior.
+- Version native packages as release 8 and validate DEB, RPM, and Arch package metadata in CI.
+
 ## 1.0.0-beta.7 - Quick Access file workspace
 
 - Add a familiar Places sidebar with Home, standard personal folders, Computer, and detected removable or separately mounted volumes.
