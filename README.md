@@ -1,16 +1,10 @@
 <!-- LATEST-RELEASE:START -->
-## Latest published release: v1.0.0-beta.6
-**[Release notes and downloads](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.6)** · Prerelease
+## Latest published release: v1.0.0-beta.7
+**[Release notes and downloads](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.7)** · Prerelease
 
 | Asset | Download |
 | --- | --- |
-| linwin-1.0.0-beta.6-arch-x86_64.pkg.tar.zst | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/linwin-1.0.0-beta.6-arch-x86_64.pkg.tar.zst) |
-| linwin-1.0.0-beta.6-debian-13.deb | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/linwin-1.0.0-beta.6-debian-13.deb) |
-| linwin-1.0.0-beta.6-fedora.rpm | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/linwin-1.0.0-beta.6-fedora.rpm) |
-| LinWin-1.0.0-beta.6-linux-packages.zip | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/LinWin-1.0.0-beta.6-linux-packages.zip) |
-| LinWin-1.0.0-beta.6-linux-packages.zip.sha256 | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/LinWin-1.0.0-beta.6-linux-packages.zip.sha256) |
-| linwin-1.0.0-beta.6-ubuntu-24.04.deb | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/linwin-1.0.0-beta.6-ubuntu-24.04.deb) |
-| SHA256SUMS | [Download](https://github.com/sudipdasin/LinWin/releases/download/v1.0.0-beta.6/SHA256SUMS) |
+| Source archive | [Download ZIP](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.7) |
 <!-- LATEST-RELEASE:END -->
 
 # LinWin
