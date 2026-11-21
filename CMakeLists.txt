@@ -90,6 +90,18 @@ if(BUILD_TESTING)
     target_compile_definitions(linwin-setup-wizard-tests PRIVATE LINWIN_SESSION_HELPER_PATH="/nonexistent/linwin-session-helper")
     add_test(NAME setup-wizard-review COMMAND linwin-setup-wizard-tests)
 
+    add_executable(linwin-file-manager-tests
+        tests/test_file_manager.cpp
+        src/file_manager_widget.cpp
+        src/file_manager_widget.h
+    )
+    target_include_directories(linwin-file-manager-tests PRIVATE src)
+    target_link_libraries(linwin-file-manager-tests PRIVATE Qt6::Widgets PkgConfig::GIO_UNIX)
+    target_compile_options(linwin-file-manager-tests PRIVATE
+        "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>"
+    )
+    add_test(NAME file-manager-quick-access COMMAND linwin-file-manager-tests)
+
     add_executable(linwin-xfce-dependency-plan-tests tests/test_xfce_dependency_plan.cpp)
     target_include_directories(linwin-xfce-dependency-plan-tests PRIVATE src)
     target_link_libraries(linwin-xfce-dependency-plan-tests PRIVATE Qt6::Core)
@@ -109,7 +121,7 @@ if(BUILD_TESTING)
         COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_session_wrapper.sh
             ${CMAKE_CURRENT_SOURCE_DIR}/data/linwin-session)
 
-    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search setup-wizard-review xfce-dependency-plan responsive-taskbar x11-session-wrapper PROPERTIES
+    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search setup-wizard-review file-manager-quick-access xfce-dependency-plan responsive-taskbar x11-session-wrapper PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 20
     )
@@ -129,9 +141,9 @@ set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Linux desktop shell engineering preview for Windows switchers")
 set(CPACK_PACKAGE_CONTACT "See the project repository for maintainer contacts")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "LinWin contributors")
-set(CPACK_DEBIAN_PACKAGE_RELEASE "6")
+set(CPACK_DEBIAN_PACKAGE_RELEASE "7")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_RPM_PACKAGE_LICENSE "GPL-3.0-or-later")
-set(CPACK_RPM_PACKAGE_RELEASE "6")
+set(CPACK_RPM_PACKAGE_RELEASE "7")
 set(CPACK_GENERATOR "TGZ;DEB;RPM")
 include(CPack)

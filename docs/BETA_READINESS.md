@@ -4,7 +4,7 @@ Last reviewed: 2026-11-22
 
 ## Release state
 
-LinWin 1.0.0-beta.5 is the current installable public preview; beta.6 adds X11 virtual desktop controls and remains an experimental beta, not a stable desktop replacement. The app can run as a normal desktop application. Its optional login-session adapter supports XFCE on X11 and keeps the user's original session available as a recovery path. Wayland and non-XFCE login sessions are not supported by the adapter. LinWin text scaling is adjustable from 85% to 150% and does not alter host display settings.
+LinWin 1.0.0-beta.6 is the current installable public preview; beta.7 adds a Quick access file sidebar with removable-media locations, persistent folder pins, and current-folder name filtering. It remains an experimental beta, not a stable desktop replacement. The app can run as a normal desktop application. Its optional login-session adapter supports XFCE on X11 and keeps the user's original session available as a recovery path. Wayland and non-XFCE login sessions are not supported by the adapter. LinWin text scaling is adjustable from 85% to 150% and does not alter host display settings.
 
 The graphical setup flow now plans a fixed set of XFCE session packages for APT, DNF, and pacman distributions when required tools are missing. It shows the package names and waits for user confirmation before invoking polkit and the host package manager. Other distributions use their graphical software manager. The package manager may install required dependencies as well as the disclosed base packages. Package upgrade, rollback, and recovery across hardware and display-manager combinations remain incomplete.
 
@@ -19,7 +19,7 @@ The private LinWin Pro mirror is intended to import a public `main` revision onl
 | Area | Current behavior | Remaining limits |
 | --- | --- | --- |
 | Start, taskbar, and shortcuts | Familiar Start-style launcher, pinned apps, responsive taskbar overflow, and common keyboard shortcuts | Window-management behavior varies by desktop and session |
-| Files | Browse, rename, copy/cut/paste, trash, shortcuts, and drag-and-drop | Cross-toolkit drag-and-drop and unusual mount types need broader testing |
+| Files | Browse, rename, copy/cut/paste, trash, shortcuts, drag-and-drop, Quick access pins, standard folders, mounted removable media, and name filtering | Mounted media is discovered in `/media`, `/run/media`, and `/mnt`; search filters names in the current folder only; cross-toolkit drag-and-drop needs broader testing |
 | Clipboard | Searchable quick picker for pinned/recent text; optional local history; opt-in middle-click paste within LinWin | Saved text is not encrypted; picker shortcuts work while LinWin is active; other apps retain their own pointer settings |
 | Task Manager | Live process/resource views and same-user task actions | Network, disk, Bluetooth, startup, services, and GPU panels are experimental and may be unavailable on some systems; this is not yet equivalent to Windows Task Manager |
 | Window switching | X11 window listing and in-app Alt+Tab when `wmctrl` is installed; host compositor switcher otherwise | No compositor-independent window-control layer |

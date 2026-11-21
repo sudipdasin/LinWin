@@ -10,6 +10,7 @@
 #include <QDesktopServices>
 #include <QDialog>
 #include <QFile>
+#include <QFileIconProvider>
 #include <QFileInfo>
 #include <QFileSystemModel>
 #include <QHBoxLayout>
@@ -22,8 +23,15 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QListWidget>
+#include <QPalette>
 #include <QPushButton>
+#include <QSet>
+#include <QSettings>
 #include <QShortcut>
+#include <QSplitter>
+#include <QStandardPaths>
+#include <QStorageInfo>
 #include <QTreeView>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -133,6 +141,17 @@ FileManagerWidget::FileManagerWidget(QWidget *parent)
     navigation->addWidget(goButton);
     layout->addLayout(navigation);
 
+    auto *searchRow = new QHBoxLayout;
+    auto *searchLabel = new QLabel(tr("Search this folder"), this);
+    searchLabel->setObjectName(QStringLiteral("fileSearchLabel"));
+    search_ = new QLineEdit(this);
+    search_->setObjectName(QStringLiteral("fileSearch"));
+    search_->setPlaceholderText(tr("Filter by file or folder name"));
+    search_->setClearButtonEnabled(true);
+    searchRow->addWidget(searchLabel);
+    searchRow->addWidget(search_, 1);
+    layout->addLayout(searchRow);
+
     auto *actions = new QHBoxLayout;
     actions->setSpacing(6);
     auto *newFolderButton = actionButton(tr("New folder"), this);
@@ -156,12 +175,17 @@ FileManagerWidget::FileManagerWidget(QWidget *parent)
     secondaryActions->setSpacing(6);
     secondaryActions->addWidget(shortcutButton);
     secondaryActions->addWidget(trashButton);
+    pinFolderButton_ = actionButton(tr("Add to Quick access"), this);
+    pinFolderButton_->setObjectName(QStringLiteral("pinCurrentFolderButton"));
+    secondaryActions->addWidget(pinFolderButton_);
     secondaryActions->addStretch(1);
     layout->addLayout(secondaryActions);
 
     model_ = new QFileSystemModel(this);
+    model_->setObjectName(QStringLiteral("fileSystemModel"));
     model_->setReadOnly(false);
     model_->setFilter(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::AllDirs | QDir::Hidden);
+    model_->setNameFilterDisables(false);
     model_->setRootPath(currentPath_);
 
     view_ = new QTreeView(this);
@@ -182,7 +206,20 @@ FileManagerWidget::FileManagerWidget(QWidget *parent)
     view_->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     view_->hideColumn(2);
     view_->hideColumn(3);
-    layout->addWidget(view_, 1);
+
+    auto *filePane = new QSplitter(Qt::Horizontal, this);
+    filePane->setObjectName(QStringLiteral("fileManagerSplitView"));
+    places_ = new QListWidget(filePane);
+    places_->setObjectName(QStringLiteral("filePlaces"));
+    places_->setMaximumWidth(230);
+    places_->setMinimumWidth(145);
+    places_->setUniformItemSizes(true);
+    places_->setContextMenuPolicy(Qt::CustomContextMenu);
+    filePane->addWidget(places_);
+    filePane->addWidget(view_);
+    filePane->setStretchFactor(1, 1);
+    filePane->setSizes({180, 720});
+    layout->addWidget(filePane, 1);
 
     status_ = new QLabel(this);
     status_->setObjectName(QStringLiteral("fileStatus"));
@@ -195,6 +232,15 @@ FileManagerWidget::FileManagerWidget(QWidget *parent)
     connect(homeButton, &QPushButton::clicked, this, [this]() { navigateTo(QDir::homePath()); });
     connect(goButton, &QPushButton::clicked, this, [this]() { navigateTo(location_->text()); });
     connect(location_, &QLineEdit::returnPressed, this, [this]() { navigateTo(location_->text()); });
+    connect(search_, &QLineEdit::textChanged, this, [this](const QString &query) {
+        const QString needle = query.trimmed();
+        model_->setNameFilters(needle.isEmpty()
+            ? QStringList()
+            : QStringList{QStringLiteral("*%1*").arg(needle)});
+        status_->setText(needle.isEmpty()
+            ? tr("Showing this folder.")
+            : tr("Filtering this folder for “%1”.").arg(needle));
+    });
     connect(newFolderButton, &QPushButton::clicked, this, &FileManagerWidget::createFolder);
     connect(renameButton, &QPushButton::clicked, this, &FileManagerWidget::renameSelected);
     connect(copyButton, &QPushButton::clicked, this, [this]() { copySelected(false); });
@@ -202,6 +248,13 @@ FileManagerWidget::FileManagerWidget(QWidget *parent)
     connect(pasteButton, &QPushButton::clicked, this, &FileManagerWidget::pasteClipboard);
     connect(shortcutButton, &QPushButton::clicked, this, &FileManagerWidget::createShortcut);
     connect(trashButton, &QPushButton::clicked, this, &FileManagerWidget::moveToTrash);
+    connect(pinFolderButton_, &QPushButton::clicked, this, &FileManagerWidget::togglePinnedFolder);
+    connect(places_, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
+        const QString path = item->data(Qt::UserRole).toString();
+        if (!path.isEmpty()) navigateTo(path);
+    });
+    connect(places_, &QListWidget::customContextMenuRequested,
+            this, &FileManagerWidget::showPlacesContextMenu);
     connect(view_->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, [this]() { updateSelectionStatus(); });
     connect(view_, &QTreeView::customContextMenuRequested,
@@ -237,6 +290,7 @@ FileManagerWidget::FileManagerWidget(QWidget *parent)
     visitedPaths_.append(currentPath_);
     visitedPathIndex_ = 0;
     backButton_->setEnabled(false);
+    populatePlaces();
     updateSelectionStatus();
 }
 
@@ -279,7 +333,110 @@ void FileManagerWidget::navigateTo(const QString &path, bool remember)
     location_->setText(currentPath_);
     view_->setRootIndex(model_->index(currentPath_));
     backButton_->setEnabled(visitedPathIndex_ > 0);
+    populatePlaces();
     updateSelectionStatus();
+}
+
+void FileManagerWidget::populatePlaces()
+{
+    if (places_ == nullptr) return;
+
+    places_->clear();
+    QSet<QString> knownPaths;
+    auto addSection = [this](const QString &label) {
+        auto *item = new QListWidgetItem(label, places_);
+        item->setFlags(Qt::NoItemFlags);
+        item->setForeground(palette().color(QPalette::Disabled, QPalette::Text));
+    };
+    auto addPlace = [this, &knownPaths](const QString &label, const QString &rawPath, bool pinned = false) {
+        const QString path = QDir::cleanPath(QDir::fromNativeSeparators(rawPath));
+        if (path.isEmpty() || knownPaths.contains(path)) return;
+        const QFileInfo info(path);
+        if (!info.exists() || !info.isDir() || !info.isReadable()) return;
+        knownPaths.insert(path);
+        auto *item = new QListWidgetItem(label, places_);
+        item->setData(Qt::UserRole, info.canonicalFilePath().isEmpty() ? info.absoluteFilePath() : info.canonicalFilePath());
+        item->setData(Qt::UserRole + 1, pinned);
+        item->setIcon(QFileIconProvider().icon(QFileIconProvider::Folder));
+        item->setToolTip(path);
+    };
+
+    addSection(tr("QUICK ACCESS"));
+    addPlace(tr("Home"), QDir::homePath());
+    const QList<QPair<QString, QStandardPaths::StandardLocation>> locations = {
+        {tr("Desktop"), QStandardPaths::DesktopLocation},
+        {tr("Documents"), QStandardPaths::DocumentsLocation},
+        {tr("Downloads"), QStandardPaths::DownloadLocation},
+        {tr("Pictures"), QStandardPaths::PicturesLocation},
+        {tr("Music"), QStandardPaths::MusicLocation},
+        {tr("Videos"), QStandardPaths::MoviesLocation}
+    };
+    for (const auto &location : locations)
+        addPlace(location.first, QStandardPaths::writableLocation(location.second));
+
+    QSettings settings;
+    const QStringList pinnedPaths = settings.value(QStringLiteral("files/pinnedFolders")).toStringList();
+    if (!pinnedPaths.isEmpty()) {
+        addSection(tr("PINNED FOLDERS"));
+        for (const QString &path : pinnedPaths)
+            addPlace(QFileInfo(path).fileName().isEmpty() ? path : QFileInfo(path).fileName(), path, true);
+    }
+
+    addSection(tr("DEVICES"));
+    addPlace(tr("Computer"), QStringLiteral("/"));
+    for (const QStorageInfo &storage : QStorageInfo::mountedVolumes()) {
+        if (!storage.isValid() || !storage.isReady()) continue;
+        const QString path = QDir::cleanPath(storage.rootPath());
+        if (!(path.startsWith(QStringLiteral("/media/"))
+              || path.startsWith(QStringLiteral("/run/media/"))
+              || path.startsWith(QStringLiteral("/mnt/")))) continue;
+        QString label = storage.displayName().trimmed();
+        if (label.isEmpty()) label = QFileInfo(path).fileName();
+        if (label.isEmpty()) label = path;
+        addPlace(label, path);
+    }
+
+    const bool pinned = pinnedPaths.contains(QFileInfo(currentPath_).canonicalFilePath().isEmpty()
+        ? QFileInfo(currentPath_).absoluteFilePath() : QFileInfo(currentPath_).canonicalFilePath());
+    pinFolderButton_->setText(pinned ? tr("Remove from Quick access") : tr("Add to Quick access"));
+    pinFolderButton_->setEnabled(QFileInfo(currentPath_).isDir());
+}
+
+void FileManagerWidget::togglePinnedFolder()
+{
+    QSettings settings;
+    QStringList pinnedPaths = settings.value(QStringLiteral("files/pinnedFolders")).toStringList();
+    const QFileInfo current(currentPath_);
+    const QString path = current.canonicalFilePath().isEmpty() ? current.absoluteFilePath() : current.canonicalFilePath();
+    if (pinnedPaths.contains(path)) {
+        pinnedPaths.removeAll(path);
+        status_->setText(tr("Removed “%1” from Quick access.").arg(current.fileName()));
+    } else {
+        if (pinnedPaths.size() >= 20) {
+            status_->setText(tr("Quick access can contain up to 20 pinned folders."));
+            return;
+        }
+        pinnedPaths.append(path);
+        status_->setText(tr("Pinned “%1” in Quick access.").arg(current.fileName().isEmpty() ? path : current.fileName()));
+    }
+    settings.setValue(QStringLiteral("files/pinnedFolders"), pinnedPaths);
+    populatePlaces();
+}
+
+void FileManagerWidget::showPlacesContextMenu(const QPoint &position)
+{
+    QListWidgetItem *item = places_->itemAt(position);
+    if (item == nullptr || !item->data(Qt::UserRole + 1).toBool()) return;
+    const QString pinnedPath = item->data(Qt::UserRole).toString();
+    QMenu menu(this);
+    QAction *removeAction = menu.addAction(tr("Remove from Quick access"));
+    if (menu.exec(places_->viewport()->mapToGlobal(position)) != removeAction) return;
+
+    QSettings settings;
+    QStringList pinnedPaths = settings.value(QStringLiteral("files/pinnedFolders")).toStringList();
+    pinnedPaths.removeAll(pinnedPath);
+    settings.setValue(QStringLiteral("files/pinnedFolders"), pinnedPaths);
+    populatePlaces();
 }
 
 void FileManagerWidget::navigateBack()

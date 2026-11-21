@@ -7,6 +7,7 @@
 class QFileSystemModel;
 class QLabel;
 class QLineEdit;
+class QListWidget;
 class QPushButton;
 class QTreeView;
 
@@ -26,13 +27,19 @@ private:
     void pasteClipboard();
     void moveToTrash();
     void createShortcut();
+    void populatePlaces();
+    void togglePinnedFolder();
+    void showPlacesContextMenu(const QPoint &position);
     void showContextMenu(const QPoint &position);
 
     QFileSystemModel *model_ = nullptr;
+    QListWidget *places_ = nullptr;
     QTreeView *view_ = nullptr;
     QLineEdit *location_ = nullptr;
+    QLineEdit *search_ = nullptr;
     QLabel *status_ = nullptr;
     QPushButton *backButton_ = nullptr;
+    QPushButton *pinFolderButton_ = nullptr;
     QString currentPath_;
     QStringList visitedPaths_;
     qsizetype visitedPathIndex_ = -1;
