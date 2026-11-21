@@ -31,7 +31,7 @@ class QWidget;
 class MainWindow final : public QMainWindow {
     Q_OBJECT
 public:
-    explicit MainWindow(bool shellMode = false, QWidget *parent = nullptr);
+    explicit MainWindow(bool overlayMode = true, bool shellSessionMode = false, QWidget *parent = nullptr);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -55,6 +55,7 @@ private:
     void applyTextScale(int percent);
     void updateTaskbarLayout();
     void applyComponentVisibility(const QString &component, bool enabled);
+    void returnToLinuxDesktop();
     bool componentEnabled(const QString &component) const;
 
     QWidget *desktopArea_ = nullptr;
@@ -67,11 +68,15 @@ private:
     QPushButton *clipboardButton_ = nullptr;
     QPushButton *settingsButton_ = nullptr;
     QPushButton *signOutButton_ = nullptr;
+    QPushButton *closeButton_ = nullptr;
     QPushButton *overflowButton_ = nullptr;
     QPushButton *workspaceButton_ = nullptr;
     QAction *clipboardOverflowAction_ = nullptr;
     QAction *settingsOverflowAction_ = nullptr;
+    QAction *desktopOverflowAction_ = nullptr;
     QAction *signOutOverflowAction_ = nullptr;
+    QAction *returnDesktopOverflowAction_ = nullptr;
+    QAction *closeOverflowAction_ = nullptr;
     QAction *workspaceOverflowAction_ = nullptr;
     QMenu *workspaceMenu_ = nullptr;
     QScrollArea *windowSwitcher_ = nullptr;
@@ -98,5 +103,7 @@ private:
     bool taskManagerEnabled_ = true;
     bool clipboardEnabled_ = true;
     bool workspaceSupportAvailable_ = false;
+    bool overlayMode_ = true;
+    bool shellSessionMode_ = false;
     QString baseStyleSheet_;
 };
