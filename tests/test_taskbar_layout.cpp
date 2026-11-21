@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
     window.resize(480, 600);
     app.processEvents();
-    qInfo() << "compact state" << window.width() << taskbar->width() << more->isVisible()
+    qCritical() << "compact state" << window.width() << taskbar->width() << more->isVisible()
             << workspaceButton->isHidden() << desktopButton->isHidden()
             << clipboard->isHidden() << settingsButton->isHidden()
             << returnDesktop->isHidden() << closeLinWin->isVisible()
