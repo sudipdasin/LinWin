@@ -2,9 +2,12 @@
 #pragma once
 
 #include <QHash>
+#include <QList>
 #include <QMainWindow>
 #include <QString>
 #include <QStringList>
+
+#include "workspace_state.h"
 
 class AppLauncherWidget;
 class ClipboardHistoryWidget;
@@ -41,6 +44,11 @@ private:
     void updateExternalWindows(const QString &output);
     void activateExternalWindow(const QString &id);
     void cycleExternalWindow();
+    void refreshWorkspaces();
+    void updateWorkspaces(const QString &output);
+    void rebuildWorkspaceMenu();
+    void switchToWorkspace(int index);
+    void createWorkspace();
     void showClipboardCenter();
     void showClipboardQuickPicker();
     void showSettingsHub();
@@ -60,9 +68,12 @@ private:
     QPushButton *settingsButton_ = nullptr;
     QPushButton *signOutButton_ = nullptr;
     QPushButton *overflowButton_ = nullptr;
+    QPushButton *workspaceButton_ = nullptr;
     QAction *clipboardOverflowAction_ = nullptr;
     QAction *settingsOverflowAction_ = nullptr;
     QAction *signOutOverflowAction_ = nullptr;
+    QAction *workspaceOverflowAction_ = nullptr;
+    QMenu *workspaceMenu_ = nullptr;
     QScrollArea *windowSwitcher_ = nullptr;
     QLabel *systemStatus_ = nullptr;
     QLabel *clock_ = nullptr;
@@ -74,13 +85,18 @@ private:
     QLabel *windowSwitcherStatus_ = nullptr;
     QProcess *windowListProcess_ = nullptr;
     QTimer *windowRefreshTimer_ = nullptr;
+    QProcess *workspaceListProcess_ = nullptr;
+    QProcess *workspaceCommandProcess_ = nullptr;
+    QTimer *workspaceRefreshTimer_ = nullptr;
     QHash<QString, QPushButton *> windowButtons_;
     QStringList windowOrder_;
+    QList<WorkspaceInfo> workspaces_;
     QString wmctrlPath_;
     int windowCursor_ = -1;
     bool startMenuEnabled_ = true;
     bool filesEnabled_ = true;
     bool taskManagerEnabled_ = true;
     bool clipboardEnabled_ = true;
+    bool workspaceSupportAvailable_ = false;
     QString baseStyleSheet_;
 };
