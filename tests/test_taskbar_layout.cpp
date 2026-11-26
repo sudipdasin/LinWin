@@ -32,6 +32,8 @@
 #include <QTableView>
 #include <QHeaderView>
 #include <QImage>
+#include <QEventLoop>
+#include "weather_widget.h"
 
 namespace {
 bool require(bool condition, const char *message)
@@ -242,11 +244,17 @@ int main(int argc, char **argv)
     themes->setCurrentIndex(themes->findData(QStringLiteral("neon")));
     window.resize(1920,1080);
     app.processEvents();
+    {QEventLoop settle;QTimer::singleShot(350,&settle,&QEventLoop::quit);settle.exec();}
     auto *calendar=window.findChild<QCalendarWidget *>(QStringLiteral("linwinDesktopCalendar"));
     auto *calendarTable=calendar?calendar->findChild<QTableView *>():nullptr;
     auto *taskbarSearch=window.findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"));
     if(!require(window.size()==QSize(1920,1080) && calendar && calendarTable && taskbarSearch && taskbarSearch->isVisible(),
                 "1920x1080 reference test must expose full desktop widgets and taskbar search."))return 1;
+    auto *weather=static_cast<WeatherWidget *>(window.findChild<QFrame *>(QStringLiteral("widgetWeather")));
+    if(!require(weather && weather->isVisible() && !weather->pollingActive(),
+                "Weather card must be visible but make no scheduled requests before opt-in."))return 1;
+    if(!require(!surface->glassSample(QRect(0,0,400,400)).isNull(),
+                "Neon glass must sample the actual cached wallpaper."))return 1;
     if(!require(calendarTable->horizontalHeader()->length()<=calendarTable->viewport()->width()+1,
                 "All calendar columns must fit inside the visible viewport."))return 1;
     QString physicalEvidence;
@@ -275,6 +283,13 @@ int main(int argc, char **argv)
     search->setText(QStringLiteral("test query"));app.processEvents();
     if(!require(views->currentIndex()==1,"Search must show filtered all-app results."))return 1;
     search->clear();start->click();
+    window.resize(1672,941);app.processEvents();
+    {QEventLoop settle;QTimer::singleShot(350,&settle,&QEventLoop::quit);settle.exec();}
+    if(!require(window.size()==QSize(1672,941),"Approved reference resolution must be preserved."))return 1;
+    if(!physicalEvidence.isEmpty() && !window.grab().save(QDir(physicalEvidence).filePath(QStringLiteral("neon-1672x941-desktop.png"))))return 1;
+    start->click();app.processEvents();
+    if(!physicalEvidence.isEmpty() && !window.grab().save(QDir(physicalEvidence).filePath(QStringLiteral("neon-1672x941-start.png"))))return 1;
+    start->click();
     window.resize(480, 600);
     app.processEvents();
     if (!require(more->isVisible() && workspaceButton->isHidden() && desktopButton->isHidden()

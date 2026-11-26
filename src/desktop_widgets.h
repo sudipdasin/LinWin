@@ -10,6 +10,7 @@
 #include <QFile>
 #include <QFrame>
 #include <QHideEvent>
+#include <QResizeEvent>
 #include <QLabel>
 #include <QShowEvent>
 #include <QStorageInfo>
@@ -60,7 +61,7 @@ public:
             metrics->addWidget(bars_[i]);
         }
         layout->addWidget(system);
-        auto *weather=new WeatherWidget(this);layout->addWidget(weather);layout->addStretch();
+        weather_=new WeatherWidget(this);layout->addWidget(weather_);layout->addStretch();
         setStyleSheet(QStringLiteral(
             "#neonWidgets { background:transparent; }"
             "#widgetClock,#widgetMetrics,#widgetWeather,QCalendarWidget { background:#092740; color:#e5f7ff; border:1px solid #148eb7; border-radius:12px; }"
@@ -81,6 +82,7 @@ public:
     }
     bool pollingActive() const { return timer_.isActive(); }
 protected:
+    void resizeEvent(QResizeEvent *e) override { QWidget::resizeEvent(e); if(weather_) weather_->setVisible(height()>=700); }
     void showEvent(QShowEvent *e) override { QWidget::showEvent(e); previous_.reset(); refresh(); timer_.start(); }
     void hideEvent(QHideEvent *e) override { timer_.stop(); previous_.reset(); QWidget::hideEvent(e); }
 private:
@@ -108,6 +110,7 @@ private:
             bars_[i]->setToolTip(percent(metrics[i]));
         }
     }
+    WeatherWidget *weather_=nullptr;
     QLabel *clock_=nullptr;
     std::array<QLabel*,3> values_{};
     std::array<QProgressBar*,3> bars_{};
