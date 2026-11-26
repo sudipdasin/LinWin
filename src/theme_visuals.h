@@ -110,6 +110,7 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
             "%1 QPushButton:disabled, %1 QCheckBox:disabled { color:%9; background:%2; }"
         ).arg(scope,panel,fg,field,subtle,radius,accent,hover,muted);
     }
+    style+=QStringLiteral("#linwinWindowsSettingsCatalog { background:%1; color:%2; } #linwinWindowsSettingsCatalog QLabel { color:%2; } #linwinSettingsCategory { background:%6; color:%2; border:1px solid %7; border-radius:%4; padding:10px; font-size:14px; } #linwinSettingsCategory:hover,#linwinSettingsCategory:focus { background:%5; border:1px solid %3; }").arg(panel,fg,accent,radius,hover,field,subtle);
     return style;
 }
 }

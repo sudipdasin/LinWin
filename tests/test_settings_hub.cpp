@@ -17,6 +17,7 @@
 #include <QTableWidget>
 #include <QGuiApplication>
 #include <QTreeWidget>
+#include <QToolButton>
 #include "windows10_settings_catalog.h"
 #include <QTemporaryDir>
 #include <QImage>
@@ -187,9 +188,16 @@ int main(int argc, char **argv)
     auto *find=widget.findChild<QLineEdit *>("linwinCatalogSearch");
     auto *openSetting=widget.findChild<QPushButton *>("linwinCatalogOpen");
     passed &= expect(tree&&find&&openSetting&&tree->topLevelItemCount()==13,"Windows 10 settings catalog must expose 13 categories.");
+    const auto categoryCards=widget.findChildren<QToolButton *>("linwinSettingsCategory");
+    passed &= expect(categoryCards.size()==13,"Settings home must expose all thirteen category cards.");
     if(tree&&find&&openSetting){
         int entries=0;for(int i=0;i<tree->topLevelItemCount();++i)entries+=tree->topLevelItem(i)->childCount();
         passed &= expect(entries==static_cast<int>(LinWinSettings::catalog.size()),"Every catalog page must be visible.");
+        for(auto *card:categoryCards)if(card->text()=="Personalization"){card->click();application.processEvents();break;}
+        passed &= expect(tree->isVisible()&&tree->topLevelItemCount()==1&&tree->topLevelItem(0)->text(0)=="Personalization","Category cards must open the correct settings group.");
+        auto *catalogHome=widget.findChild<QPushButton *>("linwinCatalogHome");
+        if(catalogHome)catalogHome->click();application.processEvents();
+        passed &= expect(!tree->isVisible(),"Settings home restores category cards.");
         find->setText("VPN");application.processEvents();
         auto *item=tree->topLevelItemCount()?tree->topLevelItem(0)->child(0):nullptr;
         if(item)tree->setCurrentItem(item);
