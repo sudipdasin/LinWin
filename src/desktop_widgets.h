@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include "system_metrics.h"
+#include "weather_widget.h"
 #include <QCalendarWidget>
 #include <QTableView>
 #include <QHeaderView>
@@ -58,13 +59,15 @@ public:
             bars_[i]->setAccessibleName(names.at(i));
             metrics->addWidget(bars_[i]);
         }
-        layout->addWidget(system); layout->addStretch();
+        layout->addWidget(system);
+        auto *weather=new WeatherWidget(this);layout->addWidget(weather);layout->addStretch();
         setStyleSheet(QStringLiteral(
             "#neonWidgets { background:transparent; }"
-            "#widgetClock,#widgetMetrics,QCalendarWidget { background:#092740; color:#e5f7ff; border:1px solid #148eb7; border-radius:12px; }"
+            "#widgetClock,#widgetMetrics,#widgetWeather,QCalendarWidget { background:#092740; color:#e5f7ff; border:1px solid #148eb7; border-radius:12px; }"
             "#widgetClock { font-size:24px; font-weight:600; padding:12px; }"
             "#widgetMetrics { font-size:12px; }"
-            "#widgetMetrics QLabel { background:transparent; color:#dbefff; }"
+            "#widgetMetrics QLabel, #widgetWeather QLabel { background:transparent; color:#dbefff; }"
+            "#widgetWeather QPushButton { background:#163b59; color:#e5f7ff; border:1px solid #286181; border-radius:6px; padding:4px; }"
             "#metricTitle { font-size:14px; font-weight:600; }"
             "#widgetMetrics QProgressBar { background:#203f57; border:0; border-radius:2px; }"
             "#widgetMetrics QProgressBar::chunk { background:#25bde4; border-radius:2px; }"
