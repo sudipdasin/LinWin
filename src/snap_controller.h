@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include "snap_geometry.h"
+#include "shell_icons.h"
 #include <QDialog>
 #include <QMenu>
 #include <QMessageBox>
@@ -20,6 +21,8 @@ public:
         auto *button = new QToolButton(window_);
         button->setObjectName(QStringLiteral("linwinSnapMenu"));
         button->setText(tr("Snap layouts"));
+        button->setIcon(LinWinVisual::shellIcon(LinWinVisual::Glyph::Snap));
+        button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         button->setPopupMode(QToolButton::InstantPopup);
         auto *menu = new QMenu(button);
         const QList<QPair<QString,Zone>> zones{

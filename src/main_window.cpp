@@ -3,6 +3,7 @@
 #include "snap_controller.h"
 #include "desktop_surface.h"
 #include "theme_visuals.h"
+#include "shell_icons.h"
 #include "desktop_widgets.h"
 
 #include "app_launcher_widget.h"
@@ -193,14 +194,14 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
         const auto refreshIcons = [this, icons, desktopPath]() {
             icons->clear();
-            const auto addShortcut = [this, icons](const QString &name, QStyle::StandardPixmap icon, int page) {
-                auto *item = new QListWidgetItem(style()->standardIcon(icon), name, icons);
+            const auto addShortcut = [icons](const QString &name, LinWinVisual::Glyph icon, int page) {
+                auto *item = new QListWidgetItem(LinWinVisual::shellIcon(icon), name, icons);
                 item->setData(Qt::UserRole, page);
                 item->setTextAlignment(Qt::AlignHCenter);
             };
-            addShortcut(tr("Files"), QStyle::SP_DirHomeIcon, 1);
-            addShortcut(tr("Task Manager"), QStyle::SP_ComputerIcon, 2);
-            addShortcut(tr("Settings"), QStyle::SP_FileDialogDetailedView, 4);
+            addShortcut(tr("Files"), LinWinVisual::Glyph::Files, 1);
+            addShortcut(tr("Task Manager"), LinWinVisual::Glyph::Tasks, 2);
+            addShortcut(tr("Settings"), LinWinVisual::Glyph::Settings, 4);
             if (desktopPath.isEmpty() || !QDir(desktopPath).exists()) return;
             QFileIconProvider provider;
             const auto entries = QDir(desktopPath).entryInfoList(
@@ -330,6 +331,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     tasksButton_->setToolTip(tr("Open Task Manager (Ctrl+Shift+Esc)"));
     clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
     settingsButton_ = makePanelButton(QStringLiteral("Settings"), QStringLiteral("navigationButton"), taskbar);
+    for (const auto &entry : QList<QPair<QPushButton *,LinWinVisual::Glyph>>{{homeButton_,LinWinVisual::Glyph::Desktop},{filesButton_,LinWinVisual::Glyph::Files},{tasksButton_,LinWinVisual::Glyph::Tasks},{clipboardButton_,LinWinVisual::Glyph::Clipboard},{settingsButton_,LinWinVisual::Glyph::Settings}}) {
+        entry.first->setIcon(LinWinVisual::shellIcon(entry.second));
+        entry.first->setIconSize(QSize(20,20));
+    }
     if (overlayMode_) {
         signOutButton_ = makePanelButton(shellSessionMode_ ? tr("Sign out") : tr("Linux desktop"),
                                         QStringLiteral("returnDesktopButton"), taskbar);
@@ -341,6 +346,8 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     closeButton_->setToolTip(tr("Close LinWin and return to the Linux desktop"));
     overflowButton_ = makePanelButton(tr("More"), QStringLiteral("taskbarOverflowButton"), taskbar);
     overflowButton_->setToolTip(tr("Open additional shell actions"));
+    overflowButton_->setIcon(LinWinVisual::shellIcon(LinWinVisual::Glyph::More));
+    overflowButton_->setIconSize(QSize(18,18));
     auto *overflowMenu = new QMenu(overflowButton_);
     clipboardOverflowAction_ = overflowMenu->addAction(tr("Clipboard"));
     settingsOverflowAction_ = overflowMenu->addAction(tr("Settings"));

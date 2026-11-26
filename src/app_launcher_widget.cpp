@@ -3,6 +3,7 @@
 
 #include "app_launcher_widget.h"
 #include "theme_visuals.h"
+#include "shell_icons.h"
 #include "recent_documents.h"
 #include <QDesktopServices>
 #include <QFileIconProvider>
@@ -91,6 +92,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     searchField_->setObjectName(QStringLiteral("applicationSearch"));
     searchField_->setPlaceholderText(tr("Search apps by name or description"));
     searchField_->setClearButtonEnabled(true);
+    searchField_->addAction(LinWinVisual::shellIcon(LinWinVisual::Glyph::Search), QLineEdit::LeadingPosition);
 
     applicationList_ = new QListWidget(this);
     applicationList_->setObjectName(QStringLiteral("applicationList"));
@@ -169,6 +171,9 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Open Files")},{2,tr("Open Tasks")},{3,tr("Open Clipboard")},{4,tr("Open Settings")}}) {
         auto *button=new QPushButton(tool.second,this);
         button->setObjectName(QStringLiteral("linwinStartTool_%1").arg(tool.first));
+        const LinWinVisual::Glyph glyphs[]{LinWinVisual::Glyph::Files,LinWinVisual::Glyph::Tasks,LinWinVisual::Glyph::Clipboard,LinWinVisual::Glyph::Settings};
+        button->setIcon(LinWinVisual::shellIcon(glyphs[tool.first-1]));
+        button->setIconSize(QSize(18,18));
         quick->addWidget(button);
         connect(button,&QPushButton::clicked,this,[this,tool]{ emit toolRequested(tool.first); });
     }
