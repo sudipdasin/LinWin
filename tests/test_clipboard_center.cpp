@@ -70,8 +70,18 @@ int main(int argc, char **argv)
         std::cerr << "Quick picker search should filter clipboard items\n";
         return 1;
     }
+    if (quickEntries->currentItem() != nullptr) {
+        std::cerr << "No matching clips must clear the selection\n";
+        return 1;
+    }
+    if (!QMetaObject::invokeMethod(&widget, "copyQuickPickEntry", Qt::DirectConnection,
+                                   Q_ARG(QListWidgetItem *, quickEntries->item(0)))
+        || picker == nullptr || !picker->isVisible()) {
+        std::cerr << "Hidden clip activation must not close the picker\n";
+        return 1;
+    }
     quickSearch->setText(QStringLiteral("first"));
-    if (quickEntries->item(0)->isHidden()) {
+    if (quickEntries->item(0)->isHidden() || quickEntries->currentItem() != quickEntries->item(0)) {
         std::cerr << "Quick picker search should restore matching clipboard items\n";
         return 1;
     }

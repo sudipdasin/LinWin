@@ -189,7 +189,7 @@ void ClipboardHistoryWidget::captureClipboardText()
 void ClipboardHistoryWidget::copySelectedEntry()
 {
     const auto *item = historyList_->currentItem();
-    if (item == nullptr || clipboard_ == nullptr) {
+    if (item == nullptr || item->isHidden() || clipboard_ == nullptr) {
         return;
     }
     clipboard_->setText(item->data(Qt::UserRole).toString(), QClipboard::Clipboard);
@@ -199,8 +199,8 @@ void ClipboardHistoryWidget::copySelectedEntry()
 void ClipboardHistoryWidget::removeSelectedEntry()
 {
     const auto *item = historyList_->currentItem();
-    if (item == nullptr) {
-        statusLabel_->setText(tr("Select an item to remove."));
+    if (item == nullptr || item->isHidden()) {
+        statusLabel_->setText(tr("Select a visible item to remove."));
         return;
     }
     const QString text = item->data(Qt::UserRole).toString();
@@ -236,7 +236,7 @@ void ClipboardHistoryWidget::clearHistory()
 void ClipboardHistoryWidget::toggleSelectedPin()
 {
     const auto *item = historyList_->currentItem();
-    if (item == nullptr) return;
+    if (item == nullptr || item->isHidden()) return;
     const QString text = item->data(Qt::UserRole).toString();
     const bool isPinned = item->data(Qt::UserRole + 1).toBool();
     if (isPinned) {
@@ -310,6 +310,16 @@ void ClipboardHistoryWidget::showQuickPicker(QWidget *anchor)
             auto *item = list->item(row);
             item->setHidden(!item->data(Qt::UserRole).toString().contains(needle, Qt::CaseInsensitive));
         }
+        if (list->currentItem() != nullptr && list->currentItem()->isHidden())
+            list->setCurrentRow(-1);
+        if (list->currentItem() == nullptr) {
+            for (int row = 0; row < list->count(); ++row) {
+                if (!list->item(row)->isHidden() && list->item(row)->data(Qt::UserRole).isValid()) {
+                    list->setCurrentRow(row);
+                    break;
+                }
+            }
+        }
     });
     connect(list, &QListWidget::itemActivated, this, &ClipboardHistoryWidget::copyQuickPickEntry);
     connect(list, &QListWidget::itemClicked, this, &ClipboardHistoryWidget::copyQuickPickEntry);
@@ -326,6 +336,8 @@ void ClipboardHistoryWidget::showQuickPicker(QWidget *anchor)
     QWidget *positionAnchor = anchor != nullptr ? anchor : this;
     if (positionAnchor != nullptr && positionAnchor->screen() != nullptr) {
         const QRect bounds = positionAnchor->screen()->availableGeometry();
+        picker->setFixedSize(qMin(picker->width(), qMax(1, bounds.width())),
+                             qMin(picker->height(), qMax(1, bounds.height())));
         QPoint position = positionAnchor->mapToGlobal(positionAnchor->rect().center())
             - QPoint(picker->width() / 2, picker->height() / 2);
         position.setX(qBound(bounds.left(), position.x(), bounds.right() - picker->width() + 1));
@@ -338,7 +350,7 @@ void ClipboardHistoryWidget::showQuickPicker(QWidget *anchor)
 
 void ClipboardHistoryWidget::copyQuickPickEntry(QListWidgetItem *item)
 {
-    if (item == nullptr || clipboard_ == nullptr || !item->data(Qt::UserRole).isValid()) return;
+    if (!componentEnabled_ || item == nullptr || item->isHidden() || clipboard_ == nullptr || !item->data(Qt::UserRole).isValid()) return;
     clipboard_->setText(item->data(Qt::UserRole).toString(), QClipboard::Clipboard);
     statusLabel_->setText(tr("Copied the selected clip. Paste it with Ctrl+V."));
     if (quickPicker_ != nullptr) quickPicker_->close();
@@ -351,6 +363,9 @@ void ClipboardHistoryWidget::filterEntries(const QString &query)
         auto *item = historyList_->item(row);
         item->setHidden(!item->data(Qt::UserRole).toString().contains(needle, Qt::CaseInsensitive));
     }
+    if (historyList_->currentItem() != nullptr && historyList_->currentItem()->isHidden())
+        historyList_->setCurrentRow(-1);
+    updatePinButtonLabel();
 }
 
 void ClipboardHistoryWidget::saveHistory() const
@@ -387,7 +402,7 @@ void ClipboardHistoryWidget::updatePinButtonLabel()
     if (pinButton_ == nullptr) return;
     const bool isPinned = item != nullptr && item->data(Qt::UserRole + 1).toBool();
     pinButton_->setText(isPinned ? tr("Unpin") : tr("Pin"));
-    pinButton_->setEnabled(item != nullptr);
+    pinButton_->setEnabled(item != nullptr && !item->isHidden());
 }
 
 void ClipboardHistoryWidget::updateMiddleClickPreference(bool enabled)
@@ -402,7 +417,9 @@ void ClipboardHistoryWidget::updateMiddleClickPreference(bool enabled)
 bool ClipboardHistoryWidget::eventFilter(QObject *watched, QEvent *event)
 {
     if ((!componentEnabled_ || !middleClickPasteCheckBox_->isChecked())
-        && event->type() == QEvent::MouseButtonPress) {
+        && (event->type() == QEvent::MouseButtonPress
+            || event->type() == QEvent::MouseButtonRelease
+            || event->type() == QEvent::MouseButtonDblClick)) {
         QWidget *widget = qobject_cast<QWidget *>(watched);
         QWidget *current = widget;
         while (current != nullptr) {
