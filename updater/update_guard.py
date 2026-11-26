@@ -32,4 +32,11 @@ def installation_plan(package, runner):
     changes = [line for line in result.stdout.splitlines() if line.startswith(('Inst ', 'Conf '))]
     if not any(line.startswith('Inst linwin ') or line.startswith('Inst linwin:amd64 ') for line in changes):
         raise ValueError('APT did not propose installing LinWin; update refused.')
-    return '\n'.join(changes[:20]) + ('\nAdditional package changes omitted from this preview.' if len(changes) > 20 else '')
+    if len(changes) > 20:
+        raise ValueError('APT proposes too many changes for a safe review; use the system package manager.')
+    return '\n'.join(changes)
+
+
+def confirm_plan(package, runner, approved):
+    if installation_plan(package, runner) != approved:
+        raise ValueError('APT installation plan changed after approval. Restart the update to review it again.')

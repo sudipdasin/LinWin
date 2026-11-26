@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import Mock
-from update_guard import installation_plan, update_lock
+from update_guard import installation_plan, update_lock, confirm_plan
 
 
 class GuardTests(unittest.TestCase):
@@ -46,7 +46,17 @@ class GuardTests(unittest.TestCase):
 
     def test_apt_preview_bounded(self):
         runner = Mock(return_value=subprocess.CompletedProcess([], 0, 'Inst linwin (1.0.0-9)\n' + 'Conf dependency\n'*40, ''))
-        self.assertEqual(len(installation_plan('/tmp/linwin.deb', runner).splitlines()), 21)
+        with self.assertRaisesRegex(ValueError, 'too many'):
+            installation_plan('/tmp/linwin.deb', runner)
+
+    def test_approved_plan_unchanged(self):
+        runner = Mock(return_value=subprocess.CompletedProcess([], 0, 'Inst linwin (1.0.0-9)', ''))
+        confirm_plan('/tmp/linwin.deb', runner, 'Inst linwin (1.0.0-9)')
+
+    def test_approved_plan_changed(self):
+        runner = Mock(return_value=subprocess.CompletedProcess([], 0, 'Inst linwin (1.0.0-9)\nInst dependency (2.0)', ''))
+        with self.assertRaisesRegex(ValueError, 'changed after approval'):
+            confirm_plan('/tmp/linwin.deb', runner, 'Inst linwin (1.0.0-9)')
 
 
 if __name__ == '__main__':

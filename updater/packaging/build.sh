@@ -17,4 +17,4 @@ if [ -f /usr/share/common-licenses/GPL-3 ]; then
 fi
 printf '/etc/xdg/autostart/linwin-update.desktop\n' > "$root/DEBIAN/conffiles"
 chmod 644 "$root/DEBIAN/conffiles"
-dpkg-deb --root-owner-group --build "$root" "${1:-linwin-update-center_1.0.2-1_all.deb}"
+dpkg-deb --root-owner-group --build "$root" "${1:-linwin-update-center_1.0.3-1_all.deb}"
