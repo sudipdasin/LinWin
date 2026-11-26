@@ -50,7 +50,7 @@ protected:
     void resizeEvent(QResizeEvent *event) override {
         QListWidget::resizeEvent(event);
         const int columns=qBound(1,viewport()->width()/72,4);
-        const QSize target(qMax(1,viewport()->width()/columns),92);
+        const QSize target(qMax(1,viewport()->width()/columns),106);
         if(gridSize()!=target)setGridSize(target);
     }
 };
@@ -94,7 +94,7 @@ QIcon appIcon(GAppInfo *appInfo)
             }
         }
     }
-    return QIcon::fromTheme(QStringLiteral("application-x-executable"));
+    return QIcon::fromTheme(QStringLiteral("application-x-executable"),LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop));
 }
 }
 
@@ -193,10 +193,12 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setResizeMode(QListView::Adjust);
     pinnedList_->setMovement(QListView::Static);
     pinnedList_->setIconSize(QSize(32,32));
-    pinnedList_->setGridSize(QSize(94,92));
+    pinnedList_->setGridSize(QSize(94,106));
+    pinnedList_->setSelectionMode(QAbstractItemView::SingleSelection);
     pinnedList_->setIconSize(QSize(44,44));
     pinnedList_->setItemDelegate(new LinWinVisual::PinnedTileDelegate(pinnedList_));
     pinnedList_->setMouseTracking(true);
+    pinnedList_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     pinnedList_->setTextElideMode(Qt::ElideNone);
     pinnedList_->setSpacing(0);
     pinnedList_->setWordWrap(true);

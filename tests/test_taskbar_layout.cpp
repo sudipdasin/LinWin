@@ -39,6 +39,7 @@
 #include <QStandardPaths>
 #include "weather_widget.h"
 #include "pinned_tile_delegate.h"
+#include "desktop_view.h"
 #include "desktop_status_widget.h"
 
 namespace {
@@ -140,6 +141,18 @@ int main(int argc, char **argv)
                      && desktopIcons->selectionMode() == QAbstractItemView::ExtendedSelection,
                  "Desktop should present selectable workspace icons.")) return 1;
     for(int i=0;i<4;++i)if(!require(!desktopIcons->item(i)->icon().pixmap(44,44).isNull(),"Native place icon artwork must exist."))return 1;
+    QStyleOptionViewItem tileOption;
+    const auto size=desktopIcons->itemDelegate()->sizeHint(tileOption,desktopIcons->model()->index(0,0));
+    if(!require(size.width()>=110&&size.height()>=108,"Desktop delegates must allocate the full grid cell, not the default text-sized rectangle."))return 1;
+    QMenu viewMenu;LinWinDesktopView::menu(viewMenu,desktopIcons,[]{});
+    auto *view=viewMenu.actions().first()->menu();
+    if(!require(view&&view->actions().size()>=5,"Desktop View menu must expose icon sizes and visibility."))return 1;
+    view->actions().first()->trigger();app.processEvents();
+    if(!require(desktopIcons->iconSize()==QSize(64,64)&&settings.value("desktop/iconSize").toInt()==64,"Large icons must resize the actual list and persist."))return 1;
+    view->actions().last()->trigger();app.processEvents();
+    if(!require(desktopIcons->item(0)->isHidden()&&desktopIcons->isVisible(),"Hide icons must preserve the desktop context surface."))return 1;
+    view->actions().last()->trigger();view->actions().at(1)->trigger();app.processEvents();
+    if(!require(!desktopIcons->item(0)->isHidden()&&desktopIcons->iconSize()==QSize(44,44),"Desktop View must restore visible medium icons."))return 1;
     desktopIcons->setCurrentRow(0);
     if (!require(pages->currentIndex() == 0, "Selecting an icon must not open it.")) return 1;
     desktopIcons->itemDoubleClicked(desktopIcons->item(0));
@@ -330,7 +343,7 @@ int main(int argc, char **argv)
     if(!require(menu->width()>=650 && menu->width()<=680 && grid && grid->gridSize().width()>=72
                 && grid->viewport()->width()/grid->gridSize().width()==4,
                 "1920-wide reference Start must preserve its proportional width and four-column grid."))return 1;
-    if(!require(grid->iconSize()==QSize(44,44) && grid->gridSize().height()==92 && pinned->isChecked() && !allApps->isChecked(),
+    if(!require(grid->iconSize()==QSize(44,44) && grid->gridSize().height()==106 && pinned->isChecked() && !allApps->isChecked(),
                 "Pinned tiles must use large icons and active navigation state."))return 1;
     // Even a theme providing only a tiny 16px bitmap must occupy the intended slot.
     if(!require(LinWinVisual::fittedIconRect(QRect(0,0,44,44),QSize(16,16))==QRect(0,0,44,44),

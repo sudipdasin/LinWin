@@ -4,6 +4,7 @@
 #include "desktop_status_widget.h"
 #include "place_icons.h"
 #include "pinned_tile_delegate.h"
+#include "desktop_view.h"
 #include "workspace_profiles.h"
 #include "command_palette.h"
 #include "snap_controller.h"
@@ -219,17 +220,19 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             addPlace(tr("Home"),QStringLiteral("home"));
             addPlace(tr("Trash"),QStringLiteral("trash"));
             addPlace(tr("Network"),QStringLiteral("network"));
-            if (desktopPath.isEmpty() || !QDir(desktopPath).exists()) return;
+            if (desktopPath.isEmpty() || !QDir(desktopPath).exists()) {LinWinDesktopView::apply(icons);return;}
             QFileIconProvider provider;
+            QSettings viewSettings;
             const auto entries = QDir(desktopPath).entryInfoList(
-                QDir::AllEntries | QDir::NoDotAndDotDot, QDir::DirsFirst | QDir::Name | QDir::IgnoreCase);
+                QDir::AllEntries | QDir::NoDotAndDotDot, LinWinDesktopView::sort(viewSettings));
             for (const QFileInfo &entry : entries) {
-                auto *item = new QListWidgetItem(provider.icon(entry), entry.fileName(), icons);
+                auto *item = new QListWidgetItem(LinWinDesktopView::icon(entry,provider.icon(entry)), LinWinDesktopView::label(entry), icons);
                 item->setData(Qt::UserRole + 1, entry.absoluteFilePath());
                 item->setForeground(Qt::white);
                 item->setToolTip(entry.absoluteFilePath());
                 item->setTextAlignment(Qt::AlignHCenter);
             }
+            LinWinDesktopView::apply(icons);
         };
         const auto openIcon = [this](QListWidgetItem *item) {
             if (item == nullptr) return;
@@ -287,6 +290,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 menu.addAction(tr("Open"), this, [openIcon, icons]() { openIcon(icons->currentItem()); });
                 menu.addSeparator();
             }
+            LinWinDesktopView::menu(menu,icons,refreshIcons);
             menu.addAction(tr("Refresh"), this, refreshIcons);
             menu.addAction(tr("Task View (Ctrl+Shift+F9)"),this,&MainWindow::showWindowOverview);
             menu.addAction(tr("Quick controls (Ctrl+Shift+F10)"),this,&MainWindow::showQuickControls);
