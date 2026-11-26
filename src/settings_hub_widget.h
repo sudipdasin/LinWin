@@ -27,6 +27,7 @@ public:
 signals:
     void componentEnabledChanged(const QString &component, bool enabled);
     void textScaleChanged(int percent);
+    void themeChanged(const QString &id);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;

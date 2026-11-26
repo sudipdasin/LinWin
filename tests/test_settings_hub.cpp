@@ -13,6 +13,7 @@
 #include <QVector>
 #include <QDialog>
 #include <QTimer>
+#include <QComboBox>
 #include <QTableWidget>
 #include <QGuiApplication>
 
@@ -49,6 +50,13 @@ int main(int argc, char **argv)
     application.processEvents();
 
     bool passed = true;
+    auto *themes = widget.findChild<QComboBox *>(QStringLiteral("linwinThemeSelector"));
+    passed &= expect(themes && themes->count() == 7 && themes->currentData().toString() == QStringLiteral("neon"), "Seven themes with Neon Fluent as default.");
+    if (themes) {
+        themes->setCurrentIndex(themes->findData(QStringLiteral("minimal")));
+        passed &= expect(settings.value(QStringLiteral("appearance/theme")).toString() == QStringLiteral("minimal"), "Theme choice persists.");
+        themes->setCurrentIndex(0);
+    }
     const auto cards = widget.findChildren<QFrame *>(QRegularExpression(QStringLiteral("^settingsCard_")));
     passed &= expect(cards.size() == 12, "expected all 12 settings categories");
     passed &= expect(visibleCards(widget) == 12, "all categories should be visible before searching");

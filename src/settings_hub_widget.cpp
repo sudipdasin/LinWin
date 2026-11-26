@@ -2,6 +2,8 @@
 #include "settings_hub_widget.h"
 #include "embedded_update_dialog.h"
 #include "display_information_dialog.h"
+#include "theme_visuals.h"
+#include <QComboBox>
 #include "text_scale.h"
 
 #include <QFrame>
@@ -256,6 +258,22 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     connect(textScaleSlider_, &QSlider::valueChanged, this, updateTextSize);
     connect(resetTextSize, &QPushButton::clicked, this, [this]() { setTextScalePercent(100); });
     updateTextSize(textScaleSlider_->value());
+
+    auto *themeRow = new QHBoxLayout;
+    themeRow->addWidget(new QLabel(tr("Desktop theme"), this));
+    auto *themes = new QComboBox(this);
+    themes->setObjectName(QStringLiteral("linwinThemeSelector"));
+    for (const auto &theme : LinWinTheme::catalog)
+        themes->addItem(LinWinVisual::qstr(theme.name), LinWinVisual::qstr(theme.id));
+    const auto savedTheme = QSettings().value(QStringLiteral("appearance/theme"), QStringLiteral("neon")).toString();
+    themes->setCurrentIndex(qMax(0, themes->findData(savedTheme)));
+    themeRow->addWidget(themes, 1);
+    outer->addLayout(themeRow);
+    connect(themes, qOverload<int>(&QComboBox::currentIndexChanged), this, [this, themes](int) {
+        const auto id = themes->currentData().toString();
+        QSettings().setValue(QStringLiteral("appearance/theme"), id);
+        emit themeChanged(id);
+    });
 
     search_ = new QLineEdit(this);
     search_->setObjectName(QStringLiteral("settingsSearch"));

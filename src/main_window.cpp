@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
 #include "desktop_surface.h"
+#include "theme_visuals.h"
 
 #include "app_launcher_widget.h"
 #include "clipboard_history_widget.h"
@@ -160,6 +161,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
 
     if (overlayMode_) {
         auto *desktop = new DesktopSurface(pages_);
+        desktopSurface_ = desktop;
         auto *desktopLayout = new QVBoxLayout(desktop);
         desktopLayout->setContentsMargins(10, 10, 10, 10);
         auto *icons = new QListWidget(desktop);
@@ -303,6 +305,9 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
 
     startButton_ = makePanelButton(QStringLiteral("LinWin"), QStringLiteral("startButton"), taskbar);
     startButton_->setToolTip(tr("Open the app menu (Super or Ctrl+Esc)"));
+    startButton_->setIcon(LinWinVisual::logoIcon());
+    startButton_->setIconSize(QSize(28,28));
+    setWindowIcon(LinWinVisual::logoIcon());
     homeButton_ = makePanelButton(QStringLiteral("Desktop"), QStringLiteral("desktopButton"), taskbar);
     filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
     tasksButton_ = makePanelButton(QStringLiteral("Tasks"), QStringLiteral("navigationButton"), taskbar);
@@ -536,7 +541,8 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         "#startMenuPanel #pageTitle { font-size: 24px; }"
         "#startMenuPanel #applicationSearch { background: #f8faff; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
         "#startMenuPanel #primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }");
-    applyTextScale(settingsHub_->textScalePercent());
+    connect(settingsHub_, &SettingsHubWidget::themeChanged, this, &MainWindow::applyTheme);
+    applyTheme(QSettings().value(QStringLiteral("appearance/theme"), QStringLiteral("neon")).toString());
 
     const bool waylandSession = !qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")
         || qEnvironmentVariable("XDG_SESSION_TYPE").compare(QStringLiteral("wayland"), Qt::CaseInsensitive) == 0;
@@ -821,10 +827,19 @@ void MainWindow::showSettingsHub()
     if (settingsHub_ != nullptr) settingsHub_->focusSearch();
 }
 
+void MainWindow::applyTheme(const QString &id)
+{
+    const auto &theme = LinWinVisual::theme(id);
+    themeId_ = LinWinVisual::qstr(theme.id);
+    QSettings().setValue(QStringLiteral("appearance/theme"), themeId_);
+    if (desktopSurface_) desktopSurface_->setTheme(themeId_);
+    applyTextScale(settingsHub_->textScalePercent());
+}
+
 void MainWindow::applyTextScale(int percent)
 {
     if (percent < 85 || percent > 150 || baseStyleSheet_.isEmpty()) return;
-    setStyleSheet(linwinScaledStyleSheet(baseStyleSheet_, percent));
+    setStyleSheet(linwinScaledStyleSheet(baseStyleSheet_ + LinWinVisual::shellStyle(LinWinVisual::theme(themeId_)), percent));
 }
 
 bool MainWindow::componentEnabled(const QString &component) const

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include "wallpaper_shader.h"
+#include "theme_visuals.h"
 #include <QApplication>
 #include <QImage>
 #include <QLinearGradient>
@@ -33,8 +34,9 @@ public:
         connect(&timer_, &QTimer::timeout, this, [this]() { rebuild(); });
     }
 
-    bool effectsEnabled() const { return effects_; }
-    bool gpuPreferred() const { return preferGpu_; }
+    void setTheme(const QString &id) { themeId_ = LinWinVisual::qstr(LinWinVisual::theme(id).id); invalidate(); }
+    bool effectsEnabled() const { return effects_ && LinWinVisual::theme(themeId_).effects; }
+    bool gpuPreferred() const { return preferGpu_ && LinWinVisual::theme(themeId_).effects; }
     void setEffectsEnabled(bool enabled)
     {
         effects_ = enabled;
@@ -52,41 +54,54 @@ protected:
     void resizeEvent(QResizeEvent *event) override
     {
         QWidget::resizeEvent(event);
-        timer_.start();
+        if (themeId_ != QStringLiteral("minimal")) timer_.start();
     }
     void paintEvent(QPaintEvent *) override
     {
         QPainter painter(this);
-        if (wallpaper_.isNull()) paintFallback(painter, rect());
+        if (themeId_ == QStringLiteral("minimal") || wallpaper_.isNull()) paintFallback(painter, rect());
         else {
             painter.setRenderHint(QPainter::SmoothPixmapTransform);
             painter.drawImage(rect(), wallpaper_);
+        }
+        if (width() >= 600 && height() >= 300) {
+            const qreal mark = qBound(54.0, width()*0.075, 128.0);
+            const qreal x = width()*0.41, y = height()*0.38;
+            LinWinVisual::drawLogo(painter, QRectF(x,y,mark,mark));
+            painter.setPen(Qt::white);
+            QFont f = painter.font(); f.setPixelSize(qRound(mark*0.50)); f.setWeight(QFont::DemiBold); painter.setFont(f);
+            painter.drawText(QRectF(x+mark+12,y, width()*0.35,mark), Qt::AlignVCenter, QStringLiteral("LinWin"));
         }
     }
 
 private:
     void invalidate()
     {
-        wallpaper_ = {};
+        wallpaper_ = QImage();
+        timer_.stop();
+        if (themeId_ == QStringLiteral("minimal")) setProperty("renderBackend", QStringLiteral("QPainter solid"));
+        else timer_.start();
         update();
-        timer_.start();
     }
     void paintFallback(QPainter &p, const QRect &r) const
     {
         QLinearGradient base(r.bottomLeft(), r.topRight());
-        base.setColorAt(0.0, QColor(8, 22, 49));
-        base.setColorAt(1.0, QColor(22, 65, 111));
+        const auto &theme = LinWinVisual::theme(themeId_);
+        const QColor sky(LinWinVisual::qstr(theme.sky)), horizon(LinWinVisual::qstr(theme.horizon));
+        if (themeId_ == QStringLiteral("minimal")) { p.fillRect(r, sky); return; }
+        base.setColorAt(0.0, sky);
+        base.setColorAt(1.0, horizon);
         p.fillRect(r, base);
-        if (!effects_) return;
+        if (!effectsEnabled()) return;
         const QPointF center(r.left() + r.width()*0.72, r.top() + r.height()*0.43);
         QRadialGradient halo(center, qMax(1.0, r.width()*0.50));
-        halo.setColorAt(0.0, QColor(48, 156, 224, 130));
-        halo.setColorAt(1.0, QColor(48, 156, 224, 0));
+        QColor glow(LinWinVisual::qstr(theme.accent)); glow.setAlpha(100);
+        halo.setColorAt(0.0, glow); glow.setAlpha(0); halo.setColorAt(1.0, glow);
         p.fillRect(r, halo);
     }
     void rebuild()
     {
-        if (width() <= 0 || height() <= 0) return;
+        if (themeId_ == QStringLiteral("minimal") || width() <= 0 || height() <= 0) return;
         // Bound the offscreen target; use logical painting for the final scale.
         QSize pixels(qMax(1, qRound(width()*devicePixelRatioF())),
                      qMax(1, qRound(height()*devicePixelRatioF())));
@@ -95,7 +110,7 @@ private:
         if (pixels.width() < 1 || pixels.height() < 1) return;
         QImage frame;
 #ifdef LINWIN_HAS_OPENGL
-        if (preferGpu_ && effects_ && !gpuFailed_
+        if (themeId_ == QStringLiteral("neon") && gpuPreferred() && effectsEnabled() && !gpuFailed_
             && QApplication::platformName() != QStringLiteral("offscreen")
             && QApplication::platformName() != QStringLiteral("minimal")) {
             frame = renderShader(pixels);
@@ -157,6 +172,7 @@ private:
         return result;
     }
 #endif
+    QString themeId_ = QStringLiteral("neon");
     QTimer timer_;
     QImage wallpaper_;
     bool effects_ = true;

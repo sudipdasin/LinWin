@@ -10,6 +10,7 @@
 #include "workspace_state.h"
 
 class AppLauncherWidget;
+class DesktopSurface;
 class ClipboardHistoryWidget;
 class FileManagerWidget;
 class TaskManagerWidget;
@@ -54,12 +55,15 @@ private:
     void showClipboardQuickPicker();
     void showSettingsHub();
     void applyTextScale(int percent);
+    void applyTheme(const QString &id);
     void updateTaskbarLayout();
     void applyComponentVisibility(const QString &component, bool enabled);
     void returnToLinuxDesktop();
     bool componentEnabled(const QString &component) const;
 
     QWidget *desktopArea_ = nullptr;
+    DesktopSurface *desktopSurface_ = nullptr;
+    QString themeId_ = QStringLiteral("neon");
     QStackedWidget *pages_ = nullptr;
     AppLauncherWidget *startMenu_ = nullptr;
     QPushButton *startButton_ = nullptr;
