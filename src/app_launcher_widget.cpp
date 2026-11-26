@@ -166,7 +166,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     });
     layout->addLayout(actions);
     auto *quick=new QHBoxLayout;
-    for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Files")},{2,tr("Tasks")},{3,tr("Clipboard")},{4,tr("Settings")}}) {
+    for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Open Files")},{2,tr("Open Tasks")},{3,tr("Open Clipboard")},{4,tr("Open Settings")}}) {
         auto *button=new QPushButton(tool.second,this);
         button->setObjectName(QStringLiteral("linwinStartTool_%1").arg(tool.first));
         quick->addWidget(button);

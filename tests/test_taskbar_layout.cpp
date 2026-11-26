@@ -23,6 +23,7 @@
 #include <QPixmap>
 #include <QDialog>
 #include <QToolButton>
+#include <QCheckBox>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -130,6 +131,17 @@ int main(int argc, char **argv)
     QApplication::sendEvent(desktopCanvas, &outside);
     if (!require(!start->isChecked() && menu->isHidden(), "A desktop click must dismiss Start.")) return 1;
 
+    start->click();
+    auto *recent=window.findChild<QListWidget *>(QStringLiteral("recentDocuments"));
+    auto *toggle=window.findChild<QCheckBox *>(QStringLiteral("linwinRecentToggle"));
+    auto *quickFiles=window.findChild<QPushButton *>(QStringLiteral("linwinStartTool_1"));
+    if (!require(recent && toggle && quickFiles && recent->isVisible(), "Start must expose recent documents and quick navigation.")) return 1;
+    toggle->setChecked(false);
+    if (!require(recent->isHidden() && !settings.value(QStringLiteral("launcher/showRecent")).toBool(), "Recent privacy toggle must persist and hide the list.")) return 1;
+    toggle->setChecked(true);
+    quickFiles->click();
+    if (!require(pages->currentIndex()==1 && menu->isHidden(), "Start Files action must open Files and dismiss Start.")) return 1;
+    desktopButton->click();
     // Test live theme switching, including widget and rendering policy.
     auto *themes = window.findChild<QComboBox *>(QStringLiteral("linwinThemeSelector"));
     auto *widgets = window.findChild<QWidget *>(QStringLiteral("neonWidgets"));
