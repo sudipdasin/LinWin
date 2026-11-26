@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
 #include "setup_wizard.h"
+#include "native_benchmark.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -26,7 +27,10 @@ int main(int argc, char *argv[])
     parser.addOption(uninstallOption);
     parser.addOption(shellOption);
     parser.addOption(windowOption);
+    const QCommandLineOption benchmarkOption(QStringLiteral("benchmark-native"),QStringLiteral("Run isolated native offscreen benchmark."),QStringLiteral("theme"));
+    parser.addOption(benchmarkOption);
     parser.process(app);
+    if(parser.isSet(benchmarkOption)) return LinWinBench::run(app,parser.value(benchmarkOption));
 
     if (parser.isSet(setupOption) || parser.isSet(uninstallOption)) {
         SetupWizard wizard(parser.isSet(uninstallOption));
