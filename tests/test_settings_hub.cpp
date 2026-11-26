@@ -54,10 +54,20 @@ int main(int argc, char **argv)
     auto *textScale = widget.findChild<QSlider *>(QStringLiteral("textScaleSlider"));
     auto *textScaleValue = widget.findChild<QLabel *>(QStringLiteral("textScaleValue"));
     auto *textScaleReset = widget.findChild<QPushButton *>(QStringLiteral("textScaleReset"));
+    auto *automaticUpdates = widget.findChild<QCheckBox *>(QStringLiteral("automaticUpdatesCheck"));
+    auto *checkUpdates = widget.findChild<QPushButton *>(QStringLiteral("checkUpdatesButton"));
     passed &= expect(filesToggle != nullptr && filesToggle->isChecked(),
                      "file manager should be enabled by default");
     passed &= expect(tasksToggle != nullptr && tasksToggle->isChecked(),
                      "Task Manager should be enabled by default");
+    passed &= expect(automaticUpdates != nullptr && automaticUpdates->isChecked()
+                         && checkUpdates != nullptr && checkUpdates->isEnabled(),
+                     "Settings should offer a manual update check and daily automatic checks by default");
+    if (automaticUpdates != nullptr) {
+        automaticUpdates->setChecked(false);
+        passed &= expect(!settings.value(QStringLiteral("updates/automaticCheck"), true).toBool(),
+                         "Automatic update checks should be saved per account");
+    }
     if (filesToggle != nullptr) filesToggle->setChecked(false);
     passed &= expect(!settings.value(QStringLiteral("components/files"), true).toBool(),
                      "component changes should persist to account settings");

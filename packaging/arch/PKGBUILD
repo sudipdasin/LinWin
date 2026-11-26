@@ -1,12 +1,12 @@
 # Maintainer: LinWin contributors
 pkgname=linwin
 pkgver=1.0.0
-pkgrel=8
+pkgrel=9
 pkgdesc='Windows-style Linux desktop overlay preview'
 arch=('x86_64')
 url='https://github.com/sudipdasin/LinWin'
 license=('GPL-3.0-or-later')
-depends=('glib2' 'qt6-base')
+depends=('glib2' 'qt6-base' 'python')
 makedepends=('cmake' 'gcc' 'pkgconf')
 source=("linwin-${pkgver}.tar.gz")
 sha256sums=('SKIP')
