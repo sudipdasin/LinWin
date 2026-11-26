@@ -1,0 +1,3 @@
+# Render.7 candidate
+
+Adds native Task View with real snapshots of visible LinWin tools and icon-only external X11 entries; local Ctrl+Shift+F9 or desktop menu; taskbar context actions (open/restore, minimize, maximize/restore, close); first-open positioning only; and a native capture gallery on the package server. Regression checks cover two-window enumeration, actual capture, minimize and restore. External windows are limited to the existing wmctrl registry, no global screenshot or compositor claims. The capture gallery contains isolated test-profile images. All previous build/installation gates apply. Render.6 must finish before deploying this candidate; main and official release metadata remain unchanged.
