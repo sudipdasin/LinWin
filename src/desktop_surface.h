@@ -3,6 +3,10 @@
 #include "wallpaper_shader.h"
 #include "theme_visuals.h"
 #include "neon_landscape.h"
+#include "background_preferences.h"
+#include <QScreen>
+#include <QShowEvent>
+#include <QHideEvent>
 #include <QApplication>
 #include <QImage>
 #include <QLinearGradient>
@@ -33,8 +37,30 @@ public:
         timer_.setSingleShot(true);
         timer_.setInterval(150);
         connect(&timer_, &QTimer::timeout, this, [this]() { rebuild(); });
+        connect(&slideshowTimer_,&QTimer::timeout,this,[this]{nextSlide();});
+        reloadBackground();
     }
 
+    void reloadBackground() {
+        QSettings s;background_=LinWinBackground::load(s);
+        slideshowTimer_.stop();slideFiles_.clear();slideIndex_=-1;picture_=QImage();
+        if(background_.mode=="picture")picture_=LinWinBackground::readImage(background_.picture);
+        else if(background_.mode=="slideshow"){
+            slideFiles_=LinWinBackground::slides(background_.folder);
+            selectNextSlide();
+            if(isVisible()&&!slideFiles_.isEmpty())slideshowTimer_.start(background_.minutes*60000);
+        }
+        invalidate();
+    }
+    void nextSlide() {
+        if(background_.mode!="slideshow")return;
+        // Refresh directory contents at each transition; preserve the current
+        // file identity when possible rather than restarting at the first item.
+        const QString old=slideIndex_>=0&&slideIndex_<slideFiles_.size()?slideFiles_[slideIndex_]:QString();
+        slideFiles_=LinWinBackground::slides(background_.folder);slideIndex_=slideFiles_.indexOf(old);
+        selectNextSlide();invalidate();
+    }
+    QString backgroundMode() const{return background_.mode;}
     void setTheme(const QString &id) { themeId_ = LinWinVisual::qstr(LinWinVisual::theme(id).id); invalidate(); }
     qint64 wallpaperCacheBytes() const { return static_cast<qint64>(wallpaper_.sizeInBytes()); }
     quint64 rebuildCount() const { return rebuildCount_; }
@@ -71,14 +97,26 @@ public:
     }
 
 protected:
+    void showEvent(QShowEvent *event) override {
+        QWidget::showEvent(event);
+        if(background_.mode=="slideshow"&&!slideFiles_.isEmpty())slideshowTimer_.start(background_.minutes*60000);
+    }
+    void hideEvent(QHideEvent *event) override {
+        slideshowTimer_.stop();QWidget::hideEvent(event);
+    }
     void resizeEvent(QResizeEvent *event) override
     {
         QWidget::resizeEvent(event);
-        if (themeId_ != QStringLiteral("minimal")) timer_.start();
+        if (background_.mode!="theme" || themeId_ != QStringLiteral("minimal")) timer_.start();
     }
     void paintEvent(QPaintEvent *) override
     {
         QPainter painter(this);
+        if(background_.mode!="theme") {
+            if(wallpaper_.isNull())paintCustom(painter,rect());
+            else {painter.setRenderHint(QPainter::SmoothPixmapTransform);painter.drawImage(rect(),wallpaper_);}
+            return; // Personal pictures and solid colors must never have a logo forced over them.
+        }
         if (themeId_ == QStringLiteral("minimal") || wallpaper_.isNull()) paintFallback(painter, rect());
         else {
             painter.setRenderHint(QPainter::SmoothPixmapTransform);
@@ -98,11 +136,25 @@ protected:
     }
 
 private:
+    void selectNextSlide() {
+        for(int i=0;i<slideFiles_.size();++i){
+            slideIndex_=(slideIndex_+1)%slideFiles_.size();
+            const auto candidate=LinWinBackground::readImage(slideFiles_[slideIndex_]);
+            if(!candidate.isNull()){picture_=candidate;return;}
+        }
+        picture_=QImage();
+    }
+    void paintCustom(QPainter &p,const QRect &area) const {
+        QRect canvas;for(auto *screen:QGuiApplication::screens())canvas=canvas.united(screen->geometry());
+        const QRect global(mapToGlobal(QPoint()),size());
+        LinWinBackground::paint(p,area,picture_,background_,canvas,global);
+    }
     void invalidate()
     {
         wallpaper_ = QImage();
         timer_.stop();
-        if (themeId_ == QStringLiteral("minimal")) setProperty("renderBackend", QStringLiteral("QPainter solid"));
+        if(background_.mode!="theme") {rebuild();}
+        else if (themeId_ == QStringLiteral("minimal")) setProperty("renderBackend", QStringLiteral("QPainter solid"));
         else timer_.start();
         update();
     }
@@ -125,7 +177,7 @@ private:
     }
     void rebuild()
     {
-        if (themeId_ == QStringLiteral("minimal") || width() <= 0 || height() <= 0) return;
+        if ((background_.mode=="theme" && themeId_ == QStringLiteral("minimal")) || width() <= 0 || height() <= 0) return;
         // Bound the offscreen target; use logical painting for the final scale.
         QSize pixels(qMax(1, qRound(width()*devicePixelRatioF())),
                      qMax(1, qRound(height()*devicePixelRatioF())));
@@ -133,6 +185,11 @@ private:
             pixels.scale(2560, 1440, Qt::KeepAspectRatio);
         if (pixels.width() < 1 || pixels.height() < 1) return;
         QImage frame;
+        if(background_.mode!="theme"){
+            frame=QImage(pixels,QImage::Format_RGB32);if(frame.isNull())return;
+            QPainter painter(&frame);paintCustom(painter,frame.rect());painter.end();wallpaper_=frame;++rebuildCount_;
+            setProperty("renderBackend",QStringLiteral("QPainter personalized background"));update();return;
+        }
 #ifdef LINWIN_HAS_OPENGL
         if (themeId_ == QStringLiteral("neon") && gpuPreferred() && effectsEnabled() && !gpuFailed_
             && QApplication::platformName() != QStringLiteral("offscreen")
@@ -199,7 +256,11 @@ private:
     }
 #endif
     QString themeId_ = QStringLiteral("neon");
-    QTimer timer_;
+    QTimer timer_,slideshowTimer_;
+    LinWinBackground::Preferences background_;
+    QImage picture_;
+    QStringList slideFiles_;
+    qsizetype slideIndex_=-1;
     QImage wallpaper_;
     quint64 rebuildCount_=0;
     bool effects_ = true;

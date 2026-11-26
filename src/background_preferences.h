@@ -69,8 +69,7 @@ inline void paint(QPainter &p,const QRect &area,const QImage &image,const Prefer
     if(image.isNull()||area.isEmpty()){p.restore();return;}
     p.setRenderHint(QPainter::SmoothPixmapTransform);
     if(prefs.fit=="tile"){
-        for(int y=area.top();y<=area.bottom();y+=image.height())
-            for(int x=area.left();x<=area.right();x+=image.width())p.drawImage(QPoint(x,y),image);
+        QBrush texture;texture.setTextureImage(image);p.setBrushOrigin(area.topLeft());p.fillRect(area,texture);
     }else{
         QRect target=area;
         if(prefs.fit=="span"&&virtualCanvas.isValid()&&surfaceGlobal.isValid()){
