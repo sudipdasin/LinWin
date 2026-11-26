@@ -1,0 +1,3 @@
+# Independent Render native build
+
+Free Render Docker web service, isolated candidate branch, Ubuntu 24.04 amd64 toolchain. Builds the actual C++/Qt desktop, runs Python tests, CTest and two Xvfb startup checks, validates the native DEB and bundled update engine. Only after every gate passes does the runtime image expose the DEB, checksum and validation summary through a non-root read-only-purpose HTTP file server. No separate updater package, no release publication or main branch promotion; no GitHub Actions or CircleCI. Candidate version 1.0.0-8+render.1 sorts below beta.9. This is not a Mint VM or hardware validation.
