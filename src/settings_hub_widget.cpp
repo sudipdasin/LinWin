@@ -95,6 +95,10 @@ QVector<Category> categories()
              {QStringLiteral("cinnamon-settings"), {QStringLiteral("users")}},
              {QStringLiteral("systemsettings"), {QStringLiteral("kcm_users")}}
          }},
+        {QStringLiteral("LinWin Updates"), QStringLiteral("Check official LinWin releases and review package updates. Install the separate LinWin Update Center companion if unavailable."),
+         QStringLiteral("linwin update release beta preview upgrade updater"), {
+             {QStringLiteral("/usr/bin/linwin-update"), {}}
+         }},
         {QStringLiteral("Updates & Software"), QStringLiteral("Open the update manager or software center provided by this desktop."),
          QStringLiteral("updates upgrade software install applications packages"), {
              {QStringLiteral("mintupdate"), {}},

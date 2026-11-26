@@ -46,8 +46,8 @@ int main(int argc, char **argv)
 
     bool passed = true;
     const auto cards = widget.findChildren<QFrame *>(QRegularExpression(QStringLiteral("^settingsCard_")));
-    passed &= expect(cards.size() == 11, "expected all 11 settings categories");
-    passed &= expect(visibleCards(widget) == 11, "all categories should be visible before searching");
+    passed &= expect(cards.size() == 12, "expected all 12 settings categories");
+    passed &= expect(visibleCards(widget) == 12, "all categories should be visible before searching");
 
     auto *filesToggle = widget.findChild<QCheckBox *>(QStringLiteral("componentToggle_files"));
     auto *tasksToggle = widget.findChild<QCheckBox *>(QStringLiteral("componentToggle_task-manager"));
@@ -97,6 +97,15 @@ int main(int argc, char **argv)
         application.processEvents();
         passed &= expect(visibleCards(widget) == 1, "Wi-Fi synonym should find Network settings");
 
+        search->setText(QStringLiteral("linwin updates"));
+        application.processEvents();
+        passed &= expect(visibleCards(widget) == 1, "LinWin update search should find its own category.");
+        bool foundUpdateCard = false;
+        for (const QFrame *card : cards)
+            if (!card->isHidden() && card->property("categoryTitle").toString() == QStringLiteral("LinWin Updates"))
+                foundUpdateCard = true;
+        passed &= expect(foundUpdateCard, "LinWin Updates must be distinct from host software updates.");
+
         search->setText(QStringLiteral("no matching setting"));
         application.processEvents();
         passed &= expect(visibleCards(widget) == 0, "unmatched search should hide all cards");
@@ -105,7 +114,7 @@ int main(int argc, char **argv)
 
         search->clear();
         application.processEvents();
-        passed &= expect(visibleCards(widget) == 11, "clearing search should restore all categories");
+        passed &= expect(visibleCards(widget) == 12, "clearing search should restore all categories");
     }
     return passed ? 0 : 1;
 }
