@@ -9,6 +9,9 @@ python3 -m unittest discover -s updater -v
 c++ -std=c++20 -O2 -Wall -Wextra -Werror -Isrc benchmarks/benchmark.cpp -o /tmp/linwin-metrics-benchmark
 /tmp/linwin-metrics-benchmark > /out/metrics-benchmark.txt
 cat /out/metrics-benchmark.txt
+c++ -std=c++20 -O2 -Isrc benchmarks/allocation_probe.cpp -o /tmp/linwin-allocation-probe
+/tmp/linwin-allocation-probe > /out/metrics-allocation.txt
+cat /out/metrics-allocation.txt
 python3 -c 'import re; from pathlib import Path; match=re.search(r"Speedup: ([0-9.]+)x",Path("/out/metrics-benchmark.txt").read_text()); assert match and float(match[1]) >= 2.0, "Metrics parser performance regression"'
 cmake -S . -B /tmp/linwin-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-O2 -UNDEBUG" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBEXECDIR=libexec -DBUILD_TESTING=ON
 cmake --build /tmp/linwin-build --parallel 1
