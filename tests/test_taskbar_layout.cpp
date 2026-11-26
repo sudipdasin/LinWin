@@ -254,9 +254,9 @@ int main(int argc, char **argv)
     if(!require(statusArea && statusArea->isVisible() && statusArea->pollingActive() && network && audio
                 && !network->icon().isNull() && !network->toolTip().isEmpty() && !audio->accessibleName().isEmpty(),
                 "Wide Neon taskbar must expose actual local status and audio controls."))return 1;
-    const auto actions=window.findChildren<QPushButton *>(QStringLiteral("linwinWidgetAction"));
-    if(!require(actions.size()==3,"Reference desktop must expose three working widget toolbar controls."))return 1;
-    for(auto *button:actions)if(!require(button->isVisible()&&!button->icon().isNull()&&!button->accessibleName().isEmpty(),"Widget controls must be visible, branded and accessible."))return 1;
+    const auto widgetActions=window.findChildren<QPushButton *>(QStringLiteral("linwinWidgetAction"));
+    if(!require(widgetActions.size()==3,"Reference desktop must expose three working widget toolbar controls."))return 1;
+    for(auto *button:widgetActions)if(!require(button->isVisible()&&!button->icon().isNull()&&!button->accessibleName().isEmpty(),"Widget controls must be visible, branded and accessible."))return 1;
     auto *calendar=window.findChild<QCalendarWidget *>(QStringLiteral("linwinDesktopCalendar"));
     auto *calendarTable=calendar?calendar->findChild<QTableView *>():nullptr;
     auto *taskbarSearch=window.findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"));
