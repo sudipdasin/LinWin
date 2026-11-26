@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <gio/gio.h>
+#include <gio/gdesktopappinfo.h>
+#include "pin_suggestions.h"
 
 #include "app_launcher_widget.h"
 #include "theme_visuals.h"
@@ -170,7 +172,14 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     columns->addWidget(rail);
     auto *pins = new QVBoxLayout;
     auto *pinnedTitle=new QLabel(tr("Pinned"),this);pinnedTitle->setObjectName(QStringLiteral("linwinStartSection"));
-    pins->addWidget(pinnedTitle);
+    auto *pinHeader=new QHBoxLayout;
+    pinHeader->addWidget(pinnedTitle);pinHeader->addStretch();
+    auto *editPins=new QPushButton(tr("Edit"),this);
+    editPins->setObjectName(QStringLiteral("linwinEditPins"));
+    auto *editMenu=new QMenu(editPins);
+    editMenu->addAction(tr("Add suggested installed apps"),this,[this]{addSuggestedPins();refreshList();});
+    editMenu->addAction(tr("Browse all apps"),this,[this]{appViews_->setCurrentIndex(1);searchField_->setFocus();});
+    editPins->setMenu(editMenu);pinHeader->addWidget(editPins);pins->addLayout(pinHeader);
     pinnedList_ = new PinnedGrid(this);
     pinnedList_->setObjectName(QStringLiteral("pinnedApps"));
     pinnedList_->setViewMode(QListView::IconMode);
@@ -278,18 +287,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     QSettings settings;
     pinnedApplicationIds_ = settings.value(kPinnedAppsSetting).toStringList();
     loadApplications();
-    // Seed only a fresh profile, and only from installed applications.
-    if (!settings.contains(kPinnedAppsSetting)) {
-        const QStringList defaults{QStringLiteral("firefox.desktop"), QStringLiteral("org.mozilla.firefox.desktop"),
-            QStringLiteral("thunar.desktop"), QStringLiteral("org.xfce.Thunar.desktop"),
-            QStringLiteral("libreoffice-writer.desktop"), QStringLiteral("org.libreoffice.LibreOffice.writer.desktop"),
-            QStringLiteral("xfce4-terminal.desktop"), QStringLiteral("org.xfce.mousepad.desktop"),
-            QStringLiteral("org.gnome.Calculator.desktop"), QStringLiteral("vlc.desktop")};
-        for (const auto &id : defaults) {
-            if (applications_.contains(id) && !pinnedApplicationIds_.contains(id)) pinnedApplicationIds_.append(id);
-        }
-        savePinnedApplications();
-    }
+    // Fresh profiles only; existing pins change only through the explicit Edit action.
+    if (!settings.contains(kPinnedAppsSetting)) {addSuggestedPins();savePinnedApplications();}
     refreshList();
 
     connect(searchField_, &QLineEdit::textChanged,
@@ -392,6 +391,25 @@ void AppLauncherWidget::loadApplications()
     g_list_free_full(registeredApps, g_object_unref);
 }
 
+void AppLauncherWidget::addSuggestedPins()
+{
+    std::vector<LinWinPins::App> apps;
+    for(auto it=applications_.cbegin();it!=applications_.cend();++it){
+        LinWinPins::App candidate{it.key().toStdString(),{}};
+        if(G_IS_DESKTOP_APP_INFO(it.value())){
+            const auto *categories=g_desktop_app_info_get_categories(G_DESKTOP_APP_INFO(it.value()));
+            if(categories)for(const auto &category:QString::fromUtf8(categories).split(QLatin1Char(';'),Qt::SkipEmptyParts))
+                candidate.categories.push_back(category.toStdString());
+        }
+        apps.push_back(std::move(candidate));
+    }
+    std::vector<std::string> existing;
+    for(const auto &id:pinnedApplicationIds_)existing.push_back(id.toStdString());
+    for(const auto &id:LinWinPins::suggestions(std::move(apps),existing))
+        pinnedApplicationIds_.append(QString::fromStdString(id));
+    savePinnedApplications();
+}
+
 void AppLauncherWidget::refreshList()
 {
     applicationList_->clear();
@@ -415,12 +433,16 @@ void AppLauncherWidget::refreshList()
         item->setToolTip(description.isEmpty() ? appName(appInfo) : description);
         if (pinnedApplicationIds_.contains(id)) {
             item->setText(appName(appInfo) + tr("  •  Pinned"));
-            auto *pin = new QListWidgetItem(appIcon(appInfo), appName(appInfo), pinnedList_);
-            pin->setData(Qt::UserRole, id);
-            pin->setToolTip(description);
+
         }
     }
 
+    for(const auto &id:pinnedApplicationIds_){
+        auto *info=applications_.value(id,nullptr);
+        if(!info)continue;
+        auto *pin=new QListWidgetItem(appIcon(info),appName(info),pinnedList_);
+        pin->setData(Qt::UserRole,id);pin->setToolTip(appDescription(info));
+    }
     filterApplications(searchField_->text());
     updatePinButton();
     if (applications_.isEmpty()) {

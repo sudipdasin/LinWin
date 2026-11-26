@@ -41,6 +41,7 @@ private slots:
 private:
     void loadApplications();
     void refreshList();
+    void addSuggestedPins();
     void refreshRecentDocuments();
     void savePinnedApplications() const;
 
