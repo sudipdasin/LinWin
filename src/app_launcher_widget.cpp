@@ -33,6 +33,7 @@
 #include <QPainterPath>
 #include <QLinearGradient>
 #include <QResizeEvent>
+#include <QButtonGroup>
 
 #include <algorithm>
 
@@ -161,6 +162,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     allButton->setIcon(QIcon::fromTheme(QStringLiteral("view-grid"),LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop)));
     pinnedButton->setIcon(QIcon::fromTheme(QStringLiteral("starred"),LinWinVisual::shellIcon(LinWinVisual::Glyph::More)));
     allButton->setCheckable(true);pinnedButton->setCheckable(true);
+    auto *viewGroup=new QButtonGroup(rail);viewGroup->setExclusive(true);viewGroup->addButton(allButton);viewGroup->addButton(pinnedButton);
     allButton->setIconSize(QSize(23,23));pinnedButton->setIconSize(QSize(23,23));
     pinnedButton->setChecked(true);
     navigation->addWidget(allButton);
