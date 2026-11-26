@@ -8,6 +8,7 @@
 #include <QVector>
 
 class QFrame;
+class QCheckBox;
 class QGridLayout;
 class QLineEdit;
 class QLabel;
@@ -15,6 +16,8 @@ class QResizeEvent;
 class QPushButton;
 class QScrollArea;
 class QSlider;
+class QProcess;
+class QTimer;
 
 class SettingsHubWidget final : public QWidget {
     Q_OBJECT
@@ -45,12 +48,22 @@ private:
     void arrangeCards();
     void openCategory(int index);
     void updateTextScaleStylesheet(int percent);
+    void startUpdateCheck(bool manual);
+    void startUpdateInstall(const QString &tag);
 
     QLineEdit *search_ = nullptr;
     QLabel *resultStatus_ = nullptr;
     QLabel *emptyState_ = nullptr;
     QLabel *textScaleValue_ = nullptr;
     QSlider *textScaleSlider_ = nullptr;
+    QLabel *updateStatus_ = nullptr;
+    QPushButton *checkUpdatesButton_ = nullptr;
+    QCheckBox *automaticUpdatesCheck_ = nullptr;
+    QProcess *updateProcess_ = nullptr;
+    QTimer *automaticUpdateTimer_ = nullptr;
+    bool updateCheckManual_ = false;
+    bool installingUpdate_ = false;
+    QString pendingUpdateTag_;
     QString baseStyleSheet_;
     QGridLayout *grid_ = nullptr;
     QVector<CategoryCard> cards_;

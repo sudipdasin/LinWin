@@ -41,6 +41,7 @@ target_compile_options(linwin PRIVATE
 include(GNUInstallDirs)
 target_compile_definitions(linwin PRIVATE
     LINWIN_SESSION_HELPER_PATH="${CMAKE_INSTALL_FULL_LIBEXECDIR}/linwin-session-helper"
+    LINWIN_UPDATE_HELPER_PATH="${CMAKE_INSTALL_FULL_LIBEXECDIR}/linwin-updater"
 )
 
 add_executable(linwin-session-helper src/session_helper.cpp)
@@ -121,7 +122,11 @@ if(BUILD_TESTING)
         COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_session_wrapper.sh
             ${CMAKE_CURRENT_SOURCE_DIR}/data/linwin-session)
 
-    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search setup-wizard-review file-manager-quick-access xfce-dependency-plan responsive-taskbar x11-session-wrapper PROPERTIES
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_test(NAME in-app-updater
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_updater.py)
+
+    set_tests_properties(task-manager-tabs clipboard-center settings-hub-search setup-wizard-review file-manager-quick-access xfce-dependency-plan responsive-taskbar x11-session-wrapper in-app-updater PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 20
     )
@@ -129,6 +134,7 @@ endif()
 
 install(TARGETS linwin RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(TARGETS linwin-session-helper RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+install(PROGRAMS scripts/linwin_updater.py DESTINATION ${CMAKE_INSTALL_LIBEXECDIR} RENAME linwin-updater)
 install(PROGRAMS data/linwin-session DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
 install(FILES data/linwin.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(FILES data/linwin-setup.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
@@ -142,8 +148,10 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Windows-style Linux desktop overlay previ
 set(CPACK_PACKAGE_CONTACT "See the project repository for maintainer contacts")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "LinWin contributors")
 set(CPACK_DEBIAN_PACKAGE_RELEASE "9")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_RPM_PACKAGE_LICENSE "GPL-3.0-or-later")
 set(CPACK_RPM_PACKAGE_RELEASE "9")
+set(CPACK_RPM_PACKAGE_REQUIRES "python3")
 set(CPACK_GENERATOR "TGZ;DEB;RPM")
 include(CPack)

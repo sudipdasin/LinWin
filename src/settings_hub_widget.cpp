@@ -4,20 +4,30 @@
 
 #include <QFrame>
 #include <QCheckBox>
+#include <QCoreApplication>
+#include <QDateTime>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QProcess>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollArea>
 #include <QStandardPaths>
 #include <QStyle>
 #include <QSlider>
+#include <QTimer>
 
 #include <algorithm>
 #include <QVBoxLayout>
+
+#ifndef LINWIN_UPDATE_HELPER_PATH
+#define LINWIN_UPDATE_HELPER_PATH "/usr/lib/linwin-updater"
+#endif
 
 namespace {
 struct Candidate {
@@ -173,6 +183,118 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     outer->addWidget(eyebrow);
     outer->addWidget(heading);
     outer->addWidget(description);
+
+    auto *updatesFrame = new QFrame(this);
+    updatesFrame->setObjectName(QStringLiteral("updatesCard"));
+    updatesFrame->setStyleSheet(QStringLiteral(
+        "#updatesCard { background: white; border: 1px solid #e0e6ef; border-radius: 10px; }"
+        "#updateCheckButton { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 13px; font-weight: 600; }"
+        "#updateStatus { color: #526078; font-size: 13px; }"));
+    auto *updatesLayout = new QVBoxLayout(updatesFrame);
+    updatesLayout->setContentsMargins(14, 12, 14, 12);
+    updatesLayout->setSpacing(7);
+    auto *updatesHeading = new QLabel(tr("App updates"), updatesFrame);
+    updatesHeading->setObjectName(QStringLiteral("sectionTitle"));
+    auto *updatesDescription = new QLabel(
+        tr("LinWin can check for compatible updates and install them with your system authorization."), updatesFrame);
+    updatesDescription->setObjectName(QStringLiteral("intro"));
+    updatesDescription->setWordWrap(true);
+    updateStatus_ = new QLabel(tr("Updates have not been checked yet."), updatesFrame);
+    updateStatus_->setObjectName(QStringLiteral("updateStatus"));
+    updateStatus_->setAccessibleName(tr("LinWin update status"));
+    automaticUpdatesCheck_ = new QCheckBox(tr("Check automatically once a day"), updatesFrame);
+    automaticUpdatesCheck_->setObjectName(QStringLiteral("automaticUpdatesCheck"));
+    automaticUpdatesCheck_->setAccessibleName(tr("Check for LinWin updates automatically once a day"));
+    QSettings updateSettings;
+    automaticUpdatesCheck_->setChecked(updateSettings.value(QStringLiteral("updates/automaticCheck"), true).toBool());
+    checkUpdatesButton_ = new QPushButton(tr("Check for updates"), updatesFrame);
+    checkUpdatesButton_->setObjectName(QStringLiteral("checkUpdatesButton"));
+    checkUpdatesButton_->setAccessibleName(tr("Check for LinWin updates now"));
+    updatesLayout->addWidget(updatesHeading);
+    updatesLayout->addWidget(updatesDescription);
+    updatesLayout->addWidget(updateStatus_);
+    auto *updateOptions = new QHBoxLayout;
+    updateOptions->addWidget(automaticUpdatesCheck_, 1);
+    updateOptions->addWidget(checkUpdatesButton_);
+    updatesLayout->addLayout(updateOptions);
+    outer->addWidget(updatesFrame);
+
+    updateProcess_ = new QProcess(this);
+    connect(checkUpdatesButton_, &QPushButton::clicked, this, [this]() { startUpdateCheck(true); });
+    connect(automaticUpdatesCheck_, &QCheckBox::toggled, this, [](bool enabled) {
+        QSettings saved;
+        saved.setValue(QStringLiteral("updates/automaticCheck"), enabled);
+        saved.sync();
+    });
+    connect(updateProcess_, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
+        if (error != QProcess::FailedToStart) return;
+        checkUpdatesButton_->setEnabled(true);
+        updateStatus_->setText(tr("The updater helper could not start. Reinstall LinWin to restore it."));
+        installingUpdate_ = false;
+    });
+    connect(updateProcess_, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+            [this](int exitCode, QProcess::ExitStatus exitStatus) {
+        checkUpdatesButton_->setEnabled(true);
+        const QByteArray output = updateProcess_->readAllStandardOutput().trimmed();
+        const QByteArray errorOutput = updateProcess_->readAllStandardError().trimmed();
+        if (installingUpdate_) {
+            installingUpdate_ = false;
+            if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+                updateStatus_->setText(tr("Update installed. Restart LinWin to use the new version."));
+            } else {
+                QString details = QString::fromLocal8Bit(output);
+                if (!errorOutput.isEmpty()) {
+                    if (!details.isEmpty()) details.append(QLatin1Char('\n'));
+                    details.append(QString::fromLocal8Bit(errorOutput));
+                }
+                updateStatus_->setText(details.isEmpty()
+                    ? tr("The update was not installed. Authorization may have been cancelled.")
+                    : tr("The update was not installed: %1").arg(details));
+            }
+            return;
+        }
+
+        QJsonParseError parseError;
+        const QJsonDocument response = QJsonDocument::fromJson(output, &parseError);
+        if (parseError.error != QJsonParseError::NoError || !response.isObject()) {
+            updateStatus_->setText(tr("Update check failed. Check your network connection and try again."));
+            return;
+        }
+        const QJsonObject result = response.object();
+        const QString status = result.value(QStringLiteral("status")).toString();
+        if (status == QStringLiteral("current")) {
+            updateStatus_->setText(tr("LinWin is up to date (%1).").arg(result.value(QStringLiteral("current")).toString()));
+            return;
+        }
+        if (status == QStringLiteral("update")) {
+            pendingUpdateTag_ = result.value(QStringLiteral("tag")).toString();
+            const QString version = result.value(QStringLiteral("version")).toString();
+            updateStatus_->setText(tr("Version %1 is available.").arg(version));
+            if (QMessageBox::question(window(), tr("LinWin update available"),
+                    tr("LinWin %1 is available. The Ubuntu/Mint or Debian package will be checked against its SHA-256 release checksum before installation. Continue to the system authorization prompt?")
+                        .arg(version),
+                    QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes) {
+                startUpdateInstall(pendingUpdateTag_);
+            }
+            return;
+        }
+        const QString error = result.value(QStringLiteral("message")).toString();
+        updateStatus_->setText(error.isEmpty() ? tr("Update check failed.") : error);
+        if (updateCheckManual_)
+            QMessageBox::information(window(), tr("LinWin update check"), updateStatus_->text());
+    });
+    const auto checkAutomaticallyIfDue = [this]() {
+        QSettings saved;
+        if (!automaticUpdatesCheck_->isChecked()) return;
+        const qint64 previous = saved.value(QStringLiteral("updates/lastCheckEpoch"), 0).toLongLong();
+        if (QDateTime::currentSecsSinceEpoch() - previous >= 24 * 60 * 60)
+            startUpdateCheck(false);
+    };
+    QTimer::singleShot(8000, this, checkAutomaticallyIfDue);
+    automaticUpdateTimer_ = new QTimer(this);
+    automaticUpdateTimer_->setInterval(24 * 60 * 60 * 1000);
+    connect(automaticUpdateTimer_, &QTimer::timeout, this, checkAutomaticallyIfDue);
+    automaticUpdateTimer_->start();
 
     auto *componentHeading = new QLabel(tr("LinWin features"), this);
     componentHeading->setObjectName(QStringLiteral("sectionTitle"));
@@ -337,6 +459,29 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
 
     connect(search_, &QLineEdit::textChanged, this, &SettingsHubWidget::filterCategories);
     filterCategories({});
+}
+
+void SettingsHubWidget::startUpdateCheck(bool manual)
+{
+    if (updateProcess_ == nullptr || updateProcess_->state() != QProcess::NotRunning) return;
+    updateCheckManual_ = manual;
+    installingUpdate_ = false;
+    checkUpdatesButton_->setEnabled(false);
+    updateStatus_->setText(tr("Checking for a compatible LinWin update…"));
+    QSettings settings;
+    settings.setValue(QStringLiteral("updates/lastCheckEpoch"), QDateTime::currentSecsSinceEpoch());
+    settings.sync();
+    updateProcess_->start(QString::fromUtf8(LINWIN_UPDATE_HELPER_PATH), {QStringLiteral("check")});
+}
+
+void SettingsHubWidget::startUpdateInstall(const QString &tag)
+{
+    if (tag.isEmpty() || updateProcess_ == nullptr || updateProcess_->state() != QProcess::NotRunning) return;
+    installingUpdate_ = true;
+    checkUpdatesButton_->setEnabled(false);
+    updateStatus_->setText(tr("Verifying and installing the update. Approve the system authorization prompt."));
+    updateProcess_->start(QString::fromUtf8(LINWIN_UPDATE_HELPER_PATH),
+                          {QStringLiteral("install"), QStringLiteral("--tag"), tag});
 }
 
 void SettingsHubWidget::focusSearch()
