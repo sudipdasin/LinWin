@@ -12,6 +12,8 @@ class QLineEdit;
 class QListWidget;
 class QListWidgetItem;
 class QPushButton;
+class QStackedWidget;
+class QPaintEvent;
 
 class AppLauncherWidget final : public QWidget {
     Q_OBJECT
@@ -19,6 +21,9 @@ public:
     explicit AppLauncherWidget(QWidget *parent = nullptr);
     ~AppLauncherWidget() override;
     void focusSearch();
+protected:
+    void paintEvent(QPaintEvent *event) override;
+public:
 
 signals:
     void toolRequested(int index);
@@ -35,6 +40,7 @@ private:
     void refreshRecentDocuments();
     void savePinnedApplications() const;
 
+    QStackedWidget *appViews_ = nullptr;
     QLineEdit *searchField_ = nullptr;
     QListWidget *applicationList_ = nullptr;
     QListWidget *pinnedList_ = nullptr;

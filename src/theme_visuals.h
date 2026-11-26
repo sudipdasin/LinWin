@@ -40,7 +40,13 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
     const QString muted=t.light ? QStringLiteral("#425773") : QStringLiteral("#b9d3e9");
     QString style=QStringLiteral(
         "#taskbar, #startMenuPanel { background:%1; color:%2; border:1px solid %7; border-radius:%4; }"
-        "#taskbar QWidget, #startMenuPanel QLabel { background:transparent; color:%2; }"
+        "#taskbar QWidget, #startMenuPanel QLabel, #linwinStartViews, #linwinStartViews QWidget, #linwinStartRail { background:transparent; color:%2; }"
+        "#startMenuPanel #linwinStartRail QPushButton { text-align:left; padding:9px 6px; }"
+        "#startMenuPanel #linwinStartRail { border-right:1px solid %7; }"
+        "#startMenuPanel #pageTitle { color:%2; font-size:24px; font-weight:600; }"
+        "#startMenuPanel QScrollBar:vertical { background:%1; width:7px; margin:0; }"
+        "#startMenuPanel QScrollBar::handle:vertical { background:%7; border-radius:3px; min-height:18px; }"
+        "#startMenuPanel QScrollBar::add-line:vertical, #startMenuPanel QScrollBar::sub-line:vertical { height:0; }"
         "#taskbar QPushButton, #startMenuPanel QPushButton { color:%2; background:transparent; border:0; padding:6px; }"
         "#taskbar QPushButton:hover, #taskbar QPushButton:checked, #startMenuPanel QPushButton:hover { background:%5; border-bottom:2px solid %3; }"
         "#taskbar QPushButton:focus, #startMenuPanel QPushButton:focus { border:1px solid %3; }"

@@ -22,6 +22,10 @@
 #include <QSize>
 #include <QSettings>
 #include <QVBoxLayout>
+#include <QStackedWidget>
+#include <QFrame>
+#include <QStyleOption>
+#include <QPainter>
 
 #include <algorithm>
 
@@ -73,9 +77,10 @@ QIcon appIcon(GAppInfo *appInfo)
 AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     : QWidget(parent)
 {
+    setAttribute(Qt::WA_StyledBackground,true);
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(14, 12, 14, 12);
-    layout->setSpacing(8);
+    layout->setContentsMargins(16, 14, 16, 12);
+    layout->setSpacing(9);
 
     auto *brand = new QHBoxLayout;
     auto *logo = new QLabel(this);
@@ -115,13 +120,23 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
 
     brand->addWidget(title, 1);
     layout->addLayout(brand);
-    layout->addWidget(description);
+    description->hide();
     layout->addWidget(searchField_);
     auto *columns = new QHBoxLayout;
-    auto *all = new QVBoxLayout;
-    all->addWidget(new QLabel(tr("All apps"), this));
-    all->addWidget(applicationList_, 1);
-    columns->addLayout(all, 1);
+    auto *rail = new QFrame(this);
+    rail->setObjectName(QStringLiteral("linwinStartRail"));
+    rail->setMinimumWidth(110);
+    rail->setMaximumWidth(148);
+    auto *navigation=new QVBoxLayout(rail);
+    navigation->setContentsMargins(0,0,8,0);
+    navigation->setSpacing(6);
+    auto *allButton=new QPushButton(tr("All apps"),rail);
+    auto *pinnedButton=new QPushButton(tr("Pinned"),rail);
+    allButton->setObjectName(QStringLiteral("linwinAllApps"));
+    pinnedButton->setObjectName(QStringLiteral("linwinPinnedView"));
+    navigation->addWidget(allButton);
+    navigation->addWidget(pinnedButton);
+    columns->addWidget(rail);
     auto *pins = new QVBoxLayout;
     pins->addWidget(new QLabel(tr("Pinned"), this));
     pinnedList_ = new QListWidget(this);
@@ -130,24 +145,37 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setResizeMode(QListView::Adjust);
     pinnedList_->setMovement(QListView::Static);
     pinnedList_->setIconSize(QSize(32,32));
-    pinnedList_->setGridSize(QSize(92,76));
+    pinnedList_->setGridSize(QSize(76,74));
     pinnedList_->setSpacing(2);
     pinnedList_->setWordWrap(true);
     pins->addWidget(pinnedList_, 1);
-    columns->addLayout(pins, 1);
+    auto *pinnedPage=new QWidget(this);
+    pins->setContentsMargins(0,0,0,0);
+    pinnedPage->setLayout(pins);
+    appViews_=new QStackedWidget(this);
+    appViews_->setObjectName(QStringLiteral("linwinStartViews"));
+    appViews_->addWidget(pinnedPage);
+    appViews_->addWidget(applicationList_);
+    columns->addWidget(appViews_,1);
+    auto *content=new QVBoxLayout;
+    columns->removeWidget(appViews_);
+    content->addWidget(appViews_,1);
+    columns->addLayout(content,1);
     layout->addLayout(columns, 1);
+    connect(allButton,&QPushButton::clicked,this,[this]{appViews_->setCurrentIndex(1);});
+    connect(pinnedButton,&QPushButton::clicked,this,[this]{searchField_->clear();appViews_->setCurrentIndex(0);});
     auto *recentHeader=new QHBoxLayout;
     recentHeader->addWidget(new QLabel(tr("Recommended documents"),this));
     auto *recentToggle=new QCheckBox(tr("Show recent"),this);
     recentToggle->setObjectName(QStringLiteral("linwinRecentToggle"));
     recentToggle->setChecked(QSettings().value(QStringLiteral("launcher/showRecent"),true).toBool());
     recentHeader->addStretch(); recentHeader->addWidget(recentToggle);
-    layout->addLayout(recentHeader);
+    content->addLayout(recentHeader);
     recentList_=new QListWidget(this);
     recentList_->setObjectName(QStringLiteral("recentDocuments"));
     recentList_->setMaximumHeight(100);
     recentList_->setMinimumHeight(44);
-    layout->addWidget(recentList_);
+    content->addWidget(recentList_);
     connect(recentToggle,&QCheckBox::toggled,this,[this](bool enabled){
         QSettings().setValue(QStringLiteral("launcher/showRecent"),enabled);
         refreshRecentDocuments();
@@ -168,9 +196,9 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
             }
         }
     });
-    layout->addLayout(actions);
-    auto *quick=new QHBoxLayout;
-    for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Open Files")},{2,tr("Open Tasks")},{3,tr("Open Clipboard")},{4,tr("Open Settings")}}) {
+    content->addLayout(actions);
+    auto *quick=navigation;
+    for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Files")},{2,tr("Task Manager")},{3,tr("Clipboard")},{4,tr("Settings")}}) {
         auto *button=new QPushButton(tool.second,this);
         button->setObjectName(QStringLiteral("linwinStartTool_%1").arg(tool.first));
         const LinWinVisual::Glyph glyphs[]{LinWinVisual::Glyph::Files,LinWinVisual::Glyph::Tasks,LinWinVisual::Glyph::Clipboard,LinWinVisual::Glyph::Settings};
@@ -179,7 +207,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         quick->addWidget(button);
         connect(button,&QPushButton::clicked,this,[this,tool]{ emit toolRequested(tool.first); });
     }
-    layout->addLayout(quick);
+    quick->addStretch();
     layout->addWidget(statusLabel_);
     refreshRecentDocuments();
 
@@ -202,6 +230,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
 
     connect(searchField_, &QLineEdit::textChanged,
             this, &AppLauncherWidget::filterApplications);
+    connect(searchField_, &QLineEdit::textChanged,this,[this](const QString &query){appViews_->setCurrentIndex(query.trimmed().isEmpty()?0:1);});
     connect(openButton, &QPushButton::clicked,
             this, &AppLauncherWidget::launchSelectedApplication);
     connect(pinButton_, &QPushButton::clicked,
@@ -233,11 +262,19 @@ AppLauncherWidget::~AppLauncherWidget()
     }
 }
 
+void AppLauncherWidget::paintEvent(QPaintEvent *)
+{
+    QStyleOption option;option.initFrom(this);
+    QPainter painter(this);
+    style()->drawPrimitive(QStyle::PE_Widget,&option,&painter,this);
+}
+
 void AppLauncherWidget::focusSearch()
 {
     // Re-enumerate the host desktop registry when Start opens, including new packages.
     loadApplications();
     searchField_->clear();
+    appViews_->setCurrentIndex(0);
     refreshList();
     refreshRecentDocuments();
     searchField_->setFocus(Qt::OtherFocusReason);
