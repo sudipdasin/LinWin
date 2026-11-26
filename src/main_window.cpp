@@ -1389,7 +1389,16 @@ void MainWindow::updateTaskbarLayout()
     QSettings visual;
     const bool small=visual.value("visual/smallTaskbar",false).toBool();
     const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());
-    if(auto *panel=findChild<QFrame *>(QStringLiteral("taskbar"))) panel->setFixedHeight(LinWinLayout::taskbarHeight(premium,small));
+    if(auto *panel=findChild<QFrame *>(QStringLiteral("taskbar"))) {
+        panel->setFixedHeight(LinWinLayout::taskbarHeight(premium,small));
+        if(auto *rootLayout=qobject_cast<QVBoxLayout *>(centralWidget()->layout())){
+            const int target=visual.value("visual/taskbarPosition","bottom").toString()=="top"?0:1;
+            if(rootLayout->indexOf(panel)!=target){
+                rootLayout->removeWidget(panel);rootLayout->insertWidget(target,panel);
+            }
+            rootLayout->activate();
+        }
+    }
     if(windowSwitcher_) windowSwitcher_->setFixedHeight(premium&&!small?48:38);
     for(auto *button:windowButtons_) {
         const QString title=button->toolTip();
@@ -1486,7 +1495,7 @@ void MainWindow::updateShellGeometry()
 
     pages_->setGeometry(desktopArea_->rect());
     if (desktopWidgets_) desktopWidgets_->setVisible(useDesktopWidgets(themeId_) && width() >= 1100 && height() >= 640);
-    const auto menu=LinWinLayout::start(desktopArea_->width(),desktopArea_->height(),themeId_=="neon",QSettings().value("visual/startFullscreen",false).toBool());
+    const auto menu=LinWinLayout::start(desktopArea_->width(),desktopArea_->height(),themeId_=="neon",QSettings().value("visual/startFullscreen",false).toBool(),QSettings().value("visual/taskbarPosition","bottom").toString()=="top");
     startMenu_->setGeometry(menu.x,menu.y,menu.width,menu.height);
     if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0 && QSettings().value("visual/transparency",true).toBool() && QSettings().value("visual/shellMode","theme").toString()=="theme") {
         const QPoint origin=desktopSurface_->mapFrom(desktopArea_,startMenu_->pos());

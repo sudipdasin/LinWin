@@ -304,6 +304,12 @@ int main(int argc, char **argv)
     if(!require(menu->geometry()==area->rect(),"Full-screen Start must occupy the actual desktop area."))return 1;
     start->click();settings.remove("visual");hub->visualChanged();app.processEvents();
     if(!require(visualPanel->height()==58&&visualClock->isVisible()&&visualSearch->isVisible(),"Restoring visual defaults must recover the original taskbar."))return 1;
+    settings.setValue("visual/taskbarPosition","top");hub->visualChanged();app.processEvents();
+    if(!require(visualPanel->geometry().top()==0&&area->geometry().top()>=visualPanel->height(),"Top taskbar must move the real panel and reserve desktop space."))return 1;
+    start->click();app.processEvents();
+    if(!require(menu->geometry().top()==6,"Start must anchor below the top taskbar."))return 1;
+    start->click();settings.remove("visual/taskbarPosition");hub->visualChanged();app.processEvents();
+    if(!require(area->geometry().top()==0&&visualPanel->geometry().top()>=area->height(),"Bottom placement must restore the desktop and taskbar geometry."))return 1;
     themes->setCurrentIndex(themes->findData("aero"));app.processEvents();
     settings.setValue("visual/widgets","show");settings.setValue("visual/compactAllThemes",true);
     hub->visualChanged();app.processEvents();

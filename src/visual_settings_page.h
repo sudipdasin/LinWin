@@ -52,19 +52,24 @@ public:
             toggle("visual/taskbarStatus",tr("Show status controls in compact mode"),true);
             toggle("visual/taskbarClock",tr("Show clock"),true);
             disabled(tr("Automatically hide the taskbar"));
-            disabled(tr("Taskbar location on screen"));
+            layout_->addWidget(new QLabel(tr("Taskbar location on screen"),body));
+            position_=new QComboBox(body);position_->setObjectName("linwinTaskbarPosition");
+            position_->addItem(tr("Bottom"),"bottom");position_->addItem(tr("Top"),"top");layout_->addWidget(position_);
+            connect(position_,qOverload<int>(&QComboBox::currentIndexChanged),this,[this]{QSettings().setValue("visual/taskbarPosition",position_->currentData());change_();});
+            disabled(tr("Left and right taskbar placement"));
             disabled(tr("Combine buttons for the same application"));
             disabled(tr("Show badges and notification area icons"));
             disabled(tr("Show taskbar on all displays"));
         }
         auto *reset=new QPushButton(tr("Restore defaults for this page"),body);layout_->addWidget(reset,0,Qt::AlignLeft);
-        connect(reset,&QPushButton::clicked,this,[this]{QSettings s;for(const auto &t:toggles_)s.remove(t.key);if(mode_){s.remove("visual/shellMode");s.remove("visual/accent");}s.sync();reload();change_();});
+        connect(reset,&QPushButton::clicked,this,[this]{QSettings s;for(const auto &t:toggles_)s.remove(t.key);if(mode_){s.remove("visual/shellMode");s.remove("visual/accent");}if(position_)s.remove("visual/taskbarPosition");s.sync();reload();change_();});
         layout_->addStretch();reload();
     }
     void reload(){
         QSettings s;
         for(const auto &t:toggles_){const QSignalBlocker block(t.box);t.box->setChecked(s.value(t.key,t.initial).toBool());}
         if(mode_){const QSignalBlocker block(mode_);mode_->setCurrentIndex(qMax(0,mode_->findData(s.value("visual/shellMode","theme"))));}
+        if(position_){const QSignalBlocker block(position_);position_->setCurrentIndex(qMax(0,position_->findData(s.value("visual/taskbarPosition","bottom"))));}
         if(accent_){const QColor color(s.value("visual/accent").toString());accent_->setText(color.isValid()?tr("Accent color: %1").arg(color.name()):tr("Choose custom accent color"));}
     }
 private:
@@ -74,5 +79,5 @@ private:
         connect(box,&QCheckBox::toggled,this,[this,key](bool value){QSettings().setValue(key,value);change_();});
     }
     void disabled(const QString &label){auto *box=new QCheckBox(label+tr(" — not implemented"),this);box->setEnabled(false);layout_->addWidget(box);}
-    QString section_;std::function<void()> change_;QVBoxLayout *layout_=nullptr;QList<Toggle> toggles_;QComboBox *mode_=nullptr;QPushButton *accent_=nullptr;
+    QString section_;std::function<void()> change_;QVBoxLayout *layout_=nullptr;QList<Toggle> toggles_;QComboBox *mode_=nullptr,*position_=nullptr;QPushButton *accent_=nullptr;
 };
