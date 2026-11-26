@@ -726,22 +726,35 @@ void MainWindow::updateExternalWindows(const QString &output)
         if (title.isEmpty() || currentOrder.contains(id)) continue;
         // Exclude the host desktop and panel by process identity, not title.
         const QString pid=match.captured(3);
+        QString processName;
         QFile comm(QStringLiteral("/proc/%1/comm").arg(pid));
         if(comm.open(QIODevice::ReadOnly)) {
             const QByteArray name=comm.readLine().trimmed();
             if(name=="xfce4-panel" || name=="xfdesktop") continue;
+            processName=QString::fromUtf8(name);
         }
         currentOrder.append(id);
         QPushButton *button = windowButtons_.value(id, nullptr);
         if (button == nullptr) {
             button = new QPushButton(windowButtonsLayout_->parentWidget());
-            button->setMaximumWidth(180);
+            button->setObjectName(QStringLiteral("linwinExternalWindow"));
+            QIcon icon;
+            // Prefer the actual host icon theme and process identity. Fall
+            // back to a generic window icon; never guess from private titles.
+            if(!processName.isEmpty()) icon=QIcon::fromTheme(processName);
+            if(icon.isNull()) icon=LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop);
+            button->setIcon(icon);
             connect(button, &QPushButton::clicked, this, [this, id]() { activateExternalWindow(id); });
             windowButtons_.insert(id, button);
             windowButtonsLayout_->addWidget(button);
         }
-        button->setText(title.size() > 20 ? title.left(19) + QChar(0x2026) : title);
+        const bool premium=themeId_==QStringLiteral("neon") && width()>=1450;
+        button->setText(premium?QString():title.size()>20?title.left(19)+QChar(0x2026):title);
+        button->setMinimumWidth(premium?42:0);
+        button->setMaximumWidth(premium?48:180);
+        button->setIconSize(QSize(premium?26:16,premium?26:16));
         button->setToolTip(title);
+        button->setAccessibleName(title);
     }
 
     for (auto it = windowButtons_.begin(); it != windowButtons_.end();) {
@@ -914,7 +927,7 @@ void MainWindow::showWindowOverview()
     }
     for (const auto &id:windowOrder_) {
         auto *button=windowButtons_.value(id,nullptr);
-        if (button) cards.append({button->toolTip(),tr("External X11 application"),id,LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop)});
+        if (button) cards.append({button->toolTip(),tr("External X11 application"),id,button->icon()});
         if(cards.size()>=48) break;
     }
     LinWinVisual::WindowOverview overview(cards,this);
@@ -1343,6 +1356,13 @@ void MainWindow::updateTaskbarLayout()
     const bool premium=themeId_==QStringLiteral("neon") && width()>=1450;
     if(auto *panel=findChild<QFrame *>(QStringLiteral("taskbar"))) panel->setFixedHeight(premium?58:44);
     if(windowSwitcher_) windowSwitcher_->setFixedHeight(premium?48:38);
+    for(auto *button:windowButtons_) {
+        const QString title=button->toolTip();
+        button->setText(premium?QString():title.size()>20?title.left(19)+QChar(0x2026):title);
+        button->setMinimumWidth(premium?42:0);
+        button->setMaximumWidth(premium?48:180);
+        button->setIconSize(QSize(premium?26:16,premium?26:16));
+    }
     for(const auto &entry:QList<QPair<QPushButton *,QString>>{{startButton_,tr("LinWin")},{homeButton_,tr("Desktop")},{filesButton_,tr("Files")},{tasksButton_,tr("Tasks")},{clipboardButton_,tr("Clipboard")},{settingsButton_,tr("Settings")}}) {
         if(!entry.first) continue;
         entry.first->setAccessibleName(entry.second);
