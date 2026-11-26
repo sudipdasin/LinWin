@@ -200,5 +200,21 @@ int main(int argc, char **argv)
         passed &= expect(item&&openSetting->isEnabled(),"Implemented Background route must be enabled.");
         if(item&&openSetting->isEnabled()){openSetting->click();passed &= expect(page&&page->isVisible(),"Catalog Background opens native page.");}
     }
+    widget.showVisualPage("colors");application.processEvents();
+    auto *colorMode=widget.findChild<QComboBox *>("linwinShellColorMode");
+    auto *transparency=widget.findChild<QCheckBox *>("transparency");
+    int visualChanges=0;QObject::connect(&widget,&SettingsHubWidget::visualChanged,&widget,[&]{++visualChanges;});
+    passed &= expect(colorMode&&colorMode->isVisible()&&transparency&&transparency->isVisible(),"Colors page exposes real mode and glass controls.");
+    if(colorMode&&transparency){colorMode->setCurrentIndex(colorMode->findData("dark"));transparency->setChecked(false);}
+    widget.showVisualPage("start");application.processEvents();
+    auto *full=widget.findChild<QCheckBox *>("startFullscreen");
+    passed &= expect(full&&full->isVisible(),"Start settings page exposes fullscreen.");if(full)full->setChecked(true);
+    widget.showVisualPage("taskbar");application.processEvents();
+    auto *small=widget.findChild<QCheckBox *>("smallTaskbar");
+    passed &= expect(small&&small->isVisible(),"Taskbar settings page exposes compact mode.");if(small)small->setChecked(true);
+    passed &= expect(visualChanges==4&&settings.value("visual/shellMode").toString()=="dark"&&!settings.value("visual/transparency").toBool()&&settings.value("visual/startFullscreen").toBool()&&settings.value("visual/smallTaskbar").toBool(),"Visual controls persist and emit live-change events.");
+    widget.showVisualPage("colors");
+    passed &= expect(colorMode&&colorMode->currentData().toString()=="dark","Reopened visual page restores preferences.");
+    settings.remove("visual");
     return passed ? 0 : 1;
 }

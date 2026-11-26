@@ -373,6 +373,8 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
 
     auto *taskbar = new QFrame(root);
     taskbar->setObjectName(QStringLiteral("taskbar"));
+    taskbar->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(taskbar,&QWidget::customContextMenuRequested,this,[this,taskbar](const QPoint &pos){QMenu menu(this);menu.addAction(tr("Taskbar settings"),this,[this]{showPage(4);settingsHub_->showVisualPage("taskbar");});menu.exec(taskbar->mapToGlobal(pos));});
     taskbar->setFixedHeight(44);
     auto *taskbarLayout = new QHBoxLayout(taskbar);
     taskbarLayout->setContentsMargins(3, 2, 3, 2);

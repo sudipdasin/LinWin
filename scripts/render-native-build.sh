@@ -6,8 +6,8 @@ export XDG_CONFIG_HOME=/tmp/linwin-build-config XDG_DATA_HOME=/tmp/linwin-build-
 mkdir -p /out "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME"
 test "$(dpkg --print-architecture)" = amd64
 # Debian compares the upstream version before the packaging revision.
-version=1.0.1~preview.9-1
-for previous in 1.0.0 1.0.0-8 1.0.0-beta.8 1.0.0-8+render.10 1.0.0-9 1.0.0-10 1.0.0-999 1.0.1~preview.1-1 1.0.1~preview.2-1 1.0.1~preview.3-1 1.0.1~preview.4-1 1.0.1~preview.5-1 1.0.1~preview.6-1 1.0.1~preview.7-1 1.0.1~preview.8-1; do
+version=1.0.1~preview.10-1
+for previous in 1.0.0 1.0.0-8 1.0.0-beta.8 1.0.0-8+render.10 1.0.0-9 1.0.0-10 1.0.0-999 1.0.1~preview.1-1 1.0.1~preview.2-1 1.0.1~preview.3-1 1.0.1~preview.4-1 1.0.1~preview.5-1 1.0.1~preview.6-1 1.0.1~preview.7-1 1.0.1~preview.8-1 1.0.1~preview.9-1; do
     dpkg --compare-versions "$version" gt "$previous"
 done
 dpkg --compare-versions "$version" lt 1.0.1-1
@@ -38,8 +38,8 @@ test -s /out/visuals/native-file-explorer.png
 test -s /out/visuals/native-task-manager.png
 test -s /out/visuals/native-task-view.png
 test -s /out/visuals/native-quick-controls.png
-cpack --config /tmp/linwin-build/CPackConfig.cmake -G DEB -B /tmp/linwin-package -D CPACK_DEBIAN_PACKAGE_VERSION=1.0.1~preview.9 -D CPACK_DEBIAN_PACKAGE_RELEASE=1 -D CPACK_PACKAGE_FILE_NAME=linwin-1.0.1-preview.9-ubuntu-24.04-amd64
-pkg=/tmp/linwin-package/linwin-1.0.1-preview.9-ubuntu-24.04-amd64.deb
+cpack --config /tmp/linwin-build/CPackConfig.cmake -G DEB -B /tmp/linwin-package -D CPACK_DEBIAN_PACKAGE_VERSION=1.0.1~preview.10 -D CPACK_DEBIAN_PACKAGE_RELEASE=1 -D CPACK_PACKAGE_FILE_NAME=linwin-1.0.1-preview.10-ubuntu-24.04-amd64
+pkg=/tmp/linwin-package/linwin-1.0.1-preview.10-ubuntu-24.04-amd64.deb
 test "$(dpkg-deb -f "$pkg" Package)" = linwin
 test "$(dpkg-deb -f "$pkg" Architecture)" = amd64
 test "$(dpkg-deb -f "$pkg" Version)" = "$version"
@@ -77,4 +77,4 @@ ln -s "$(basename "$pkg")" /out/linwin-latest.deb
 cd /out
 sha256sum "$(basename "$pkg")" > SHA256SUMS
 python3 /src/scripts/release_evidence.py /out "$(basename "$pkg")" "$version"
-printf '%s\n' 'Native Ubuntu 24.04 amd64 candidate. Build, CTest, updater tests, Xvfb startup, actual container APT install/remove, nineteen native Qt captures with effects enabled, native snap geometry/controller checks, recent-document, landscape and workspace restore, multiresolution icon and metric accessibility, Task View, native taskbar controls, persistent workspace, Quick Controls, Command Palette, per-tool geometry recall and PNG gallery integrity, icon-cache and six native benchmark process checks passed. Debian version ordering and executable version identity verified. Start panel opacity, wallpaper-sampled glass, navigation, calendar width, opt-in weather and two-resolution checks passed. Reference-size Start grid, local network and battery status, and compact status lifecycle checks passed. Pinned tile artwork sizing and exclusive Start navigation checks included. Download attachment and HEAD/GET regression tests passed. Textured terrain determinism, original place artwork and widget toolbar gates included. Personalization background preferences, image fitting, native Settings navigation and actual solid-background pixel checks included. Windows 10 settings catalog navigation and deferred-action gate included. Visual reference parity is NOT certified. Not a Mint VM or physical GPU certification.' > validation.txt
+printf '%s\n' 'Native Ubuntu 24.04 amd64 candidate. Build, CTest, updater tests, Xvfb startup, actual container APT install/remove, nineteen native Qt captures with effects enabled, native snap geometry/controller checks, recent-document, landscape and workspace restore, multiresolution icon and metric accessibility, Task View, native taskbar controls, persistent workspace, Quick Controls, Command Palette, per-tool geometry recall and PNG gallery integrity, icon-cache and six native benchmark process checks passed. Debian version ordering and executable version identity verified. Start panel opacity, wallpaper-sampled glass, navigation, calendar width, opt-in weather and two-resolution checks passed. Reference-size Start grid, local network and battery status, and compact status lifecycle checks passed. Pinned tile artwork sizing and exclusive Start navigation checks included. Download attachment and HEAD/GET regression tests passed. Textured terrain determinism, original place artwork and widget toolbar gates included. Personalization background preferences, image fitting, native Settings navigation and actual solid-background pixel checks included. Windows 10 settings catalog navigation and deferred-action gate included. Visual personalization pages, actual taskbar height and visibility, fullscreen Start geometry and shell palette checks included. Visual reference parity is NOT certified. Not a Mint VM or physical GPU certification.' > validation.txt

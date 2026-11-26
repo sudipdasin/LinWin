@@ -275,6 +275,22 @@ int main(int argc, char **argv)
     window.resize(1920,1080);
     app.processEvents();
     {QEventLoop settle;QTimer::singleShot(350,&settle,&QEventLoop::quit);settle.exec();}
+    auto *visualPanel=window.findChild<QFrame *>("taskbar");
+    auto *visualClock=window.findChild<QWidget *>("panelClock");
+    auto *visualSearch=window.findChild<QPushButton *>("linwinTaskbarSearch");
+    auto *area=window.findChild<QWidget *>("desktopArea");
+    if(!require(visualPanel&&visualClock&&visualSearch&&area,"Visual settings need actual shell controls."))return 1;
+    settings.setValue("visual/smallTaskbar",true);settings.setValue("visual/taskbarClock",false);
+    settings.setValue("visual/taskbarSearch",false);settings.setValue("visual/startFullscreen",true);
+    settings.setValue("visual/shellMode","light");settings.setValue("visual/accent","#ae326e");
+    hub->visualChanged();app.processEvents();
+    if(!require(visualPanel->height()==44&&visualClock->isHidden()&&visualSearch->isHidden()
+        &&window.styleSheet().contains("#ae326e")&&window.styleSheet().contains("#edf2f8"),
+        "Saved visual controls must update the actual taskbar and shell stylesheet."))return 1;
+    start->click();app.processEvents();
+    if(!require(menu->geometry()==area->rect(),"Full-screen Start must occupy the actual desktop area."))return 1;
+    start->click();settings.remove("visual");hub->visualChanged();app.processEvents();
+    if(!require(visualPanel->height()==58&&visualClock->isVisible()&&visualSearch->isVisible(),"Restoring visual defaults must recover the original taskbar."))return 1;
     auto *statusFrame=window.findChild<QFrame *>(QStringLiteral("linwinStatusArea"));
     auto *statusArea=static_cast<DesktopStatus *>(statusFrame);
     auto *network=statusFrame?statusFrame->findChild<QPushButton *>(QStringLiteral("linwinStatusNetwork")):nullptr;

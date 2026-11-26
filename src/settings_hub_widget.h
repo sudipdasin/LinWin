@@ -27,6 +27,7 @@ public:
     void focusSearch();
     void showBackground();
     void showWindowsCatalog();
+    void showVisualPage(const QString &route);
     int textScalePercent() const;
     void setTextScalePercent(int percent);
 

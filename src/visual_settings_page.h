@@ -8,6 +8,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QColorDialog>
+#include <QList>
 #include <QSettings>
 #include <QSignalBlocker>
 #include <QScrollArea>
@@ -34,7 +35,7 @@ public:
             connect(accent_,&QPushButton::clicked,this,[this]{const QColor initial(QSettings().value("visual/accent","#29dfff").toString());const auto color=QColorDialog::getColor(initial,this,tr("Choose an accent color"));if(color.isValid()){QSettings().setValue("visual/accent",color.name());reload();change_();}});
             auto *resetAccent=new QPushButton(tr("Use theme accent color"),body);layout_->addWidget(resetAccent);
             connect(resetAccent,&QPushButton::clicked,this,[this]{QSettings().remove("visual/accent");reload();change_();});
-            toggle("visual/transparency",tr("Transparency effects (Start wallpaper blur)"),true);
+            toggle("visual/transparency",tr("Transparency effects (theme-default Start wallpaper blur)"),true);
             disabled(tr("Automatically pick an accent color from my background"));
             disabled(tr("Separate application color mode"));
             disabled(tr("Show accent on native title bars and window borders"));

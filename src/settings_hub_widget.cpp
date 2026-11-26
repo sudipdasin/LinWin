@@ -395,10 +395,7 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     };
     colors_=makeVisual("colors");startAppearance_=makeVisual("start");taskbarAppearance_=makeVisual("taskbar");
     windowsCatalog_=new WindowsSettingsCatalogPage(sections_,[this](const QString &route){
-        if(route=="colors"||route=="start"||route=="taskbar"){
-            auto *page=route=="colors"?colors_:route=="start"?startAppearance_:taskbarAppearance_;
-            page->reload();sections_->setCurrentWidget(page);return;
-        }
+        if(route=="colors"||route=="start"||route=="taskbar"){showVisualPage(route);return;}
         if(route=="background"){showBackground();return;}
         focusSearch();
         if(route=="themes"){if(auto *themes=findChild<QComboBox *>("linwinThemeSelector"))themes->setFocus();}
@@ -407,6 +404,13 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     },[this]{focusSearch();});
     sections_->addWidget(windowsCatalog_);
     filterCategories({});
+}
+
+void SettingsHubWidget::showVisualPage(const QString &route)
+{
+    auto *page=route=="colors"?colors_:route=="start"?startAppearance_:route=="taskbar"?taskbarAppearance_:nullptr;
+    if(!page)return;
+    page->reload();sections_->setCurrentWidget(page);
 }
 
 void SettingsHubWidget::showWindowsCatalog()
