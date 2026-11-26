@@ -331,6 +331,14 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     startMenu_->setWindowFlags(Qt::Widget);
     startMenu_->hide();
     connect(startMenu_,&AppLauncherWidget::toolRequested,this,&MainWindow::showPage);
+    connect(startMenu_,&AppLauncherWidget::returnDesktopRequested,this,[this]{
+        startButton_->setChecked(false);
+        if(!shellSessionMode_) returnToLinuxDesktop();
+        else QMessageBox::information(this,tr("LinWin"),tr("Use Sign out to return to the login screen."));
+    });
+    connect(startMenu_,&AppLauncherWidget::exitRequested,this,[this]{
+        if(QMessageBox::question(this,tr("Close LinWin"),tr("Close LinWin and its open tool windows?"),QMessageBox::Yes|QMessageBox::No,QMessageBox::No)==QMessageBox::Yes) close();
+    });
 
     auto *taskbar = new QFrame(root);
     taskbar->setObjectName(QStringLiteral("taskbar"));
@@ -1289,6 +1297,8 @@ void MainWindow::applyTheme(const QString &id)
     if (desktopSurface_) desktopSurface_->setTheme(themeId_);
     if (desktopWidgets_) desktopWidgets_->setVisible(theme.widgets && width() >= 1100 && height() >= 640);
     applyTextScale(settingsHub_->textScalePercent());
+    updateTaskbarLayout();
+    updateShellGeometry();
 }
 
 void MainWindow::applyTextScale(int percent)
@@ -1307,6 +1317,16 @@ void MainWindow::updateTaskbarLayout()
 {
     const bool compact = width() < 920;
     const bool hideWindowDetails = width() < 920;
+    const bool premium=themeId_==QStringLiteral("neon") && width()>=1450;
+    if(auto *panel=findChild<QFrame *>(QStringLiteral("taskbar"))) panel->setFixedHeight(premium?58:44);
+    if(windowSwitcher_) windowSwitcher_->setFixedHeight(premium?48:38);
+    for(const auto &entry:QList<QPair<QPushButton *,QString>>{{startButton_,tr("LinWin")},{homeButton_,tr("Desktop")},{filesButton_,tr("Files")},{tasksButton_,tr("Tasks")},{clipboardButton_,tr("Clipboard")},{settingsButton_,tr("Settings")}}) {
+        if(!entry.first) continue;
+        entry.first->setAccessibleName(entry.second);
+        entry.first->setText(premium?QString():entry.second);
+        entry.first->setIconSize(QSize(premium?30:20,premium?30:20));
+        entry.first->setMinimumWidth(premium?42:0);
+    }
     if(auto *search=findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"))) search->setVisible(width()>=1450 && startMenuEnabled_);
 
     if (startButton_ != nullptr) startButton_->setVisible(startMenuEnabled_);

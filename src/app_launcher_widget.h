@@ -27,6 +27,8 @@ public:
 
 signals:
     void toolRequested(int index);
+    void exitRequested();
+    void returnDesktopRequested();
 
 private slots:
     void filterApplications(const QString &query);

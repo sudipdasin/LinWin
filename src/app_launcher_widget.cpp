@@ -26,6 +26,8 @@
 #include <QFrame>
 #include <QStyleOption>
 #include <QStyle>
+#include <QMenu>
+#include <QFileInfo>
 #include <QPainter>
 
 #include <algorithm>
@@ -119,15 +121,21 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     statusLabel_->setObjectName(QStringLiteral("launcherStatus"));
     statusLabel_->setWordWrap(true);
 
-    brand->addWidget(title, 1);
+    auto *brandText=new QVBoxLayout;
+    brandText->setSpacing(0);
+    brandText->addWidget(title);
+    auto *tagline=new QLabel(tr("Linux Desktop OS"),this);
+    tagline->setObjectName(QStringLiteral("launcherTagline"));brandText->addWidget(tagline);
+    brand->addLayout(brandText);
+    brand->addSpacing(12);
+    brand->addWidget(searchField_,1);
     layout->addLayout(brand);
     description->hide();
-    layout->addWidget(searchField_);
     auto *columns = new QHBoxLayout;
     auto *rail = new QFrame(this);
     rail->setObjectName(QStringLiteral("linwinStartRail"));
-    rail->setMinimumWidth(110);
-    rail->setMaximumWidth(148);
+    rail->setMinimumWidth(140);
+    rail->setMaximumWidth(190);
     auto *navigation=new QVBoxLayout(rail);
     navigation->setContentsMargins(0,0,8,0);
     navigation->setSpacing(6);
@@ -146,7 +154,9 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setResizeMode(QListView::Adjust);
     pinnedList_->setMovement(QListView::Static);
     pinnedList_->setIconSize(QSize(32,32));
-    pinnedList_->setGridSize(QSize(76,74));
+    pinnedList_->setGridSize(QSize(94,78));
+    pinnedList_->setIconSize(QSize(36,36));
+    pinnedList_->setTextElideMode(Qt::ElideNone);
     pinnedList_->setSpacing(2);
     pinnedList_->setWordWrap(true);
     pins->addWidget(pinnedList_, 1);
@@ -157,9 +167,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     appViews_->setObjectName(QStringLiteral("linwinStartViews"));
     appViews_->addWidget(pinnedPage);
     appViews_->addWidget(applicationList_);
-    columns->addWidget(appViews_,1);
     auto *content=new QVBoxLayout;
-    columns->removeWidget(appViews_);
     content->addWidget(appViews_,1);
     columns->addLayout(content,1);
     layout->addLayout(columns, 1);
@@ -205,7 +213,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     content->addLayout(actions);
     auto *quick=navigation;
     for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Files")},{2,tr("Task Manager")},{3,tr("Clipboard")},{4,tr("Settings")}}) {
-        auto *button=new QPushButton(tool.second,this);
+        auto *button=new QPushButton(tool.second,rail);
         button->setObjectName(QStringLiteral("linwinStartTool_%1").arg(tool.first));
         const LinWinVisual::Glyph glyphs[]{LinWinVisual::Glyph::Files,LinWinVisual::Glyph::Tasks,LinWinVisual::Glyph::Clipboard,LinWinVisual::Glyph::Settings};
         button->setIcon(LinWinVisual::shellIcon(glyphs[tool.first-1]));
@@ -214,7 +222,30 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         connect(button,&QPushButton::clicked,this,[this,tool]{ emit toolRequested(tool.first); });
     }
     quick->addStretch();
+    auto *power=new QPushButton(QIcon::fromTheme(QStringLiteral("system-shutdown")),tr("Power"),rail);
+    power->setObjectName(QStringLiteral("linwinStartPower"));
+    auto *powerMenu=new QMenu(power);
+    auto *back=powerMenu->addAction(tr("Return to Linux desktop"));
+    auto *exit=powerMenu->addAction(tr("Close LinWin"));
+    connect(back,&QAction::triggered,this,&AppLauncherWidget::returnDesktopRequested);
+    connect(exit,&QAction::triggered,this,&AppLauncherWidget::exitRequested);
+    power->setMenu(powerMenu);quick->addWidget(power);
+    auto *footer=new QFrame(this);footer->setObjectName(QStringLiteral("linwinStartFooter"));
+    auto *footerLayout=new QHBoxLayout(footer);footerLayout->setContentsMargins(6,5,6,2);
+    auto *account=new QLabel(tr("Local user"),footer);
+    account->setObjectName(QStringLiteral("linwinStartAccount"));
+    const QString name=qEnvironmentVariable("USER");
+    if(!name.isEmpty()) account->setText(name);
+    account->setTextFormat(Qt::PlainText);
+    auto *avatar=new QLabel(footer);
+    avatar->setPixmap(QIcon::fromTheme(QStringLiteral("avatar-default"),LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop)).pixmap(30,30));
+    footerLayout->addWidget(avatar);footerLayout->addWidget(account);footerLayout->addStretch();
+    auto *preferences=new QPushButton(LinWinVisual::shellIcon(LinWinVisual::Glyph::Settings),tr("Settings"),footer);
+    preferences->setObjectName(QStringLiteral("linwinFooterSettings"));
+    connect(preferences,&QPushButton::clicked,this,[this]{emit toolRequested(4);});
+    footerLayout->addWidget(preferences);
     layout->addWidget(statusLabel_);
+    layout->addWidget(footer);
     refreshRecentDocuments();
 
     QSettings settings;
