@@ -71,7 +71,10 @@ protected:
             LinWinVisual::drawLogo(painter, QRectF(x,y,mark,mark));
             painter.setPen(Qt::white);
             QFont f = painter.font(); f.setPixelSize(qRound(mark*0.50)); f.setWeight(QFont::DemiBold); painter.setFont(f);
-            painter.drawText(QRectF(x+mark+12,y, width()*0.35,mark), Qt::AlignVCenter, QStringLiteral("LinWin"));
+            painter.drawText(QRectF(x+mark+12,y, width()*0.35,mark*.72), Qt::AlignVCenter, QStringLiteral("LinWin"));
+            f.setPixelSize(qMax(9,qRound(mark*.105))); f.setWeight(QFont::Medium); f.setLetterSpacing(QFont::AbsoluteSpacing,1.8); painter.setFont(f);
+            painter.setPen(QColor("#c3e5f5"));
+            painter.drawText(QRectF(x+mark+14,y+mark*.65,width()*.35,mark*.22),Qt::AlignVCenter,QStringLiteral("LINUX DESKTOP OS"));
         }
     }
 

@@ -36,16 +36,31 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
     const QString field=t.light ? QStringLiteral("#ffffff") : QStringLiteral("#122e49");
     const QString hover=t.light ? QStringLiteral("#d7e5f6") : QStringLiteral("#214563");
     const QString radius=t.effects ? QStringLiteral("9px") : QStringLiteral("0px");
+    const QString subtle=t.light ? QStringLiteral("#b8c9db") : QStringLiteral("#365575");
+    const QString muted=t.light ? QStringLiteral("#425773") : QStringLiteral("#b9d3e9");
     return QStringLiteral(
-        "#taskbar, #startMenuPanel { background:%1; color:%2; border:1px solid %3; border-radius:%4; }"
+        "#taskbar, #startMenuPanel { background:%1; color:%2; border:1px solid %7; border-radius:%4; }"
         "#taskbar QWidget, #startMenuPanel QLabel { background:transparent; color:%2; }"
         "#taskbar QPushButton, #startMenuPanel QPushButton { color:%2; background:transparent; border:0; padding:6px; }"
         "#taskbar QPushButton:hover, #taskbar QPushButton:checked, #startMenuPanel QPushButton:hover { background:%5; border-bottom:2px solid %3; }"
-        "#startMenuPanel #applicationSearch, #startMenuPanel #applicationList, #startMenuPanel #pinnedApps, #startMenuPanel #recentDocuments { background:%6; color:%2; border:1px solid %3; border-radius:%4; }"
+        "#taskbar QPushButton:focus, #startMenuPanel QPushButton:focus { border:1px solid %3; }"
+        "#startMenuPanel #intro, #startMenuPanel #launcherStatus { color:%8; font-size:12px; }"
+        "#startMenuPanel QCheckBox { color:%2; background:transparent; }"
+        "#startMenuPanel QListWidget::item { padding:5px; border-radius:%4; }"
+        "#startMenuPanel QListWidget::item:hover { background:%5; }"
+        "#startMenuPanel #applicationSearch:focus { border:2px solid %3; }"
+        "QMenu { background:%1; color:%2; border:1px solid %7; padding:5px; }"
+        "QMenu::item { padding:7px 24px; border-radius:%4; }"
+        "QMenu::item:selected { background:%5; color:%2; }"
+        "QMenu::item:disabled { color:%8; }"
+        "QMenu::separator { height:1px; background:%7; margin:4px 8px; }"
+        "#linwinSnapMenu { background:%1; color:%2; border:1px solid %7; border-radius:%4; padding:5px 10px; }"
+        "#linwinSnapMenu:hover { background:%5; border-color:%3; }"
+        "#startMenuPanel #applicationSearch, #startMenuPanel #applicationList, #startMenuPanel #pinnedApps, #startMenuPanel #recentDocuments { background:%6; color:%2; border:1px solid %7; border-radius:%4; }"
         "#startMenuPanel QListWidget::item:selected { background:%5; color:%2; }"
         "#startMenuPanel #primaryAction { background:%5; color:%2; border:1px solid %3; border-radius:%4; }"
         "#taskbar #startButton, #taskbar #panelClock, #taskbar #panelStatus, #taskbar #windowSwitcherStatus { color:%2; }"
         "#taskbar #windowSwitcher QPushButton { background:%5; color:%2; border-bottom:2px solid %3; }"
-    ).arg(panel,fg,accent,radius,hover,field);
+    ).arg(panel,fg,accent,radius,hover,field,subtle,muted);
 }
 }

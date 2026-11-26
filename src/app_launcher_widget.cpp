@@ -82,6 +82,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     logo->setPixmap(LinWinVisual::logoIcon().pixmap(36,36));
     brand->addWidget(logo);
     auto *title = new QLabel(tr("LinWin"), this);
+    title->setAccessibleName(tr("LinWin Start menu"));
     title->setObjectName(QStringLiteral("pageTitle"));
     auto *description = new QLabel(
         tr("Find and open applications installed on this computer. Pin the ones you use most."), this);
@@ -90,7 +91,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
 
     searchField_ = new QLineEdit(this);
     searchField_->setObjectName(QStringLiteral("applicationSearch"));
-    searchField_->setPlaceholderText(tr("Search apps by name or description"));
+    searchField_->setPlaceholderText(tr("Search installed applications"));
     searchField_->setClearButtonEnabled(true);
     searchField_->addAction(LinWinVisual::shellIcon(LinWinVisual::Glyph::Search), QLineEdit::LeadingPosition);
 
@@ -129,7 +130,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setResizeMode(QListView::Adjust);
     pinnedList_->setMovement(QListView::Static);
     pinnedList_->setIconSize(QSize(32,32));
-    pinnedList_->setGridSize(QSize(90,72));
+    pinnedList_->setGridSize(QSize(92,76));
+    pinnedList_->setSpacing(2);
     pinnedList_->setWordWrap(true);
     pins->addWidget(pinnedList_, 1);
     columns->addLayout(pins, 1);
