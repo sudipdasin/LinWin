@@ -143,6 +143,9 @@ int main(int argc, char **argv)
     if (!require(pages->currentIndex()==1 && menu->isHidden(), "Start Files action must open Files and dismiss Start.")) return 1;
     desktopButton->click();
     // Test live theme switching, including widget and rendering policy.
+    // Capture the real visual effects with the deterministic CPU fallback in offscreen tests.
+    surface->setEffectsEnabled(true);
+    surface->setGpuPreferred(false);
     auto *themes = window.findChild<QComboBox *>(QStringLiteral("linwinThemeSelector"));
     auto *widgets = window.findChild<QWidget *>(QStringLiteral("neonWidgets"));
     if (!require(themes && themes->count() == 7 && widgets && widgets->isVisible(),
