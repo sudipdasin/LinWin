@@ -96,12 +96,12 @@ private:
         const QColor sky(LinWinVisual::qstr(theme.sky)), horizon(LinWinVisual::qstr(theme.horizon));
         if (themeId_ == QStringLiteral("minimal")) { p.fillRect(r, sky); return; }
         base.setColorAt(0.0, sky);
-        base.setColorAt(1.0, horizon);
+        base.setColorAt(1.0, themeId_==QStringLiteral("neon")?QColor("#051a35"):horizon);
         p.fillRect(r, base);
         if (!effectsEnabled()) return;
         const QPointF center(r.left() + r.width()*0.72, r.top() + r.height()*0.43);
         QRadialGradient halo(center, qMax(1.0, r.width()*0.50));
-        QColor glow(LinWinVisual::qstr(theme.accent)); glow.setAlpha(100);
+        QColor glow(LinWinVisual::qstr(theme.accent)); glow.setAlpha(themeId_==QStringLiteral("neon")?45:100);
         halo.setColorAt(0.0, glow); glow.setAlpha(0); halo.setColorAt(1.0, glow);
         p.fillRect(r, halo);
         if (themeId_ == QStringLiteral("neon")) LinWinVisual::drawNeonLandscape(p,r);

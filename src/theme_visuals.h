@@ -22,8 +22,12 @@ inline void drawLogo(QPainter &p, QRectF r) {
     loop.lineTo(22, 22); loop.closeSubpath();
     QLinearGradient g(0, 0, 100, 100);
     g.setColorAt(0, QColor("#08edff")); g.setColorAt(.52, QColor("#158be8")); g.setColorAt(1, QColor("#01f2de"));
-    QPen pen(QBrush(g), 11, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    p.setPen(pen); p.setBrush(Qt::NoBrush); p.drawPath(loop);
+    p.setBrush(Qt::NoBrush);
+    for(int i=5;i>=1;--i){p.setPen(QPen(QColor(0,182,255,9),15+i*3,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));p.drawPath(loop);}
+    p.setPen(QPen(QColor("#075397"),19,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));p.drawPath(loop);
+    p.setPen(QPen(QBrush(g),16,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));p.drawPath(loop);
+    p.setPen(QPen(QColor(188,255,255,190),1.8,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+    QPainterPath highlight;highlight.moveTo(13,69);highlight.lineTo(24,19);highlight.cubicTo(27,11,35,9,45,16);highlight.lineTo(83,41);p.drawPath(highlight);
     p.restore();
 }
 inline QIcon logoIcon() {
