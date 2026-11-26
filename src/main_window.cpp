@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
 #include "workspace_profiles.h"
+#include "command_palette.h"
 #include "snap_controller.h"
 #include "desktop_surface.h"
 #include "theme_visuals.h"
@@ -260,6 +261,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             menu.addAction(tr("Refresh"), this, refreshIcons);
             menu.addAction(tr("Task View (Ctrl+Shift+F9)"),this,&MainWindow::showWindowOverview);
             menu.addAction(tr("Quick controls (Ctrl+Shift+F10)"),this,&MainWindow::showQuickControls);
+            menu.addAction(tr("Command Palette (Ctrl+Shift+P)"),this,&MainWindow::showCommandPalette);
             if (!toolWindows_.isEmpty()) {
                 auto *restore=menu.addAction(tr("Restore hidden workspace"),this,&MainWindow::restoreHiddenWorkspace);
                 restore->setEnabled(!hiddenWorkspace_.isEmpty());
@@ -479,6 +481,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     }
     connect(closeButton_, &QPushButton::clicked, this, &QWidget::close);
     connect(closeOverflowAction_, &QAction::triggered, this, &QWidget::close);
+    auto *paletteShortcut=new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")),this);
+    paletteShortcut->setObjectName(QStringLiteral("linwinCommandPaletteShortcut"));
+    paletteShortcut->setContext(Qt::ApplicationShortcut);
+    connect(paletteShortcut,&QShortcut::activated,this,&MainWindow::showCommandPalette);
     auto *quickControlsShortcut=new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F10")),this);
     quickControlsShortcut->setObjectName(QStringLiteral("linwinQuickControlsShortcut"));
     quickControlsShortcut->setContext(Qt::ApplicationShortcut);
@@ -713,6 +719,56 @@ void MainWindow::activateExternalWindow(const QString &id)
 {
     if (!QRegularExpression(QStringLiteral("^0x[0-9a-fA-F]+$")).match(id).hasMatch()) return;
     QProcess::startDetached(wmctrlPath_, {QStringLiteral("-ia"), id});
+}
+
+void MainWindow::showCommandPalette()
+{
+    if(commandPaletteOpen_ || quickControlsOpen_ || overviewOpen_) return;
+    commandPaletteOpen_=true;
+    using namespace LinWinVisual;
+    QList<Command> commands;
+    auto add=[&](const QString &id,const QString &title,const QString &keywords,Glyph glyph){
+        commands.append({id,title,keywords,shellIcon(glyph)});
+    };
+    if(componentEnabled(QStringLiteral("files"))) add("files",tr("Open File Explorer"),tr("folders documents storage"),Glyph::Files);
+    if(componentEnabled(QStringLiteral("task-manager"))) add("tasks",tr("Open Task Manager"),tr("cpu ram processes performance"),Glyph::Tasks);
+    if(componentEnabled(QStringLiteral("clipboard"))) add("clipboard",tr("Open Clipboard history"),tr("copy paste"),Glyph::Clipboard);
+    add("settings",tr("Open Settings"),tr("preferences configuration"),Glyph::Settings);
+    add("overview",tr("Open Task View"),tr("switch windows overview"),Glyph::Desktop);
+    add("desktop",tr("Show desktop / restore hidden tools"),tr("hide windows recall"),Glyph::Desktop);
+    if(desktopSurface_) {
+        add("quick",tr("Open Quick Controls"),tr("effects privacy graphics"),Glyph::Settings);
+        auto *themes=settingsHub_->findChild<QComboBox *>(QStringLiteral("linwinThemeSelector"));
+        if(themes) for(int i=0;i<themes->count();++i)
+            add(QStringLiteral("theme:")+themes->itemData(i).toString(),tr("Theme: %1").arg(themes->itemText(i)),tr("appearance personalization wallpaper"),Glyph::Settings);
+    }
+    if(!toolWindows_.isEmpty()) {
+        QSettings settings;
+        for(int slot=1;slot<=3;++slot) if(!LinWinWorkspace::load(settings,slot).isEmpty())
+            add(QStringLiteral("workspace:%1").arg(slot),tr("Restore workspace %1").arg(slot),tr("saved layout windows"),Glyph::Snap);
+    }
+    CommandPalette palette(commands,this);
+    const bool accepted=palette.exec()==QDialog::Accepted;
+    const QString id=palette.chosen();
+    commandPaletteOpen_=false;
+    if(!accepted) return;
+    if(id=="files") showPage(1);
+    else if(id=="tasks") showPage(2);
+    else if(id=="clipboard") showClipboardCenter();
+    else if(id=="settings") showSettingsHub();
+    else if(id=="overview") showWindowOverview();
+    else if(id=="desktop") toggleWorkspaceVisibility();
+    else if(id=="quick") showQuickControls();
+    else if(id.startsWith("theme:")) {
+        auto *themes=settingsHub_->findChild<QComboBox *>(QStringLiteral("linwinThemeSelector"));
+        if(themes) {
+            const int index=themes->findData(id.mid(6));
+            if(index>=0) themes->setCurrentIndex(index);
+        }
+    } else if(id.startsWith("workspace:")) {
+        bool ok=false;const int slot=id.mid(10).toInt(&ok);
+        if(ok && LinWinWorkspace::validSlot(slot)) loadWorkspaceProfile(slot);
+    }
 }
 
 void MainWindow::showQuickControls()

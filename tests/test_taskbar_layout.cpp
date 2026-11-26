@@ -167,6 +167,27 @@ int main(int argc, char **argv)
                  "Neon must show widgets on a sufficiently large desktop.")) return 1;
     const QString evidence = qEnvironmentVariable("LINWIN_VISUAL_EVIDENCE_DIR");
     if (!evidence.isEmpty() && !QDir().mkpath(evidence)) return 1;
+    auto *paletteShortcut=window.findChild<QShortcut *>(QStringLiteral("linwinCommandPaletteShortcut"));
+    if(!require(paletteShortcut,"Command palette shortcut must exist.")) return 1;
+    bool paletteOk=false;
+    QTimer::singleShot(0,&window,[&]{
+        auto *palette=window.findChild<QDialog *>(QStringLiteral("linwinCommandPalette"));
+        auto *search=palette?palette->findChild<QLineEdit *>(QStringLiteral("linwinCommandSearch")):nullptr;
+        auto *results=palette?palette->findChild<QListWidget *>(QStringLiteral("linwinCommandResults")):nullptr;
+        if(search && results) {
+            search->setText(QStringLiteral("impossible-unmatched-query"));
+            paletteOk=results->count()==0;
+            QMetaObject::invokeMethod(search,"returnPressed",Qt::DirectConnection);
+            search->setText(QStringLiteral("theme minimal"));
+            paletteOk=paletteOk && results->count()==1 && results->currentItem()!=nullptr;
+            if(paletteOk && !evidence.isEmpty()) paletteOk=palette->grab().save(QDir(evidence).filePath(QStringLiteral("native-command-palette.png")));
+            if(paletteOk) QMetaObject::invokeMethod(search,"returnPressed",Qt::DirectConnection);
+            else palette->reject();
+        } else if(palette) palette->reject(); else QApplication::closeAllWindows();
+    });
+    QMetaObject::invokeMethod(paletteShortcut,"activated",Qt::DirectConnection);
+    if(!require(paletteOk && themes->currentData().toString()==QStringLiteral("minimal"),"Palette must filter and execute the selected theme.")) return 1;
+    themes->setCurrentIndex(themes->findData(QStringLiteral("neon")));
     auto *quickShortcut=window.findChild<QShortcut *>(QStringLiteral("linwinQuickControlsShortcut"));
     if (!require(quickShortcut,"Quick controls shortcut must exist.")) return 1;
     bool quickOk=false;

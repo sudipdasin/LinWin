@@ -60,6 +60,8 @@ private:
     void cycleExternalWindow();
     void showWindowOverview();
     void showQuickControls();
+    void showCommandPalette();
+    bool commandPaletteOpen_=false;
     bool quickControlsOpen_ = false;
     bool overviewOpen_ = false;
     void refreshWorkspaces();
