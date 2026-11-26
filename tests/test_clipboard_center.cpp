@@ -39,7 +39,7 @@ int main(int argc, char **argv)
         }
     }
     const auto *capture = widget.findChild<QCheckBox *>(QStringLiteral("captureClipboard"));
-    const auto *middleClick = widget.findChild<QCheckBox *>(QStringLiteral("middleClickPaste"));
+    auto *middleClick = widget.findChild<QCheckBox *>(QStringLiteral("middleClickPaste"));
     if (capture == nullptr || capture->isChecked() || middleClick == nullptr || middleClick->isChecked()) {
         std::cerr << "Clipboard capture and middle-click paste must start off\n";
         return 1;
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     captureToggle->setChecked(true);
     QApplication::clipboard()->setText(QStringLiteral("first clip"));
     application.processEvents();
-    const int savedCount = history->count();
+    int savedCount = history->count();
     if (savedCount != 1) {
         std::cerr << "Enabled clipboard history should capture a new text clip\n";
         return 1;
@@ -129,6 +129,8 @@ int main(int argc, char **argv)
         return 1;
     }
     middleClick->setChecked(false);
+    application.processEvents();
+    savedCount = history->count();
 
     widget.setComponentEnabled(false);
     if (widget.isEnabled()) {
