@@ -19,6 +19,8 @@ class SettingsHubWidget;
 class QAction;
 
 class QHBoxLayout;
+class QDialog;
+class QCloseEvent;
 class QLabel;
 class QKeyEvent;
 class QMenu;
@@ -37,11 +39,15 @@ public:
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     void showPage(int index);
+    void initializeToolWindows();
+    void hideToolWindows();
+    void syncToolButtons();
     void updateShellGeometry();
     void refreshExternalWindows();
     void updateExternalWindows(const QString &output);
@@ -62,6 +68,7 @@ private:
     void returnToLinuxDesktop();
     bool componentEnabled(const QString &component) const;
 
+    QHash<int, QDialog *> toolWindows_;
     QWidget *desktopArea_ = nullptr;
     DesktopSurface *desktopSurface_ = nullptr;
     DesktopWidgets *desktopWidgets_ = nullptr;

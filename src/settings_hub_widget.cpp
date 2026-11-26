@@ -222,6 +222,13 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
         });
     }
     outer->addWidget(componentFrame);
+    auto *independentWindows = new QCheckBox(tr("Open desktop tools in independent windows (applies on restart)"), this);
+    independentWindows->setObjectName(QStringLiteral("linwinIndependentWindows"));
+    independentWindows->setChecked(preferences.value(QStringLiteral("appearance/independentWindows"), true).toBool());
+    outer->addWidget(independentWindows);
+    connect(independentWindows, &QCheckBox::toggled, this, [](bool enabled) {
+        QSettings().setValue(QStringLiteral("appearance/independentWindows"), enabled);
+    });
 
     auto *textSizeRow = new QHBoxLayout;
     auto *textSizeLabel = new QLabel(tr("LinWin text size"), this);

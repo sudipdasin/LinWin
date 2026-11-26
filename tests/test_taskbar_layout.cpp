@@ -20,6 +20,7 @@
 #include <QComboBox>
 #include <QDir>
 #include <QPixmap>
+#include <QDialog>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -54,6 +55,7 @@ int main(int argc, char **argv)
     QSettings settings;
     settings.clear();
     settings.setValue(QStringLiteral("appearance/theme"), QStringLiteral("neon"));
+    settings.setValue(QStringLiteral("appearance/independentWindows"), false);
     settings.setValue(QStringLiteral("components/start-menu"), true);
     settings.setValue(QStringLiteral("components/files"), true);
     settings.setValue(QStringLiteral("components/task-manager"), true);
@@ -197,5 +199,30 @@ int main(int argc, char **argv)
     if (!require(!regularWindow.windowFlags().testFlag(Qt::FramelessWindowHint),
                  "The development window option should retain normal window decorations.")) return 1;
 
+    settings.setValue(QStringLiteral("appearance/independentWindows"), true);
+    MainWindow floating(true, false);
+    floating.resize(1180,760);
+    floating.show();
+    app.processEvents();
+    auto *icons = floating.findChild<QListWidget *>(QStringLiteral("desktopIcons"));
+    auto *files = floating.findChild<QDialog *>(QStringLiteral("linwinToolWindow_1"));
+    auto *tasks = floating.findChild<QDialog *>(QStringLiteral("linwinToolWindow_2"));
+    auto *floatingPages = floating.findChild<QStackedWidget *>(QStringLiteral("shellPages"));
+    if (!require(icons && files && tasks && floatingPages && !files->isVisible() && !tasks->isVisible(),
+                 "Independent native tools must begin closed.")) return 1;
+    icons->itemDoubleClicked(icons->item(0));
+    icons->itemDoubleClicked(icons->item(1));
+    app.processEvents();
+    if (!require(files->isVisible() && tasks->isVisible() && files->isWindow() && tasks->isWindow()
+                 && floatingPages->currentIndex()==0, "Two tools must coexist over the desktop.")) return 1;
+    files->close();
+    app.processEvents();
+    if (!require(!files->isVisible() && tasks->isVisible(), "Closing a tool must not close the other.")) return 1;
+    icons->itemDoubleClicked(icons->item(0));
+    app.processEvents();
+    if (!require(files->isVisible(), "A closed tool must be reopenable.")) return 1;
+    floating.findChild<QPushButton *>(QStringLiteral("desktopButton"))->click();
+    if (!require(!files->isVisible() && !tasks->isVisible(), "Show desktop must hide native tools.")) return 1;
+    floating.close();
     return 0;
 }

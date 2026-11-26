@@ -14,6 +14,9 @@
 
 #include <QApplication>
 #include <QDateTime>
+#include <QCloseEvent>
+#include <QDialog>
+#include <QScreen>
 #include <QEvent>
 #include <QDesktopServices>
 #include <QDir>
@@ -291,6 +294,8 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     pages_->addWidget(clipboardHistory_);
     settingsHub_ = new SettingsHubWidget(pages_);
     pages_->addWidget(settingsHub_);
+    if (overlayMode_ && QSettings().value(QStringLiteral("appearance/independentWindows"), true).toBool())
+        initializeToolWindows();
     connect(settingsHub_, &SettingsHubWidget::componentEnabledChanged,
             this, &MainWindow::applyComponentVisibility);
     connect(settingsHub_, &SettingsHubWidget::textScaleChanged,
@@ -802,15 +807,86 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     QMainWindow::keyPressEvent(event);
 }
 
+void MainWindow::initializeToolWindows()
+{
+    const QList<QPair<QWidget *, QString>> tools{
+        {fileManager_, tr("File Explorer")},
+        {taskManager_, tr("Task Manager")},
+        {clipboardHistory_, tr("Clipboard history")},
+        {settingsHub_, tr("Settings")}
+    };
+    int index = 1;
+    for (const auto &tool : tools) {
+        pages_->removeWidget(tool.first);
+        pages_->insertWidget(index, new QWidget(pages_));
+        auto *window = new QDialog(this, Qt::Window | Qt::WindowTitleHint |
+                                  Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint |
+                                  Qt::WindowCloseButtonHint);
+        window->setObjectName(QStringLiteral("linwinToolWindow_%1").arg(index));
+        window->setWindowTitle(tool.second);
+        window->setWindowModality(Qt::NonModal);
+        window->setAttribute(Qt::WA_DeleteOnClose, false);
+        auto *layout = new QVBoxLayout(window);
+        layout->setContentsMargins(0,0,0,0);
+        layout->addWidget(tool.first);
+        tool.first->show();
+        window->resize(index == 3 ? 560 : 900, index == 3 ? 500 : 650);
+        toolWindows_.insert(index, window);
+        connect(window, &QDialog::finished, this, [this](int) { syncToolButtons(); });
+        ++index;
+    }
+}
+
+void MainWindow::hideToolWindows()
+{
+    for (auto *window : toolWindows_) window->hide();
+    syncToolButtons();
+}
+
+void MainWindow::syncToolButtons()
+{
+    if (toolWindows_.isEmpty() || !homeButton_) return;
+    const QList<QPushButton *> buttons{filesButton_, tasksButton_, clipboardButton_, settingsButton_};
+    bool any = false;
+    for (int i=0; i<buttons.size(); ++i) {
+        const bool visible = toolWindows_.value(i+1)->isVisible();
+        buttons.at(i)->setChecked(visible);
+        any = any || visible;
+    }
+    homeButton_->setChecked(!any);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    hideToolWindows();
+    QMainWindow::closeEvent(event);
+}
+
 void MainWindow::showPage(int index)
 {
     if ((index == 1 && !componentEnabled(QStringLiteral("files")))
         || (index == 2 && !componentEnabled(QStringLiteral("task-manager")))
         || (index == 3 && !componentEnabled(QStringLiteral("clipboard"))))
         return;
-    pages_->setCurrentIndex(index);
     startMenu_->hide();
     startButton_->setChecked(false);
+    if (!toolWindows_.isEmpty()) {
+        if (index == 0) { hideToolWindows(); return; }
+        auto *window = toolWindows_.value(index, nullptr);
+        if (!window) return;
+        if (!window->isVisible()) {
+            const QRect area = screen() ? screen()->availableGeometry() : geometry();
+            const QSize size = window->size().boundedTo(area.size());
+            window->resize(size);
+            window->move(area.center() - QPoint(size.width()/2, size.height()/2) + QPoint((index-1)*20,(index-1)*16));
+        }
+        if (window->isMinimized()) window->showNormal(); else window->show();
+        window->raise();
+        window->activateWindow();
+        syncToolButtons();
+        return;
+    }
+    pages_->setCurrentIndex(index);
 }
 
 void MainWindow::showClipboardCenter()
@@ -887,6 +963,7 @@ void MainWindow::updateTaskbarLayout()
 void MainWindow::returnToLinuxDesktop()
 {
     if (shellSessionMode_) return;
+    hideToolWindows();
     showMinimized();
 }
 
@@ -912,7 +989,11 @@ void MainWindow::applyComponentVisibility(const QString &component, bool enabled
     if (component == QStringLiteral("files")) filesEnabled_ = enabled;
     else if (component == QStringLiteral("task-manager")) taskManagerEnabled_ = enabled;
     else if (component == QStringLiteral("clipboard")) clipboardEnabled_ = enabled;
-    pages_->widget(pageIndex)->setEnabled(enabled);
+    if (auto *window = toolWindows_.value(pageIndex, nullptr)) {
+        window->setEnabled(enabled);
+        if (!enabled) window->hide();
+        syncToolButtons();
+    } else pages_->widget(pageIndex)->setEnabled(enabled);
     if (component == QStringLiteral("clipboard")) clipboardHistory_->setComponentEnabled(enabled);
     if (!enabled && pages_->currentIndex() == pageIndex) showPage(0);
     updateTaskbarLayout();

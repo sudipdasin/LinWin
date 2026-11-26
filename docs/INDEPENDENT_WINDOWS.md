@@ -1,0 +1,5 @@
+# Independent desktop windows
+
+The default overlay candidate now hosts File Explorer, Task Manager, Clipboard and Settings in separate non-modal native Qt windows, instead of replacing the desktop page. Multiple tools may coexist; the XFCE window manager supplies movement, resizing, minimize/maximize and window decorations. The taskbar controls reopen or restore them. Show desktop and return to Linux hide LinWin tool windows. The previous stacked layout is retained via Settings → independent windows (restart required) and in the normal development window. No changes to the host window manager configuration.
+
+A native regression checks opening two tools, preserving the desktop, closing one, reopening, and show-desktop recovery. Prior stacked-layout tests remain enabled with the legacy setting. Actual XFCE focus, stacking, native decorations, snapping and multi-monitor behavior are not yet validated. This branch is staged separately, not promoted to the current live Render build or main. No CI invoked.
