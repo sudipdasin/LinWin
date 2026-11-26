@@ -11,6 +11,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QListView>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSize>
@@ -87,7 +88,15 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     applicationList_->setObjectName(QStringLiteral("applicationList"));
     applicationList_->setSelectionMode(QAbstractItemView::SingleSelection);
     applicationList_->setUniformItemSizes(true);
-    applicationList_->setIconSize(QSize(32, 32));
+    applicationList_->setViewMode(QListView::IconMode);
+    applicationList_->setFlow(QListView::LeftToRight);
+    applicationList_->setWrapping(true);
+    applicationList_->setResizeMode(QListView::Adjust);
+    applicationList_->setMovement(QListView::Static);
+    applicationList_->setGridSize(QSize(108, 88));
+    applicationList_->setIconSize(QSize(40, 40));
+    applicationList_->setWordWrap(true);
+    applicationList_->setSpacing(4);
 
     auto *actions = new QHBoxLayout;
     auto *openButton = new QPushButton(tr("Open"), this);
@@ -189,10 +198,10 @@ void AppLauncherWidget::refreshList()
         auto *item = new QListWidgetItem(appIcon(appInfo), appName(appInfo), applicationList_);
         item->setData(Qt::UserRole, id);
         const QString description = appDescription(appInfo);
-        item->setToolTip(description.isEmpty() ? appName(appInfo) : description);
-        if (pinnedApplicationIds_.contains(id)) {
-            item->setText(appName(appInfo) + tr("  •  Pinned"));
-        }
+        const bool pinned = pinnedApplicationIds_.contains(id);
+        const QString detail = description.isEmpty() ? appName(appInfo) : description;
+        item->setToolTip(pinned ? tr("Pinned · %1").arg(detail) : detail);
+        item->setData(Qt::UserRole + 1, pinned);
     }
 
     filterApplications(searchField_->text());

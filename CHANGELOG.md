@@ -2,6 +2,16 @@
 
 All notable LinWin changes will be recorded here. This project is in early development and has not made a stable release.
 
+## 1.0.0-beta.9 - Windows-style desktop interaction pass
+
+- Replace text-heavy pinned taskbar buttons with icon-first controls that keep explicit accessible names and tooltips.
+- Center and widen the searchable Start panel, and present installed apps as a wrapping icon grid with pinned apps first.
+- Add desktop context actions for Files, app search, personalization, switching back to Linux, and closing LinWin.
+- Improve the original blue desktop wallpaper gradient and retune taskbar contrast and active indicators.
+- Make LinWin's middle-click setting use the regular Ctrl+C clipboard when enabled; ignore it by default in LinWin text fields, preserve the clicked caret position, and leave host apps unchanged.
+- Keep published beta.8 download assets as the last published packages; this source version is not published yet.
+- Add regression checks for icon accessibility and centered Start-panel geometry.
+
 ## 1.0.0-beta.8 - Full-screen desktop overlay
 
 - Launch LinWin by default as a borderless full-screen overlay that covers the existing desktop and panel; retain `linwin --window` for a normal development window.

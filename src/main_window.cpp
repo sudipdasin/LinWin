@@ -62,6 +62,18 @@ QPushButton *makePanelButton(const QString &text, const QString &name, QWidget *
     button->setFocusPolicy(Qt::StrongFocus);
     return button;
 }
+
+QPushButton *makeTaskbarButton(const QString &label, const QString &name,
+                               QStyle::StandardPixmap icon, QWidget *parent)
+{
+    auto *button = makePanelButton(QString(), name, parent);
+    button->setIcon(parent->style()->standardIcon(icon));
+    button->setIconSize(QSize(22, 22));
+    button->setFixedWidth(42);
+    button->setAccessibleName(label);
+    button->setToolTip(label);
+    return button;
+}
 }
 
 MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
@@ -175,6 +187,25 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         addDesktopShortcut(tr("Settings"), QStyle::SP_FileDialogDetailedView, 4);
         desktopLayout->addLayout(shortcutColumn);
         desktopLayout->addStretch();
+        desktop->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(desktop, &QWidget::customContextMenuRequested, this,
+                [this, desktop](const QPoint &position) {
+            QMenu menu(desktop);
+            menu.addAction(style()->standardIcon(QStyle::SP_DirHomeIcon), tr("Open Files"),
+                           this, [this]() { showPage(1); });
+            menu.addAction(style()->standardIcon(QStyle::SP_DialogOpenButton), tr("Show apps"),
+                           this, [this]() {
+                if (startMenuEnabled_) startButton_->setChecked(true);
+            });
+            menu.addAction(style()->standardIcon(QStyle::SP_FileDialogDetailedView), tr("Personalize"),
+                           this, &MainWindow::showSettingsHub);
+            if (overlayMode_ && !shellSessionMode_) {
+                menu.addSeparator();
+                menu.addAction(tr("Switch to Linux desktop"), this, &MainWindow::returnToLinuxDesktop);
+                menu.addAction(tr("Close LinWin"), this, &QWidget::close);
+            }
+            menu.exec(desktop->mapToGlobal(position));
+        });
         pages_->addWidget(desktop);
     } else {
         scroll->hide();
@@ -205,14 +236,21 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     taskbarLayout->setContentsMargins(12, 7, 12, 7);
     taskbarLayout->setSpacing(8);
 
-    startButton_ = makePanelButton(QStringLiteral("⊞  Start"), QStringLiteral("startButton"), taskbar);
-    startButton_->setToolTip(tr("Open the app menu (Super or Ctrl+Esc)"));
-    homeButton_ = makePanelButton(QStringLiteral("Desktop"), QStringLiteral("desktopButton"), taskbar);
-    filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
-    tasksButton_ = makePanelButton(QStringLiteral("Tasks"), QStringLiteral("navigationButton"), taskbar);
+    startButton_ = makePanelButton(QStringLiteral("⊞"), QStringLiteral("startButton"), taskbar);
+    startButton_->setFixedWidth(42);
+    startButton_->setAccessibleName(tr("Start"));
+    startButton_->setToolTip(tr("Start — search and launch applications (Super or Ctrl+Esc)"));
+    homeButton_ = makeTaskbarButton(tr("Desktop"), QStringLiteral("desktopButton"),
+                                    QStyle::SP_DesktopIcon, taskbar);
+    filesButton_ = makeTaskbarButton(tr("Files"), QStringLiteral("filesButton"),
+                                     QStyle::SP_DirIcon, taskbar);
+    tasksButton_ = makeTaskbarButton(tr("Task Manager"), QStringLiteral("tasksButton"),
+                                     QStyle::SP_ComputerIcon, taskbar);
     tasksButton_->setToolTip(tr("Open Task Manager (Ctrl+Shift+Esc)"));
-    clipboardButton_ = makePanelButton(QStringLiteral("Clipboard"), QStringLiteral("navigationButton"), taskbar);
-    settingsButton_ = makePanelButton(QStringLiteral("Settings"), QStringLiteral("navigationButton"), taskbar);
+    clipboardButton_ = makeTaskbarButton(tr("Clipboard"), QStringLiteral("clipboardButton"),
+                                         QStyle::SP_FileDialogListView, taskbar);
+    settingsButton_ = makeTaskbarButton(tr("Settings"), QStringLiteral("settingsButton"),
+                                        QStyle::SP_FileDialogDetailedView, taskbar);
     if (overlayMode_) {
         signOutButton_ = makePanelButton(shellSessionMode_ ? tr("Sign out") : tr("Linux desktop"),
                                         QStringLiteral("returnDesktopButton"), taskbar);
@@ -399,7 +437,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     baseStyleSheet_ = QStringLiteral(
         "QMainWindow, QWidget { background: #f4f6fa; color: #172033; font-family: 'Sans Serif'; }"
         "#desktopArea { background: #f4f6fa; }"
-        "#windowsDesktop { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #0b4c9e, stop:0.55 #2478c9, stop:1 #77b9df); }"
+        "#windowsDesktop { background: qlineargradient(x1:0, y1:1, x2:1, y2:0, stop:0 #06316f, stop:0.38 #0876bd, stop:0.7 #20a2d7, stop:1 #c6efff); }"
         "#desktopShortcut { background: transparent; color: white; border: 1px solid transparent; border-radius: 5px; padding: 4px; }"
         "#desktopShortcut:hover { background: rgba(255,255,255,28); border-color: rgba(255,255,255,65); }"
         "#eyebrow { color: #3568d4; font-size: 11px; font-weight: 700; letter-spacing: 1px; }"
@@ -422,18 +460,18 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         "#dangerAction:hover { background: #ffe1df; }"
         "#secondaryAction { background: white; color: #263853; border: 1px solid #d5deeb; border-radius: 6px; padding: 8px 12px; }"
         "#secondaryAction:hover { background: #edf3ff; }"
-        "#taskbar { background: #17243a; border-top: 1px solid #263853; }"
-        "#taskbar QPushButton { background: transparent; color: #e5ecf7; border: 0; border-radius: 7px; padding: 9px 13px; font-size: 13px; }"
-        "#taskbar QPushButton:hover { background: #263853; }"
-        "#taskbar QPushButton:checked { background: #2d4770; color: white; }"
-        "#taskbar #startButton { background: #315fc0; color: white; font-weight: 700; padding-left: 16px; padding-right: 16px; }"
-        "#taskbar #startButton:hover { background: #3b6dd5; }"
+        "#taskbar { background: rgba(18, 26, 43, 242); border-top: 1px solid rgba(255,255,255,28); }"
+        "#taskbar QPushButton { background: transparent; color: #e5ecf7; border: 0; border-radius: 7px; padding: 7px; font-size: 13px; }"
+        "#taskbar QPushButton:hover { background: #31435f; }"
+        "#taskbar QPushButton:checked { background: #304d76; color: white; border-bottom: 2px solid #68a5ff; }"
+        "#taskbar #startButton { background: #253d67; color: white; font-size: 22px; font-weight: 700; padding: 0; }"
+        "#taskbar #startButton:hover { background: #365987; }"
         "#windowSwitcherStatus { color: #9dabc2; font-size: 11px; padding: 0 8px; }"
         "#windowSwitcher QPushButton { background: #243550; color: #e5ecf7; border: 1px solid #354966; border-radius: 6px; padding: 6px 9px; }"
         "#windowSwitcher QPushButton:hover { background: #31496c; }"
         "#panelStatus { color: #b8c5d9; font-size: 12px; }"
         "#panelClock { color: #f3f6fb; font-size: 12px; font-weight: 600; min-width: 72px; }"
-        "#startMenuPanel { background: #ffffff; border: 1px solid #d8e0ec; border-radius: 14px; }"
+        "#startMenuPanel { background: #f3f6fc; border: 1px solid #d8e0ec; border-radius: 14px; }"
         "#startMenuPanel #pageTitle { font-size: 24px; }"
         "#startMenuPanel #applicationSearch { background: #f8faff; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
         "#startMenuPanel #primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }");
@@ -783,7 +821,8 @@ void MainWindow::updateShellGeometry()
     pages_->setGeometry(desktopArea_->rect());
     const int areaWidth = desktopArea_->width();
     const int areaHeight = desktopArea_->height();
-    const int menuWidth = qMin(440, qMax(300, areaWidth - 24));
-    const int menuHeight = qMin(570, qMax(280, areaHeight - 24));
-    startMenu_->setGeometry(12, qMax(12, areaHeight - menuHeight - 12), menuWidth, menuHeight);
+    const int menuWidth = qMin(520, qMax(300, areaWidth - 24));
+    const int menuHeight = qMin(610, qMax(260, areaHeight - 24));
+    startMenu_->setGeometry(qMax(12, (areaWidth - menuWidth) / 2),
+                             qMax(12, areaHeight - menuHeight - 12), menuWidth, menuHeight);
 }

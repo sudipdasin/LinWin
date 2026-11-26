@@ -28,7 +28,8 @@ constexpr qsizetype kMaximumTextLength = 20000;
 const QString kHistorySetting = QStringLiteral("clipboard/history");
 const QString kCaptureSetting = QStringLiteral("clipboard/historyEnabled");
 const QString kPinnedSetting = QStringLiteral("clipboard/pinned");
-const QString kMiddleClickSetting = QStringLiteral("clipboard/allowPrimaryPasteInLinWin");
+const QString kMiddleClickSetting = QStringLiteral("clipboard/windowsMiddleClickPaste");
+const QString kLegacyMiddleClickSetting = QStringLiteral("clipboard/allowPrimaryPasteInLinWin");
 
 QString previewText(QString text)
 {
@@ -67,14 +68,14 @@ ClipboardHistoryWidget::ClipboardHistoryWidget(QWidget *parent)
     captureCheckBox_->setObjectName(QStringLiteral("captureClipboard"));
 
     middleClickPasteCheckBox_ = new QCheckBox(
-        tr("Paste selected text when I middle-click in LinWin"), this);
+        tr("Paste clipboard text when I middle-click in LinWin"), this);
     middleClickPasteCheckBox_->setObjectName(QStringLiteral("middleClickPaste"));
     middleClickPasteCheckBox_->setToolTip(
-        tr("Linux desktop apps may use the middle button to paste separately selected text. "
-           "This preference affects LinWin text fields only; it does not change other apps."));
+        tr("When enabled, a middle click pastes the regular Ctrl+C clipboard in LinWin text fields. "
+           "It does not use Linux's separate selection buffer or change other apps."));
     auto *middleClickHelp = new QLabel(
-        tr("Off by default to prevent accidental text insertion when pressing the scroll wheel. "
-           "This does not change middle-click behavior in browsers or other desktop apps."), this);
+        tr("Off by default. When enabled, middle-click pastes the same text as Ctrl+V in LinWin. "
+           "Other apps keep their own middle-click behavior."), this);
     middleClickHelp->setObjectName(QStringLiteral("middleClickHelp"));
     middleClickHelp->setWordWrap(true);
 
@@ -129,7 +130,9 @@ ClipboardHistoryWidget::ClipboardHistoryWidget(QWidget *parent)
         history_.removeLast();
     }
     captureCheckBox_->setChecked(settings.value(kCaptureSetting, false).toBool());
-    middleClickPasteCheckBox_->setChecked(settings.value(kMiddleClickSetting, false).toBool());
+    middleClickPasteCheckBox_->setChecked(
+        settings.value(kMiddleClickSetting,
+                       settings.value(kLegacyMiddleClickSetting, false)).toBool());
     refreshList();
     QApplication::instance()->installEventFilter(this);
 
@@ -395,22 +398,45 @@ void ClipboardHistoryWidget::updateMiddleClickPreference(bool enabled)
     QSettings settings;
     settings.setValue(kMiddleClickSetting, enabled);
     statusLabel_->setText(enabled
-        ? tr("Middle-click paste is enabled in LinWin text fields. Other apps keep their own setting.")
-        : tr("Middle-click paste is disabled in LinWin text fields. Other apps are unchanged."));
+        ? tr("Middle-click now pastes the regular clipboard in LinWin text fields. Other apps are unchanged.")
+        : tr("Middle-click is ignored in LinWin text fields. Other apps are unchanged."));
 }
 
 bool ClipboardHistoryWidget::eventFilter(QObject *watched, QEvent *event)
 {
-    if ((!componentEnabled_ || !middleClickPasteCheckBox_->isChecked())
-        && event->type() == QEvent::MouseButtonPress) {
+    if (event->type() == QEvent::MouseButtonPress) {
         QWidget *widget = qobject_cast<QWidget *>(watched);
         QWidget *current = widget;
         while (current != nullptr) {
-            if (qobject_cast<QLineEdit *>(current) != nullptr
-                || qobject_cast<QPlainTextEdit *>(current) != nullptr
-                || qobject_cast<QTextEdit *>(current) != nullptr) {
-                if (static_cast<QMouseEvent *>(event)->button() == Qt::MiddleButton) return true;
-                break;
+            auto *lineEdit = qobject_cast<QLineEdit *>(current);
+            auto *plainEdit = qobject_cast<QPlainTextEdit *>(current);
+            auto *textEdit = qobject_cast<QTextEdit *>(current);
+            if (lineEdit != nullptr || plainEdit != nullptr || textEdit != nullptr) {
+                auto *mouseEvent = static_cast<QMouseEvent *>(event);
+                if (mouseEvent->button() != Qt::MiddleButton) break;
+
+                if (!componentEnabled_ || !middleClickPasteCheckBox_->isChecked()) return true;
+                if ((lineEdit != nullptr && lineEdit->isReadOnly())
+                    || (plainEdit != nullptr && plainEdit->isReadOnly())
+                    || (textEdit != nullptr && textEdit->isReadOnly())) return true;
+
+                const QPoint editorPosition = current->mapFromGlobal(
+                    mouseEvent->globalPosition().toPoint());
+                const QString text = clipboard_ != nullptr
+                    ? clipboard_->text(QClipboard::Clipboard) : QString();
+                if (!text.isEmpty()) {
+                    if (lineEdit != nullptr) {
+                        lineEdit->setCursorPosition(lineEdit->cursorPositionAt(editorPosition));
+                        lineEdit->insert(text);
+                    } else if (plainEdit != nullptr) {
+                        plainEdit->setTextCursor(plainEdit->cursorForPosition(editorPosition));
+                        plainEdit->insertPlainText(text);
+                    } else {
+                        textEdit->setTextCursor(textEdit->cursorForPosition(editorPosition));
+                        textEdit->insertPlainText(text);
+                    }
+                }
+                return true;
             }
             current = current->parentWidget();
         }

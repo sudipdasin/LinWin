@@ -8,9 +8,12 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSettings>
+#include <QSize>
 #include <QStackedWidget>
 #include <QDebug>
 #include <QLabel>
+#include <QListWidget>
+#include <QListView>
 #include <QFrame>
 
 namespace {
@@ -57,12 +60,11 @@ int main(int argc, char **argv)
     auto *more = window.findChild<QPushButton *>(QStringLiteral("taskbarOverflowButton"));
     auto *workspaceButton = window.findChild<QPushButton *>(QStringLiteral("workspaceButton"));
     auto *desktopButton = window.findChild<QPushButton *>(QStringLiteral("desktopButton"));
-    QPushButton *clipboard = nullptr;
-    QPushButton *settingsButton = nullptr;
-    for (auto *button : window.findChildren<QPushButton *>()) {
-        if (button->text() == QStringLiteral("Clipboard")) clipboard = button;
-        if (button->text() == QStringLiteral("Settings")) settingsButton = button;
-    }
+    auto *clipboard = window.findChild<QPushButton *>(QStringLiteral("clipboardButton"));
+    auto *settingsButton = window.findChild<QPushButton *>(QStringLiteral("settingsButton"));
+    auto *startButton = window.findChild<QPushButton *>(QStringLiteral("startButton"));
+    auto *startMenu = window.findChild<QWidget *>(QStringLiteral("startMenuPanel"));
+    auto *applicationList = window.findChild<QListWidget *>(QStringLiteral("applicationList"));
     auto *returnDesktop = window.findChild<QPushButton *>(QStringLiteral("returnDesktopButton"));
     auto *closeLinWin = window.findChild<QPushButton *>(QStringLiteral("closeLinWinButton"));
     auto *switcher = window.findChild<QScrollArea *>(QStringLiteral("windowSwitcher"));
@@ -70,11 +72,12 @@ int main(int argc, char **argv)
     auto *taskbar = window.findChild<QFrame *>(QStringLiteral("taskbar"));
     auto *clock = window.findChild<QLabel *>(QStringLiteral("panelClock"));
     auto *pages = window.findChild<QStackedWidget *>(QStringLiteral("shellPages"));
+    auto *desktopArea = window.findChild<QWidget *>(QStringLiteral("desktopArea"));
 
     auto *desktopCanvas = window.findChild<QWidget *>(QStringLiteral("windowsDesktop"));
     if (!require(more && workspaceButton && desktopButton && clipboard && settingsButton && returnDesktop && closeLinWin
                      && switcher && systemStatus && pages && desktopCanvas
-                     && taskbar && clock,
+                     && taskbar && clock && startButton && startMenu && desktopArea && applicationList,
                  "Expected taskbar controls were not created.")) return 1;
     if (!require(window.windowFlags().testFlag(Qt::FramelessWindowHint),
                  "The desktop overlay should hide the native window frame.")) return 1;
@@ -83,6 +86,23 @@ int main(int argc, char **argv)
                      && returnDesktop->isVisible() && closeLinWin->isVisible()
                      && switcher->isVisible() && systemStatus->isVisible(),
                  "Wide taskbar should show its full navigation and window details.")) return 1;
+    if (!require(clipboard->text().isEmpty() && settingsButton->text().isEmpty()
+                     && clipboard->iconSize() == QSize(22, 22)
+                     && clipboard->accessibleName() == QStringLiteral("Clipboard")
+                     && settingsButton->accessibleName() == QStringLiteral("Settings"),
+                 "Pinned taskbar actions should be icon-first while retaining accessible names.")) return 1;
+
+    startButton->click();
+    app.processEvents();
+    if (!require(startMenu->isVisible()
+                     && qAbs(startMenu->geometry().center().x() - desktopArea->width() / 2) <= 1,
+                 "Start should open as a centered panel above the desktop taskbar.")) return 1;
+    if (!require(applicationList->viewMode() == QListView::IconMode
+                     && applicationList->flow() == QListView::LeftToRight
+                     && applicationList->wordWrap(),
+                 "Start should present installed apps as a wrapping icon grid.")) return 1;
+    startButton->click();
+    app.processEvents();
 
     window.resize(480, 600);
     app.processEvents();

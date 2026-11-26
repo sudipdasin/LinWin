@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QSettings>
 #include <QMetaObject>
+#include <QMouseEvent>
 #include <QPointer>
 
 #include <iostream>
@@ -24,6 +25,8 @@ int main(int argc, char **argv)
     settings.clear();
 
     ClipboardHistoryWidget widget;
+    widget.show();
+    application.processEvents();
     const QStringList required{
         QStringLiteral("captureClipboard"), QStringLiteral("middleClickPaste"),
         QStringLiteral("clipboardSearch"), QStringLiteral("clipboardEntries"),
@@ -86,6 +89,47 @@ int main(int argc, char **argv)
         std::cerr << "Choosing a quick-pick item should copy it and close the popup\n";
         return 1;
     }
+
+    auto *search = widget.findChild<QLineEdit *>(QStringLiteral("clipboardSearch"));
+    if (search == nullptr) {
+        std::cerr << "Clipboard search field was not created\n";
+        return 1;
+    }
+    const auto sendMiddleClick = [search](const QPoint &position) {
+        const QPoint globalPosition = search->mapToGlobal(position);
+        QMouseEvent event(QEvent::MouseButtonPress, QPointF(position), QPointF(globalPosition),
+                          Qt::MiddleButton, Qt::MiddleButton, Qt::NoModifier);
+        QApplication::sendEvent(search, &event);
+    };
+    search->setText(QStringLiteral("ABCD"));
+    QPoint clickPosition(-1, search->height() / 2);
+    for (int x = 0; x < search->width(); ++x) {
+        if (search->cursorPositionAt(QPoint(x, clickPosition.y())) == 2) {
+            clickPosition.setX(x);
+            break;
+        }
+    }
+    if (clickPosition.x() < 0) {
+        std::cerr << "Could not find a test click point at the middle of the search text\n";
+        return 1;
+    }
+    QApplication::clipboard()->setText(QStringLiteral("regular clipboard"), QClipboard::Clipboard);
+    if (QApplication::clipboard()->supportsSelection()) {
+        QApplication::clipboard()->setText(QStringLiteral("separate selection"), QClipboard::Selection);
+    }
+    sendMiddleClick(clickPosition);
+    if (search->text() != QStringLiteral("ABCD")) {
+        std::cerr << "Middle-click should be ignored by default in LinWin text fields\n";
+        return 1;
+    }
+    middleClick->setChecked(true);
+    sendMiddleClick(clickPosition);
+    if (search->text() != QStringLiteral("ABregular clipboardCD")) {
+        std::cerr << "Enabled middle-click should paste the regular clipboard, not PRIMARY selection\n";
+        return 1;
+    }
+    middleClick->setChecked(false);
+
     widget.setComponentEnabled(false);
     if (widget.isEnabled()) {
         std::cerr << "Disabled clipboard component should not remain interactive\n";
