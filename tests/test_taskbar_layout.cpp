@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
 #include "desktop_surface.h"
+#include "snap_controller.h"
 #include "workspace_state.h"
 
 #include <QAction>
@@ -232,5 +233,24 @@ int main(int argc, char **argv)
     floating.findChild<QPushButton *>(QStringLiteral("desktopButton"))->click();
     if (!require(!files->isVisible() && !tasks->isVisible(), "Show desktop must hide native tools.")) return 1;
     floating.close();
+    // Exercise the real controller on a small native dialog independently of
+    // the content minimum sizes of the full File Explorer and Task Manager.
+    QDialog probe;
+    probe.resize(240,180);
+    probe.move(50,50);
+    auto *controller=new SnapController(&probe,nullptr);
+    auto *layout=new QVBoxLayout(&probe);
+    layout->addWidget(controller->createButton());
+    probe.show();
+    app.processEvents();
+    const QRect original=probe.geometry();
+    if (!require(controller->snap(LinWinSnap::Zone::Left), "Live left snap must succeed.")) return 1;
+    app.processEvents();
+    if (!require(probe.width()>original.width() && probe.height()>original.height(),
+                 "Live snap must resize the native dialog.")) return 1;
+    controller->restore();
+    app.processEvents();
+    if (!require(probe.size()==original.size(), "Restore must recover the previous native window size.")) return 1;
+    probe.close();
     return 0;
 }
