@@ -34,6 +34,7 @@
 #include <QImage>
 #include <QEventLoop>
 #include "weather_widget.h"
+#include "desktop_status_widget.h"
 
 namespace {
 bool require(bool condition, const char *message)
@@ -245,6 +246,13 @@ int main(int argc, char **argv)
     window.resize(1920,1080);
     app.processEvents();
     {QEventLoop settle;QTimer::singleShot(350,&settle,&QEventLoop::quit);settle.exec();}
+    auto *statusFrame=window.findChild<QFrame *>(QStringLiteral("linwinStatusArea"));
+    auto *statusArea=static_cast<DesktopStatus *>(statusFrame);
+    auto *network=statusFrame?statusFrame->findChild<QPushButton *>(QStringLiteral("linwinStatusNetwork")):nullptr;
+    auto *audio=statusFrame?statusFrame->findChild<QPushButton *>(QStringLiteral("linwinStatusAudio")):nullptr;
+    if(!require(statusArea && statusArea->isVisible() && statusArea->pollingActive() && network && audio
+                && !network->icon().isNull() && !network->toolTip().isEmpty() && !audio->accessibleName().isEmpty(),
+                "Wide Neon taskbar must expose actual local status and audio controls."))return 1;
     auto *calendar=window.findChild<QCalendarWidget *>(QStringLiteral("linwinDesktopCalendar"));
     auto *calendarTable=calendar?calendar->findChild<QTableView *>():nullptr;
     auto *taskbarSearch=window.findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"));
@@ -270,6 +278,10 @@ int main(int argc, char **argv)
                 && menu->findChild<QFrame *>(QStringLiteral("linwinStartFooter")) && menu->findChild<QPushButton *>(QStringLiteral("linwinStartPower"))
                 && start->text().isEmpty() && !start->accessibleName().isEmpty(),
                 "Start must paint its own background and open the pinned view."))return 1;
+    auto *grid=menu->findChild<QListWidget *>(QStringLiteral("pinnedApps"));
+    if(!require(menu->width()>=650 && menu->width()<=680 && grid && grid->gridSize().width()>=72
+                && grid->viewport()->width()/grid->gridSize().width()==4,
+                "1920-wide reference Start must preserve its proportional width and four-column grid."))return 1;
     const auto image=menu->grab().toImage();
     const QColor pixel=image.pixelColor(8,image.height()/2);
     const QColor expected(QStringLiteral("#09233e"));
@@ -288,10 +300,13 @@ int main(int argc, char **argv)
     if(!require(window.size()==QSize(1672,941),"Approved reference resolution must be preserved."))return 1;
     if(!physicalEvidence.isEmpty() && !window.grab().save(QDir(physicalEvidence).filePath(QStringLiteral("neon-1672x941-desktop.png"))))return 1;
     start->click();app.processEvents();
+    if(!require(menu->width()>=560 && menu->width()<=600 && grid->viewport()->width()/qMax(1,grid->gridSize().width())==4,
+                "Approved-size Start must retain reference proportions and four-column pinned layout."))return 1;
     if(!physicalEvidence.isEmpty() && !window.grab().save(QDir(physicalEvidence).filePath(QStringLiteral("neon-1672x941-start.png"))))return 1;
     start->click();
     window.resize(480, 600);
     app.processEvents();
+    if(!require(statusArea->isHidden() && !statusArea->pollingActive(),"Compact taskbar must suspend hidden status polling."))return 1;
     if (!require(more->isVisible() && workspaceButton->isHidden() && desktopButton->isHidden()
                      && clipboard->isHidden() && settingsButton->isHidden()
                      && returnDesktop->isHidden() && closeLinWin->isVisible()
