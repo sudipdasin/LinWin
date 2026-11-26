@@ -15,12 +15,15 @@ class QResizeEvent;
 class QPushButton;
 class QScrollArea;
 class QSlider;
+class QStackedWidget;
+class BackgroundSettingsPage;
 
 class SettingsHubWidget final : public QWidget {
     Q_OBJECT
 public:
     explicit SettingsHubWidget(QWidget *parent = nullptr);
     void focusSearch();
+    void showBackground();
     int textScalePercent() const;
     void setTextScalePercent(int percent);
 
@@ -28,6 +31,7 @@ signals:
     void componentEnabledChanged(const QString &component, bool enabled);
     void textScaleChanged(int percent);
     void themeChanged(const QString &id);
+    void backgroundChanged();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -47,6 +51,8 @@ private:
     void openCategory(int index);
     void updateTextScaleStylesheet(int percent);
 
+    QStackedWidget *sections_=nullptr;
+    BackgroundSettingsPage *backgroundPage_=nullptr;
     QLineEdit *search_ = nullptr;
     QLabel *resultStatus_ = nullptr;
     QLabel *emptyState_ = nullptr;

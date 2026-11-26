@@ -317,6 +317,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 });
             }
             menu.addSeparator();
+            menu.addAction(tr("Personalize"),this,[this]{showPage(4);settingsHub_->showBackground();});
             menu.addAction(tr("Settings"), this, &MainWindow::showSettingsHub);
             if (!shellSessionMode_)
                 menu.addAction(tr("Return to Linux desktop"), this, &MainWindow::returnToLinuxDesktop);
@@ -351,6 +352,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             this, &MainWindow::applyComponentVisibility);
     connect(settingsHub_, &SettingsHubWidget::textScaleChanged,
             this, &MainWindow::applyTextScale);
+    connect(settingsHub_,&SettingsHubWidget::backgroundChanged,this,[this]{if(desktopSurface_)desktopSurface_->reloadBackground();});
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
     startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
@@ -800,6 +802,7 @@ void MainWindow::showCommandPalette()
     if(componentEnabled(QStringLiteral("task-manager"))) add("tasks",tr("Open Task Manager"),tr("cpu ram processes performance"),Glyph::Tasks);
     if(componentEnabled(QStringLiteral("clipboard"))) add("clipboard",tr("Open Clipboard history"),tr("copy paste"),Glyph::Clipboard);
     add("settings",tr("Open Settings"),tr("preferences configuration"),Glyph::Settings);
+    add("background",tr("Personalization: Background"),tr("wallpaper picture slideshow color"),Glyph::Settings);
     add("overview",tr("Open Task View"),tr("switch windows overview"),Glyph::Desktop);
     add("desktop",tr("Show desktop / restore hidden tools"),tr("hide windows recall"),Glyph::Desktop);
     if(desktopSurface_) {
@@ -822,6 +825,7 @@ void MainWindow::showCommandPalette()
     else if(id=="tasks") showPage(2);
     else if(id=="clipboard") showClipboardCenter();
     else if(id=="settings") showSettingsHub();
+    else if(id=="background"){showPage(4);settingsHub_->showBackground();}
     else if(id=="overview") showWindowOverview();
     else if(id=="desktop") toggleWorkspaceVisibility();
     else if(id=="quick") showQuickControls();

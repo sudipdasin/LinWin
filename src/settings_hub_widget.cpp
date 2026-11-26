@@ -3,6 +3,8 @@
 #include "embedded_update_dialog.h"
 #include "display_information_dialog.h"
 #include "theme_visuals.h"
+#include "background_settings_page.h"
+#include <QStackedWidget>
 #include <QComboBox>
 #include "text_scale.h"
 
@@ -86,8 +88,9 @@ QVector<Category> categories()
              {QStringLiteral("systemsettings"), {QStringLiteral("kcm_access")}},
              {QStringLiteral("mate-keyboard-properties"), {}}
          }},
-        {QStringLiteral("Appearance"), QStringLiteral("Themes, colors, fonts, icons, and desktop appearance."),
-         QStringLiteral("appearance theme colors fonts icons wallpaper"), {
+        {QStringLiteral("Personalization"), QStringLiteral("Background, pictures, colors, slideshow, themes and desktop appearance."),
+         QStringLiteral("appearance personalization background wallpaper theme colors fonts icons slideshow"), {
+             {QStringLiteral("internal:background"), {}},
              {QStringLiteral("gnome-control-center"), {QStringLiteral("appearance")}},
              {QStringLiteral("xfce4-appearance-settings"), {}},
              {QStringLiteral("systemsettings"), {QStringLiteral("kcm_lookandfeel")}},
@@ -139,7 +142,7 @@ QString findAvailableProgram(const QVector<Candidate> &candidates, QStringList *
         return score(left) < score(right);
     });
     for (const Candidate &candidate : ordered) {
-        if (candidate.program == QStringLiteral("internal:linwin-update")) return candidate.program;
+        if (candidate.program.startsWith(QStringLiteral("internal:"))) return candidate.program;
         const QString path = QStandardPaths::findExecutable(candidate.program);
         if (!path.isEmpty()) {
             *arguments = candidate.arguments;
@@ -166,7 +169,10 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
         "#settingsOpenButton:disabled { background: #e8edf4; color: #788397; }"
         "#settingsEmptyState { color: #64738a; background: white; border: 1px dashed #cfd9e8; border-radius: 10px; padding: 22px; }");
     setStyleSheet(baseStyleSheet_);
-    auto *outer = new QVBoxLayout(this);
+    auto *root=new QVBoxLayout(this);root->setContentsMargins(0,0,0,0);
+    sections_=new QStackedWidget(this);root->addWidget(sections_);
+    auto *overview=new QWidget(sections_);sections_->addWidget(overview);
+    auto *outer = new QVBoxLayout(overview);
     outer->setContentsMargins(28, 24, 28, 20);
     outer->setSpacing(12);
 
@@ -377,11 +383,19 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     }
 
     connect(search_, &QLineEdit::textChanged, this, &SettingsHubWidget::filterCategories);
+    backgroundPage_=new BackgroundSettingsPage(sections_,[this]{emit backgroundChanged();},[this]{focusSearch();});
+    sections_->addWidget(backgroundPage_);
     filterCategories({});
+}
+
+void SettingsHubWidget::showBackground()
+{
+    backgroundPage_->reload();sections_->setCurrentWidget(backgroundPage_);
 }
 
 void SettingsHubWidget::focusSearch()
 {
+    sections_->setCurrentIndex(0);
     search_->setFocus(Qt::ShortcutFocusReason);
     search_->selectAll();
 }
@@ -449,6 +463,7 @@ void SettingsHubWidget::openCategory(int index)
     if (index < 0 || index >= targets_.size()) return;
     const LaunchTarget &target = targets_.at(index);
     if (target.program.isEmpty()) return;
+    if (target.program == QStringLiteral("internal:background")) {showBackground();return;}
     if (target.program == QStringLiteral("internal:linwin-update")) {
         EmbeddedUpdateDialog dialog(this);
         dialog.exec();
