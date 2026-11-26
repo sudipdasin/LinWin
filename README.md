@@ -1,10 +1,10 @@
 <!-- LATEST-RELEASE:START -->
-## Latest published release: v1.0.0-beta.7
-**[Release notes and downloads](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.7)** · Prerelease
+## Latest published release: v1.0.0-beta.8
+**[Release notes and downloads](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.8)** · Prerelease
 
 | Asset | Download |
 | --- | --- |
-| Source archive | [Download ZIP](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.7) |
+| Source archive | [Download ZIP](https://github.com/sudipdasin/LinWin/releases/tag/v1.0.0-beta.8) |
 <!-- LATEST-RELEASE:END -->
 
 # LinWin
