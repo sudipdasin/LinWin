@@ -60,6 +60,7 @@ public:
         timer_.setInterval(2000);
         connect(&timer_,&QTimer::timeout,this,[this]{refresh();});
     }
+    bool pollingActive() const { return timer_.isActive(); }
 protected:
     void showEvent(QShowEvent *e) override { QWidget::showEvent(e); previous_.reset(); refresh(); timer_.start(); }
     void hideEvent(QHideEvent *e) override { timer_.stop(); previous_.reset(); QWidget::hideEvent(e); }

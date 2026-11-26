@@ -36,6 +36,8 @@ public:
     }
 
     void setTheme(const QString &id) { themeId_ = LinWinVisual::qstr(LinWinVisual::theme(id).id); invalidate(); }
+    qint64 wallpaperCacheBytes() const { return static_cast<qint64>(wallpaper_.sizeInBytes()); }
+    quint64 rebuildCount() const { return rebuildCount_; }
     bool effectsEnabled() const { return effects_ && LinWinVisual::theme(themeId_).effects; }
     bool gpuPreferred() const { return preferGpu_ && LinWinVisual::theme(themeId_).effects; }
     void setEffectsEnabled(bool enabled)
@@ -132,6 +134,7 @@ private:
         }
         setProperty("renderBackend", usedShader ? QStringLiteral("OpenGL") : QStringLiteral("QPainter"));
         wallpaper_ = frame;
+        ++rebuildCount_;
         update();
     }
 #ifdef LINWIN_HAS_OPENGL
@@ -181,6 +184,7 @@ private:
     QString themeId_ = QStringLiteral("neon");
     QTimer timer_;
     QImage wallpaper_;
+    quint64 rebuildCount_=0;
     bool effects_ = true;
     bool preferGpu_ = true;
     bool gpuFailed_ = false;

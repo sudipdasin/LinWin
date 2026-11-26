@@ -6,9 +6,12 @@
 #include <QLinearGradient>
 #include <QPixmap>
 #include <QPolygonF>
+#include <QCoreApplication>
+#include <QObject>
+#include <array>
 namespace LinWinVisual {
 enum class Glyph { Files, Tasks, Settings, Clipboard, Desktop, Search, Snap, More };
-inline QIcon shellIcon(Glyph glyph) {
+inline QIcon rasterizeShellIcon(Glyph glyph) {
     QIcon icon;
     for (int size : {24,32,48,96}) {
         QPixmap pm(size,size); pm.fill(Qt::transparent);
@@ -33,6 +36,29 @@ inline QIcon shellIcon(Glyph glyph) {
         }
         p.end(); icon.addPixmap(pm);
     }
+    return icon;
+}
+struct ShellIconCache final : QObject {
+    explicit ShellIconCache(QObject *parent):QObject(parent) {}
+    std::array<QIcon,8> icons;
+    unsigned rasterizations=0;
+};
+inline ShellIconCache *shellIconCache() {
+    auto *app=QCoreApplication::instance();
+    if(!app) return nullptr;
+    // GUI-thread-only, app-owned lifetime. Avoid static QPixmaps at shutdown.
+    for(auto *child:app->children()) if(child->objectName()==QStringLiteral("linwinShellIconCache"))
+        return static_cast<ShellIconCache*>(child);
+    auto *cache=new ShellIconCache(app);
+    cache->setObjectName(QStringLiteral("linwinShellIconCache"));
+    return cache;
+}
+inline QIcon shellIcon(Glyph glyph) {
+    const auto index=static_cast<std::size_t>(glyph);
+    auto *cache=shellIconCache();
+    if(!cache || index>=cache->icons.size()) return {};
+    auto &icon=cache->icons[index];
+    if(icon.isNull()) {icon=rasterizeShellIcon(glyph);++cache->rasterizations;}
     return icon;
 }
 }
