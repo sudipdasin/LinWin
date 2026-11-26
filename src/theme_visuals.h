@@ -7,6 +7,7 @@
 #include <QLinearGradient>
 #include <QIcon>
 #include <QPixmap>
+#include <QSettings>
 namespace LinWinVisual {
 inline QString qstr(std::string_view s) { return QString::fromLatin1(s.data(), static_cast<qsizetype>(s.size())); }
 inline const LinWinTheme::Theme &theme(const QString &id) { return LinWinTheme::byId(id.toStdString()); }
@@ -36,12 +37,18 @@ inline QIcon logoIcon() {
     return QIcon(pix);
 }
 inline QString shellStyle(const LinWinTheme::Theme &t) {
-    const QString panel=qstr(t.panel), fg=qstr(t.text), accent=qstr(t.accent);
-    const QString field=t.light ? QStringLiteral("#ffffff") : QStringLiteral("#122e49");
-    const QString hover=t.light ? QStringLiteral("#d7e5f6") : QStringLiteral("#214563");
+    QSettings settings;
+    const QString mode=settings.value("visual/shellMode","theme").toString();
+    const bool light=mode=="light"||(mode!="dark"&&t.light);
+    const QString panel=mode=="light"?"#edf2f8":mode=="dark"?"#17222f":qstr(t.panel);
+    const QString fg=mode=="light"?"#172940":mode=="dark"?"#edf2f8":qstr(t.text);
+    const QColor custom(settings.value("visual/accent").toString());
+    const QString accent=custom.isValid()?custom.name():qstr(t.accent);
+    const QString field=light ? QStringLiteral("#ffffff") : QStringLiteral("#122e49");
+    const QString hover=light ? QStringLiteral("#d7e5f6") : QStringLiteral("#214563");
     const QString radius=t.effects ? QStringLiteral("9px") : QStringLiteral("0px");
-    const QString subtle=t.light ? QStringLiteral("#b8c9db") : QStringLiteral("#365575");
-    const QString muted=t.light ? QStringLiteral("#425773") : QStringLiteral("#b9d3e9");
+    const QString subtle=light ? QStringLiteral("#b8c9db") : QStringLiteral("#365575");
+    const QString muted=light ? QStringLiteral("#425773") : QStringLiteral("#b9d3e9");
     QString style=QStringLiteral(
         "#taskbar, #startMenuPanel { background:%1; color:%2; border:1px solid %7; border-radius:%4; }"
         "#taskbar QWidget, #startMenuPanel QLabel, #linwinStartViews, #linwinStartViews QWidget, #linwinStartRail { background:transparent; color:%2; }"

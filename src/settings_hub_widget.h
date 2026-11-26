@@ -18,6 +18,7 @@ class QSlider;
 class QStackedWidget;
 class BackgroundSettingsPage;
 class WindowsSettingsCatalogPage;
+class VisualSettingsPage;
 
 class SettingsHubWidget final : public QWidget {
     Q_OBJECT
@@ -34,6 +35,7 @@ signals:
     void textScaleChanged(int percent);
     void themeChanged(const QString &id);
     void backgroundChanged();
+    void visualChanged();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -56,6 +58,7 @@ private:
     QStackedWidget *sections_=nullptr;
     BackgroundSettingsPage *backgroundPage_=nullptr;
     WindowsSettingsCatalogPage *windowsCatalog_=nullptr;
+    VisualSettingsPage *colors_=nullptr,*startAppearance_=nullptr,*taskbarAppearance_=nullptr;
     QLineEdit *search_ = nullptr;
     QLabel *resultStatus_ = nullptr;
     QLabel *emptyState_ = nullptr;

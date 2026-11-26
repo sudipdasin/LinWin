@@ -354,6 +354,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     connect(settingsHub_, &SettingsHubWidget::textScaleChanged,
             this, &MainWindow::applyTextScale);
     connect(settingsHub_,&SettingsHubWidget::backgroundChanged,this,[this]{if(desktopSurface_)desktopSurface_->reloadBackground();});
+    connect(settingsHub_,&SettingsHubWidget::visualChanged,this,[this]{applyTextScale(settingsHub_->textScalePercent());updateTaskbarLayout();updateShellGeometry();});
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
     startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
@@ -1471,7 +1472,7 @@ void MainWindow::updateShellGeometry()
     if (desktopWidgets_) desktopWidgets_->setVisible(LinWinVisual::theme(themeId_).widgets && width() >= 1100 && height() >= 640);
     const auto menu=LinWinLayout::start(desktopArea_->width(),desktopArea_->height(),themeId_=="neon",QSettings().value("visual/startFullscreen",false).toBool());
     startMenu_->setGeometry(menu.x,menu.y,menu.width,menu.height);
-    if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0 && QSettings().value("visual/transparency",true).toBool()) {
+    if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0 && QSettings().value("visual/transparency",true).toBool() && QSettings().value("visual/shellMode","theme").toString()=="theme") {
         const QPoint origin=desktopSurface_->mapFrom(desktopArea_,startMenu_->pos());
         startMenu_->setGlassBackdrop(desktopSurface_->glassSample(QRect(origin,startMenu_->size())));
     } else startMenu_->setGlassBackdrop(QImage());

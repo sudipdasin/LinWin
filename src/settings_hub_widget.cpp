@@ -5,6 +5,7 @@
 #include "theme_visuals.h"
 #include "background_settings_page.h"
 #include "windows_settings_catalog_page.h"
+#include "visual_settings_page.h"
 #include <QStackedWidget>
 #include <QComboBox>
 #include "text_scale.h"
@@ -388,7 +389,16 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     connect(search_, &QLineEdit::textChanged, this, &SettingsHubWidget::filterCategories);
     backgroundPage_=new BackgroundSettingsPage(sections_,[this]{emit backgroundChanged();},[this]{focusSearch();});
     sections_->addWidget(backgroundPage_);
+    auto makeVisual=[this](const QString &name){
+        auto *page=new VisualSettingsPage(sections_,name,[this]{emit visualChanged();},[this]{showWindowsCatalog();});
+        sections_->addWidget(page);return page;
+    };
+    colors_=makeVisual("colors");startAppearance_=makeVisual("start");taskbarAppearance_=makeVisual("taskbar");
     windowsCatalog_=new WindowsSettingsCatalogPage(sections_,[this](const QString &route){
+        if(route=="colors"||route=="start"||route=="taskbar"){
+            auto *page=route=="colors"?colors_:route=="start"?startAppearance_:taskbarAppearance_;
+            page->reload();sections_->setCurrentWidget(page);return;
+        }
         if(route=="background"){showBackground();return;}
         focusSearch();
         if(route=="themes"){if(auto *themes=findChild<QComboBox *>("linwinThemeSelector"))themes->setFocus();}
