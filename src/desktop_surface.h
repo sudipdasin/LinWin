@@ -38,6 +38,23 @@ public:
     void setTheme(const QString &id) { themeId_ = LinWinVisual::qstr(LinWinVisual::theme(id).id); invalidate(); }
     qint64 wallpaperCacheBytes() const { return static_cast<qint64>(wallpaper_.sizeInBytes()); }
     quint64 rebuildCount() const { return rebuildCount_; }
+    // Sample the cached wallpaper only. Desktop icons and other windows are
+    // deliberately excluded; the host compositor remains untouched.
+    QImage glassSample(const QRect &logicalRegion) const {
+        if(themeId_!=QStringLiteral("neon")||!effectsEnabled()||wallpaper_.isNull()||width()<=0||height()<=0)return {};
+        const QRect region=logicalRegion.intersected(rect());
+        if(region.isEmpty())return {};
+        const QRectF source(region.x()*wallpaper_.width()/static_cast<qreal>(width()),
+                            region.y()*wallpaper_.height()/static_cast<qreal>(height()),
+                            region.width()*wallpaper_.width()/static_cast<qreal>(width()),
+                            region.height()*wallpaper_.height()/static_cast<qreal>(height()));
+        // Two downsampling passes approximate a broad low-pass blur. This
+        // small image is cached by the launcher, not recalculated per paint.
+        QImage sample(QSize(qMax(2,region.width()/12),qMax(2,region.height()/12)),QImage::Format_RGB32);
+        QPainter painter(&sample);painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawImage(QRectF(sample.rect()),wallpaper_,source);painter.end();
+        return sample.scaled(qMax(2,sample.width()/2),qMax(2,sample.height()/2),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+    }
     bool effectsEnabled() const { return effects_ && LinWinVisual::theme(themeId_).effects; }
     bool gpuPreferred() const { return preferGpu_ && LinWinVisual::theme(themeId_).effects; }
     void setEffectsEnabled(bool enabled)

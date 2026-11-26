@@ -1427,4 +1427,8 @@ void MainWindow::updateShellGeometry()
     const int menuWidth=qMax(1,qMin(660,areaWidth-2*inset));
     const int menuHeight=qMax(1,qMin(635,areaHeight-2*inset));
     startMenu_->setGeometry(inset,qMax(0,areaHeight-menuHeight-inset),menuWidth,menuHeight);
+    if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0) {
+        const QPoint origin=desktopSurface_->mapFrom(desktopArea_,startMenu_->pos());
+        startMenu_->setGlassBackdrop(desktopSurface_->glassSample(QRect(origin,startMenu_->size())));
+    } else startMenu_->setGlassBackdrop(QImage());
 }

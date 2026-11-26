@@ -4,6 +4,7 @@
 #include <QHash>
 #include <QStringList>
 #include <QWidget>
+#include <QImage>
 
 typedef struct _GAppInfo GAppInfo;
 
@@ -21,6 +22,7 @@ public:
     explicit AppLauncherWidget(QWidget *parent = nullptr);
     ~AppLauncherWidget() override;
     void focusSearch();
+    void setGlassBackdrop(const QImage &sample) { glassBackdrop_=sample;update(); }
 protected:
     void paintEvent(QPaintEvent *event) override;
 public:
@@ -42,6 +44,7 @@ private:
     void refreshRecentDocuments();
     void savePinnedApplications() const;
 
+    QImage glassBackdrop_;
     QStackedWidget *appViews_ = nullptr;
     QLineEdit *searchField_ = nullptr;
     QListWidget *applicationList_ = nullptr;

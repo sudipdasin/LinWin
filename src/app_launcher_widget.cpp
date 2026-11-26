@@ -29,6 +29,8 @@
 #include <QMenu>
 #include <QFileInfo>
 #include <QPainter>
+#include <QPainterPath>
+#include <QLinearGradient>
 
 #include <algorithm>
 
@@ -304,6 +306,15 @@ void AppLauncherWidget::paintEvent(QPaintEvent *)
     QStyleOption option;option.initFrom(this);
     QPainter painter(this);
     style()->drawPrimitive(QStyle::PE_Widget,&option,&painter,this);
+    if(glassBackdrop_.isNull())return;
+    painter.setRenderHint(QPainter::Antialiasing);painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    QPainterPath outline;outline.addRoundedRect(QRectF(rect()).adjusted(1,1,-1,-1),12,12);
+    painter.save();painter.setClipPath(outline);
+    painter.drawImage(rect(),glassBackdrop_);
+    QLinearGradient tint(0,0,width(),height());
+    tint.setColorAt(0,QColor(9,35,62,241));tint.setColorAt(1,QColor(8,34,60,244));
+    painter.fillRect(rect(),tint);painter.restore();
+    painter.setBrush(Qt::NoBrush);painter.setPen(QPen(QColor(54,178,225,180),1));painter.drawPath(outline);
 }
 
 void AppLauncherWidget::focusSearch()
