@@ -40,6 +40,7 @@ inline int run(QApplication &app,const QString &theme) {
     QSettings::setDefaultFormat(QSettings::IniFormat);
     QSettings::setPath(QSettings::IniFormat,QSettings::UserScope,temporary.path());
     QSettings settings;
+    settings.setFallbacksEnabled(false);
     settings.setValue(QStringLiteral("appearance/theme"),theme);
     settings.setValue(QStringLiteral("appearance/desktopEffects"),true);
     settings.setValue(QStringLiteral("appearance/desktopGpu"),false);
