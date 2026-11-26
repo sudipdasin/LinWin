@@ -239,7 +239,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             LinWinDesktopView::apply(icons);
         };
         const auto openIcon = [this](QListWidgetItem *item) {
-            if (item == nullptr) return;
+            if (item == nullptr || item->isHidden()) return;
             const QString place=item->data(Qt::UserRole+2).toString();
             if(place==QStringLiteral("computer") || place==QStringLiteral("home")) {
                 if(!componentEnabled(QStringLiteral("files"))) {
@@ -775,7 +775,7 @@ void MainWindow::updateExternalWindows(const QString &output)
             windowButtons_.insert(id, button);
             windowButtonsLayout_->addWidget(button);
         }
-        const bool premium=(themeId_==QStringLiteral("neon") || QSettings().value("visual/compactAllThemes",false).toBool()) && width()>=1450;
+        const bool premium=(themeId_==QStringLiteral("neon") || (themeId_!="minimal" && QSettings().value("visual/compactAllThemes",true).toBool())) && width()>=1450;
     QSettings visual;
     const bool small=visual.value("visual/smallTaskbar",false).toBool();
     const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());
@@ -1385,7 +1385,7 @@ void MainWindow::updateTaskbarLayout()
 {
     const bool compact = width() < 920;
     const bool hideWindowDetails = width() < 920;
-    const bool premium=(themeId_==QStringLiteral("neon") || QSettings().value("visual/compactAllThemes",false).toBool()) && width()>=1450;
+    const bool premium=(themeId_==QStringLiteral("neon") || (themeId_!="minimal" && QSettings().value("visual/compactAllThemes",true).toBool())) && width()>=1450;
     QSettings visual;
     const bool small=visual.value("visual/smallTaskbar",false).toBool();
     const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());

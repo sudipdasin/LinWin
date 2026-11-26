@@ -137,6 +137,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     auto *actions = new QHBoxLayout;
     auto *openButton = new QPushButton(tr("Open"), this);
     pinButton_ = new QPushButton(tr("Pin"), this);
+    pinButton_->setObjectName("linwinPinAction");
     openButton->setObjectName(QStringLiteral("primaryAction"));
     actions->addWidget(openButton);
     actions->addWidget(pinButton_);
@@ -500,7 +501,7 @@ void AppLauncherWidget::refreshList()
     if (applications_.isEmpty()) {
         statusLabel_->setText(tr("No installed applications were found in the desktop application registry."));
     } else {
-        statusLabel_->setText(tr("%1 applications found. Double-click an app or select it and choose Open.")
+        statusLabel_->setText(tr("%1 applications found. Click a pinned app, or double-click an app in All apps.")
                                   .arg(static_cast<qlonglong>(applications_.size())));
     }
 }

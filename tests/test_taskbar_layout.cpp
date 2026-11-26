@@ -383,6 +383,17 @@ int main(int argc, char **argv)
     QApplication::sendEvent(search,&enter);app.processEvents();
     if(!require(menu->isHidden()&&!start->isChecked(),"Launching a harmless installed application must dismiss Start."))return 1;
     search->clear();
+    start->click();app.processEvents();
+    search->setText("LinWin Regression alpha");app.processEvents();
+    auto *pinAction=menu->findChild<QPushButton *>("linwinPinAction");
+    if(!require(pinAction&&allList->currentItem()&&!allList->currentItem()->isHidden(),"Fixture must be selectable for pinning."))return 1;
+    const auto fixtureId=allList->currentItem()->data(Qt::UserRole).toString();
+    if(!settings.value("launcher/pinnedApplications").toStringList().contains(fixtureId))pinAction->click();
+    pinned->click();app.processEvents();
+    QListWidgetItem *fixturePin=nullptr;for(int i=0;i<grid->count();++i)if(grid->item(i)->data(Qt::UserRole).toString()==fixtureId)fixturePin=grid->item(i);
+    if(!require(fixturePin&&!fixturePin->isHidden(),"Pinning must put the actual registered app on the grid."))return 1;
+    grid->itemClicked(fixturePin);app.processEvents();
+    if(!require(menu->isHidden()&&!start->isChecked(),"Single click on a registered pinned app must launch it and dismiss Start."))return 1;
     window.resize(1672,941);app.processEvents();
     {QEventLoop settle;QTimer::singleShot(350,&settle,&QEventLoop::quit);settle.exec();}
     if(!require(window.size()==QSize(1672,941),"Approved reference resolution must be preserved."))return 1;
