@@ -2,6 +2,9 @@
 #pragma once
 #include "system_metrics.h"
 #include "weather_widget.h"
+#include "shell_icons.h"
+#include <QPushButton>
+#include <functional>
 #include <QCalendarWidget>
 #include <QTableView>
 #include <QHeaderView>
@@ -26,6 +29,7 @@ public:
         setFixedWidth(292);
         auto *layout=new QVBoxLayout(this);
         layout->setContentsMargins(0,14,0,0); layout->setSpacing(12);
+        actions_=new QHBoxLayout;actions_->addStretch();layout->addLayout(actions_);
         clock_=new QLabel(this); clock_->setObjectName(QStringLiteral("widgetClock"));
         clock_->setAlignment(Qt::AlignVCenter|Qt::AlignLeft); clock_->setTextFormat(Qt::RichText); clock_->setFixedHeight(112); layout->addWidget(clock_);
         auto *calendar=new QCalendarWidget(this);
@@ -43,6 +47,7 @@ public:
         }
         layout->addWidget(calendar);
         auto *system=new QFrame(this); system->setObjectName(QStringLiteral("widgetMetrics"));
+        system->setMinimumHeight(162);
         auto *metrics=new QVBoxLayout(system);
         metrics->setContentsMargins(10,10,10,10); metrics->setSpacing(5);
         auto *title=new QLabel(tr("System monitor"),system);
@@ -61,10 +66,13 @@ public:
             metrics->addWidget(bars_[i]);
         }
         layout->addWidget(system);
-        weather_=new WeatherWidget(this);layout->addWidget(weather_);layout->addStretch();
+        weather_=new WeatherWidget(this);weather_->setMinimumHeight(122);layout->addWidget(weather_);layout->addStretch();
         setStyleSheet(QStringLiteral(
             "#neonWidgets { background:transparent; }"
-            "#widgetClock,#widgetMetrics,#widgetWeather,QCalendarWidget { background:#092740; color:#e5f7ff; border:1px solid #148eb7; border-radius:12px; }"
+            "#widgetClock,#widgetMetrics,#widgetWeather,QCalendarWidget { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #123b59,stop:0.35 #0a233c,stop:1 #071c33); color:#e5f7ff; border:1px solid #1789b6; border-radius:14px; }"
+            "#widgetClock { border-left:4px solid #26dcff; }"
+            "#linwinWidgetAction { background:transparent; border:0; border-radius:6px; }"
+            "#linwinWidgetAction:hover { background:#214563; }"
             "#widgetClock { font-size:24px; font-weight:600; padding:12px; }"
             "#widgetMetrics { font-size:12px; }"
             "#widgetMetrics QLabel, #widgetWeather QLabel { background:transparent; color:#dbefff; }"
@@ -79,6 +87,18 @@ public:
         ));
         timer_.setInterval(2000);
         connect(&timer_,&QTimer::timeout,this,[this]{refresh();});
+    }
+    void setActions(std::function<void()> overview,std::function<void()> controls,std::function<void()> desktop) {
+        auto add=[this](const QString &title,LinWinVisual::Glyph glyph,std::function<void()> action){
+            auto *button=new QPushButton(LinWinVisual::shellIcon(glyph),QString(),this);
+            button->setObjectName(QStringLiteral("linwinWidgetAction"));
+            button->setIconSize(QSize(24,24));button->setFixedSize(36,34);
+            button->setAccessibleName(title);button->setToolTip(title);
+            connect(button,&QPushButton::clicked,this,[action]{action();});actions_->addWidget(button);
+        };
+        add(tr("Show desktop"),LinWinVisual::Glyph::Desktop,desktop);
+        add(tr("Task View"),LinWinVisual::Glyph::Snap,overview);
+        add(tr("Quick Controls"),LinWinVisual::Glyph::Settings,controls);
     }
     bool pollingActive() const { return timer_.isActive(); }
 protected:
@@ -112,6 +132,7 @@ private:
             bars_[i]->setToolTip(percent(metrics[i]));
         }
     }
+    QHBoxLayout *actions_=nullptr;
     WeatherWidget *weather_=nullptr;
     QLabel *clock_=nullptr;
     std::array<QLabel*,3> values_{};

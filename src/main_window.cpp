@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
 #include "desktop_status_widget.h"
+#include "place_icons.h"
+#include "pinned_tile_delegate.h"
 #include "workspace_profiles.h"
 #include "command_palette.h"
 #include "snap_controller.h"
@@ -187,7 +189,8 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         icons->setMovement(QListView::Static);
         icons->setGridSize(QSize(112, 88));
         icons->setTextElideMode(Qt::ElideNone);
-        icons->setIconSize(QSize(42, 42));
+        icons->setIconSize(QSize(44,44));
+        icons->setItemDelegate(new LinWinVisual::PinnedTileDelegate(icons));
         icons->setSelectionMode(QAbstractItemView::ExtendedSelection);
         icons->setFrameShape(QFrame::NoFrame);
         icons->setAutoFillBackground(false);
@@ -198,21 +201,23 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         auto *desktopRow = new QHBoxLayout;
         desktopRow->addWidget(icons, 1);
         desktopWidgets_ = new DesktopWidgets(desktop);
+        desktopWidgets_->setActions([this]{showWindowOverview();},[this]{showQuickControls();},[this]{toggleWorkspaceVisibility();});
         desktopRow->addWidget(desktopWidgets_);
         desktopLayout->addLayout(desktopRow, 1);
         const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
         const auto refreshIcons = [this, icons, desktopPath]() {
             icons->clear();
-            const auto addPlace = [icons](const QString &name,const QString &iconName,LinWinVisual::Glyph fallback,const QString &place) {
-                auto *item=new QListWidgetItem(QIcon::fromTheme(iconName,LinWinVisual::shellIcon(fallback)),name,icons);
+            const auto addPlace = [icons](const QString &name,const QString &place) {
+                auto *item=new QListWidgetItem(LinWinVisual::placeIcon(place),name,icons);
+                item->setForeground(Qt::white);
                 item->setData(Qt::UserRole+2,place);
                 item->setTextAlignment(Qt::AlignHCenter);
                 item->setToolTip(name);
             };
-            addPlace(tr("This PC"),QStringLiteral("computer"),LinWinVisual::Glyph::Desktop,QStringLiteral("computer"));
-            addPlace(tr("Home"),QStringLiteral("user-home"),LinWinVisual::Glyph::Files,QStringLiteral("home"));
-            addPlace(tr("Trash"),QStringLiteral("user-trash"),LinWinVisual::Glyph::Files,QStringLiteral("trash"));
-            addPlace(tr("Network"),QStringLiteral("network-workgroup"),LinWinVisual::Glyph::Desktop,QStringLiteral("network"));
+            addPlace(tr("This PC"),QStringLiteral("computer"));
+            addPlace(tr("Home"),QStringLiteral("home"));
+            addPlace(tr("Trash"),QStringLiteral("trash"));
+            addPlace(tr("Network"),QStringLiteral("network"));
             if (desktopPath.isEmpty() || !QDir(desktopPath).exists()) return;
             QFileIconProvider provider;
             const auto entries = QDir(desktopPath).entryInfoList(

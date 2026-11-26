@@ -150,8 +150,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     auto *columns = new QHBoxLayout;
     auto *rail = new QFrame(this);
     rail->setObjectName(QStringLiteral("linwinStartRail"));
-    rail->setMinimumWidth(140);
-    rail->setMaximumWidth(190);
+    rail->setMinimumWidth(142);
+    rail->setMaximumWidth(205);
     auto *navigation=new QVBoxLayout(rail);
     navigation->setContentsMargins(0,0,8,0);
     navigation->setSpacing(6);
@@ -169,7 +169,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     navigation->addWidget(pinnedButton);
     columns->addWidget(rail);
     auto *pins = new QVBoxLayout;
-    pins->addWidget(new QLabel(tr("Pinned"), this));
+    auto *pinnedTitle=new QLabel(tr("Pinned"),this);pinnedTitle->setObjectName(QStringLiteral("linwinStartSection"));
+    pins->addWidget(pinnedTitle);
     pinnedList_ = new PinnedGrid(this);
     pinnedList_->setObjectName(QStringLiteral("pinnedApps"));
     pinnedList_->setViewMode(QListView::IconMode);
@@ -194,12 +195,13 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     connect(appViews_,&QStackedWidget::currentChanged,this,[allButton,pinnedButton](int index){allButton->setChecked(index==1);pinnedButton->setChecked(index==0);});
     auto *content=new QVBoxLayout;
     content->addWidget(appViews_,1);
-    columns->addLayout(content,1);
+    columns->addLayout(content,5);
+    columns->setStretch(0,3);
     layout->addLayout(columns, 1);
     connect(allButton,&QPushButton::clicked,this,[this]{appViews_->setCurrentIndex(1);});
     connect(pinnedButton,&QPushButton::clicked,this,[this]{searchField_->clear();appViews_->setCurrentIndex(0);});
     auto *recentHeader=new QHBoxLayout;
-    recentHeader->addWidget(new QLabel(tr("Recommended documents"),this));
+    auto *recentTitle=new QLabel(tr("Recommended"),this);recentTitle->setObjectName(QStringLiteral("linwinStartSection"));recentHeader->addWidget(recentTitle);
     auto *recentToggle=new QCheckBox(tr("Show recent"),this);
     recentToggle->setObjectName(QStringLiteral("linwinRecentToggle"));
     recentToggle->setChecked(QSettings().value(QStringLiteral("launcher/showRecent"),true).toBool());
