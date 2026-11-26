@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "settings_hub_widget.h"
 #include "embedded_update_dialog.h"
+#include "display_information_dialog.h"
 #include "text_scale.h"
 
 #include <QFrame>
@@ -329,6 +330,15 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
             ? tr("%1 settings are unavailable").arg(category.title)
             : tr("Open %1 settings").arg(category.title));
         footer->addWidget(availability, 1);
+        if (category.title == QStringLiteral("Display")) {
+            auto *info = new QPushButton(tr("Display info"), card);
+            info->setObjectName(QStringLiteral("linwinDisplayInfoButton"));
+            connect(info, &QPushButton::clicked, this, [this]() {
+                DisplayInformationDialog dialog(this);
+                dialog.exec();
+            });
+            footer->addWidget(info);
+        }
         footer->addWidget(openButton);
         cardLayout->addWidget(title);
         cardLayout->addWidget(details);

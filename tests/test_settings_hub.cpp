@@ -13,6 +13,8 @@
 #include <QVector>
 #include <QDialog>
 #include <QTimer>
+#include <QTableWidget>
+#include <QGuiApplication>
 
 #include <iostream>
 
@@ -87,6 +89,19 @@ int main(int argc, char **argv)
                          "reset should restore default LinWin typography");
     }
     settings.clear();
+
+    auto *info = widget.findChild<QPushButton *>(QStringLiteral("linwinDisplayInfoButton"));
+    passed &= expect(info != nullptr, "Display information must be available without a host control panel.");
+    if (info) {
+        QTimer::singleShot(0, &widget, [&]() {
+            auto *dialog = widget.findChild<QDialog *>(QStringLiteral("linwinDisplayInformation"));
+            auto *table = dialog ? dialog->findChild<QTableWidget *>(QStringLiteral("linwinDisplayTable")) : nullptr;
+            passed &= expect(table && table->rowCount() == QGuiApplication::screens().size(), "Display info must enumerate real Qt screens.");
+            if (dialog) dialog->reject();
+            else QApplication::closeAllWindows();
+        });
+        info->click();
+    }
 
     auto *search = widget.findChild<QLineEdit *>(QStringLiteral("settingsSearch"));
     passed &= expect(search != nullptr, "search field should have a stable object name");
