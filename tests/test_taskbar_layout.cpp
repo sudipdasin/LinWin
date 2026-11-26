@@ -268,6 +268,18 @@ int main(int argc, char **argv)
         if (!files->grab().save(QDir(evidence).filePath(QStringLiteral("native-file-explorer.png")))
             || !tasks->grab().save(QDir(evidence).filePath(QStringLiteral("native-task-manager.png")))) return 1;
     }
+    QPushButton *fileTaskbar=nullptr;
+    for(auto *button:floating.findChildren<QPushButton *>())
+        if(button->text()==QStringLiteral("Files") && button->objectName()==QStringLiteral("navigationButton")) fileTaskbar=button;
+    auto *minAction=fileTaskbar?fileTaskbar->findChild<QAction *>(QStringLiteral("linwinToolMinimize")):nullptr;
+    auto *openAction=fileTaskbar?fileTaskbar->findChild<QAction *>(QStringLiteral("linwinToolOpen")):nullptr;
+    if (!require(minAction && openAction && minAction->isEnabled(),"Open tools must expose native taskbar actions.")) return 1;
+    minAction->trigger();
+    app.processEvents();
+    if(!require(files->isMinimized(),"Taskbar minimize must minimize the native tool.")) return 1;
+    openAction->trigger();
+    app.processEvents();
+    if(!require(files->isVisible() && !files->isMinimized(),"Taskbar restore must reopen the native tool.")) return 1;
     files->close();
     app.processEvents();
     if (!require(!files->isVisible() && tasks->isVisible(), "Closing a tool must not close the other.")) return 1;

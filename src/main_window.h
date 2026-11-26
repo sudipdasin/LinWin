@@ -50,6 +50,7 @@ private:
     void toggleWorkspaceVisibility();
     void restoreHiddenWorkspace();
     void syncToolButtons();
+    void initializeToolTaskbarActions();
     void updateShellGeometry();
     void refreshExternalWindows();
     void updateExternalWindows(const QString &output);

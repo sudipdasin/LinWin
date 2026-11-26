@@ -435,6 +435,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             startMenu_->focusSearch();
         }
     });
+    initializeToolTaskbarActions();
     connect(homeButton_, &QPushButton::clicked, this, &MainWindow::toggleWorkspaceVisibility);
     homeButton_->setToolTip(tr("Show desktop or restore hidden tools (Ctrl+Alt+D)"));
     connect(filesButton_, &QPushButton::clicked, this, [this]() { showPage(1); });
@@ -830,6 +831,12 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
+    if (event->type()==QEvent::WindowStateChange || event->type()==QEvent::Show || event->type()==QEvent::Hide) {
+        for(auto *window:toolWindows_) if(watched==window) {
+            QTimer::singleShot(0,this,[this]{syncToolButtons();});
+            break;
+        }
+    }
     if (startMenu_ == nullptr || startButton_ == nullptr || !startMenu_->isVisible())
         return QMainWindow::eventFilter(watched, event);
 
@@ -932,14 +939,59 @@ void MainWindow::restoreHiddenWorkspace()
     syncToolButtons();
 }
 
+void MainWindow::initializeToolTaskbarActions()
+{
+    if(toolWindows_.isEmpty()) return;
+    const QList<QPushButton *> buttons{filesButton_,tasksButton_,clipboardButton_,settingsButton_};
+    for(int i=0;i<buttons.size();++i) {
+        const int index=i+1;
+        auto *button=buttons.at(i);
+        auto *window=toolWindows_.value(index);
+        button->setContextMenuPolicy(Qt::ActionsContextMenu);
+        auto add=[button](const QString &label,const QString &id) {
+            auto *action=new QAction(label,button);
+            action->setObjectName(id);
+            button->addAction(action);
+            return action;
+        };
+        auto *open=add(tr("Open / restore"),QStringLiteral("linwinToolOpen"));
+        auto *minimize=add(tr("Minimize"),QStringLiteral("linwinToolMinimize"));
+        auto *maximize=add(tr("Maximize / restore"),QStringLiteral("linwinToolMaximize"));
+        auto *close=add(tr("Close window"),QStringLiteral("linwinToolClose"));
+        connect(open,&QAction::triggered,this,[this,index]{showPage(index);});
+        connect(minimize,&QAction::triggered,this,[this,window]{
+            if(window->isVisible() && window->isEnabled()) window->showMinimized();
+            syncToolButtons();
+        });
+        connect(maximize,&QAction::triggered,this,[this,window,index]{
+            if(!window->isEnabled()) return;
+            if(!window->isVisible() || window->isMinimized()) showPage(index);
+            if(window->isMaximized()) window->showNormal(); else window->showMaximized();
+            syncToolButtons();
+        });
+        connect(close,&QAction::triggered,this,[this,window]{
+            if(window->isVisible()) window->close();
+            syncToolButtons();
+        });
+    }
+    syncToolButtons();
+}
+
 void MainWindow::syncToolButtons()
 {
     if (toolWindows_.isEmpty() || !homeButton_) return;
     const QList<QPushButton *> buttons{filesButton_, tasksButton_, clipboardButton_, settingsButton_};
     bool any = false;
     for (int i=0; i<buttons.size(); ++i) {
-        const bool visible = toolWindows_.value(i+1)->isVisible();
+        auto *window=toolWindows_.value(i+1);
+        const bool visible=window->isVisible();
         buttons.at(i)->setChecked(visible);
+        for(auto *action:buttons.at(i)->actions()) {
+            const auto id=action->objectName();
+            if(id==QStringLiteral("linwinToolOpen") || id==QStringLiteral("linwinToolMaximize")) action->setEnabled(window->isEnabled());
+            else if(id==QStringLiteral("linwinToolMinimize")) action->setEnabled(window->isEnabled() && visible && !window->isMinimized());
+            else if(id==QStringLiteral("linwinToolClose")) action->setEnabled(visible);
+        }
         any = any || visible;
     }
     homeButton_->setChecked(!any);
@@ -973,12 +1025,13 @@ void MainWindow::showPage(int index)
         hiddenWorkspace_.removeAll(index);
         auto *window = toolWindows_.value(index, nullptr);
         if (!window) return;
-        if (!window->isVisible()) {
+        if (!window->isVisible() && !window->property("linwinOpenedOnce").toBool()) {
             const QRect area = screen() ? screen()->availableGeometry() : geometry();
             const QSize size = window->size().boundedTo(area.size());
             window->resize(size);
             window->move(area.center() - QPoint(size.width()/2, size.height()/2) + QPoint((index-1)*20,(index-1)*16));
         }
+        window->setProperty("linwinOpenedOnce",true);
         if (window->isMinimized()) window->showNormal(); else window->show();
         window->raise();
         window->activateWindow();
