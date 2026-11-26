@@ -1,8 +1,8 @@
 # Maintainer: LinWin contributors
 pkgname=linwin
 pkgver=1.0.0
-pkgrel=7
-pkgdesc='Lightweight Windows-style Linux desktop shell preview'
+pkgrel=8
+pkgdesc='Windows-style Linux desktop overlay preview'
 arch=('x86_64')
 url='https://github.com/sudipdasin/LinWin'
 license=('GPL-3.0-or-later')

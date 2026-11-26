@@ -49,37 +49,47 @@ int main(int argc, char **argv)
     settings.setValue(QStringLiteral("components/task-manager"), true);
     settings.setValue(QStringLiteral("components/clipboard"), true);
 
-    MainWindow window(true);
+    MainWindow window(true, false);
     window.show();
     window.resize(1180, 760);
     app.processEvents();
 
     auto *more = window.findChild<QPushButton *>(QStringLiteral("taskbarOverflowButton"));
     auto *workspaceButton = window.findChild<QPushButton *>(QStringLiteral("workspaceButton"));
+    auto *desktopButton = window.findChild<QPushButton *>(QStringLiteral("desktopButton"));
     QPushButton *clipboard = nullptr;
     QPushButton *settingsButton = nullptr;
     for (auto *button : window.findChildren<QPushButton *>()) {
         if (button->text() == QStringLiteral("Clipboard")) clipboard = button;
         if (button->text() == QStringLiteral("Settings")) settingsButton = button;
     }
-    auto *signOut = window.findChild<QPushButton *>(QStringLiteral("signOutButton"));
+    auto *returnDesktop = window.findChild<QPushButton *>(QStringLiteral("returnDesktopButton"));
+    auto *closeLinWin = window.findChild<QPushButton *>(QStringLiteral("closeLinWinButton"));
     auto *switcher = window.findChild<QScrollArea *>(QStringLiteral("windowSwitcher"));
     auto *systemStatus = window.findChild<QLabel *>(QStringLiteral("panelStatus"));
     auto *taskbar = window.findChild<QFrame *>(QStringLiteral("taskbar"));
     auto *clock = window.findChild<QLabel *>(QStringLiteral("panelClock"));
     auto *pages = window.findChild<QStackedWidget *>(QStringLiteral("shellPages"));
 
-    if (!require(more && workspaceButton && clipboard && settingsButton && signOut && switcher && systemStatus && pages
+    auto *desktopCanvas = window.findChild<QWidget *>(QStringLiteral("windowsDesktop"));
+    if (!require(more && workspaceButton && desktopButton && clipboard && settingsButton && returnDesktop && closeLinWin
+                     && switcher && systemStatus && pages && desktopCanvas
                      && taskbar && clock,
                  "Expected taskbar controls were not created.")) return 1;
-    if (!require(more->isHidden() && workspaceButton->isVisible() && clipboard->isVisible() && settingsButton->isVisible()
-                     && signOut->isVisible() && switcher->isVisible() && systemStatus->isVisible(),
+    if (!require(window.windowFlags().testFlag(Qt::FramelessWindowHint),
+                 "The desktop overlay should hide the native window frame.")) return 1;
+    if (!require(more->isHidden() && workspaceButton->isVisible() && desktopButton->isVisible()
+                     && clipboard->isVisible() && settingsButton->isVisible()
+                     && returnDesktop->isVisible() && closeLinWin->isVisible()
+                     && switcher->isVisible() && systemStatus->isVisible(),
                  "Wide taskbar should show its full navigation and window details.")) return 1;
 
     window.resize(480, 600);
     app.processEvents();
-    if (!require(more->isVisible() && workspaceButton->isHidden() && clipboard->isHidden() && settingsButton->isHidden()
-                     && signOut->isHidden() && switcher->isHidden() && systemStatus->isHidden(),
+    if (!require(more->isVisible() && workspaceButton->isHidden() && desktopButton->isHidden()
+                     && clipboard->isHidden() && settingsButton->isHidden()
+                     && returnDesktop->isHidden() && closeLinWin->isVisible()
+                     && switcher->isHidden() && systemStatus->isHidden(),
                  "Narrow taskbar should move secondary controls into its overflow menu.")) return 1;
     for (auto *widget : {static_cast<QWidget *>(more), static_cast<QWidget *>(clock)}) {
         if (!require(widget->geometry().left() >= 0 && widget->geometry().right() < taskbar->width(),
@@ -87,9 +97,11 @@ int main(int argc, char **argv)
     }
 
     const auto actions = more->menu()->actions();
-    if (!require(actions.size() == 4 && actions.at(0)->isVisible() && actions.at(1)->isVisible()
-                     && actions.at(2)->isVisible()
-                     && actions.at(3)->text() == QStringLiteral("Virtual desktops…"),
+    if (!require(actions.size() == 6 && actions.at(0)->isVisible() && actions.at(1)->isVisible()
+                     && actions.at(2)->text() == QStringLiteral("Desktop")
+                     && actions.at(3)->text() == QStringLiteral("Switch to Linux desktop")
+                     && actions.at(4)->text() == QStringLiteral("Close LinWin")
+                     && actions.at(5)->text() == QStringLiteral("Virtual desktops…"),
                  "Narrow taskbar overflow should expose core actions and a virtual desktop entry.")) return 1;
     actions.at(0)->trigger();
     app.processEvents();
@@ -97,6 +109,19 @@ int main(int argc, char **argv)
     actions.at(1)->trigger();
     app.processEvents();
     if (!require(pages->currentIndex() == 4, "Overflow Settings action should open Settings.")) return 1;
+
+    actions.at(3)->trigger();
+    app.processEvents();
+    if (!require(window.isMinimized(), "Switch to Linux desktop should minimize LinWin without closing it.")) return 1;
+    window.show();
+    app.processEvents();
+    actions.at(4)->trigger();
+    app.processEvents();
+    if (!require(window.isHidden(), "Close LinWin should exit the overlay window.")) return 1;
+
+    MainWindow regularWindow(false, false);
+    if (!require(!regularWindow.windowFlags().testFlag(Qt::FramelessWindowHint),
+                 "The development window option should retain normal window decorations.")) return 1;
 
     return 0;
 }
