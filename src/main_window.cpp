@@ -20,6 +20,8 @@
 #include <QApplication>
 #include <QDateTime>
 #include <QCloseEvent>
+#include <QShowEvent>
+#include <QHideEvent>
 #include <QDialog>
 #include <QComboBox>
 #include <QCheckBox>
@@ -627,8 +629,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         windowRefreshTimer_ = new QTimer(this);
         windowRefreshTimer_->setInterval(1500);
         connect(windowRefreshTimer_, &QTimer::timeout, this, &MainWindow::refreshExternalWindows);
-        windowRefreshTimer_->start();
-        refreshExternalWindows();
+        windowRefreshTimer_->setObjectName(QStringLiteral("linwinExternalWindowPoll"));
 
         auto *switchShortcut = new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Tab), this);
         switchShortcut->setContext(Qt::ApplicationShortcut);
@@ -659,16 +660,47 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         workspaceRefreshTimer_ = new QTimer(this);
         workspaceRefreshTimer_->setInterval(2500);
         connect(workspaceRefreshTimer_, &QTimer::timeout, this, &MainWindow::refreshWorkspaces);
-        workspaceRefreshTimer_->start();
+        workspaceRefreshTimer_->setObjectName(QStringLiteral("linwinExternalWorkspacePoll"));
         connect(workspaceMenu_, &QMenu::aboutToShow, this, &MainWindow::refreshWorkspaces);
-        refreshWorkspaces();
     }
 
     updateShellGeometry();
 }
 
+void MainWindow::syncWindowPolling()
+{
+    const bool active=isVisible() && !isMinimized();
+    if(windowRefreshTimer_) {
+        if(active && !windowRefreshTimer_->isActive()) {windowRefreshTimer_->start();refreshExternalWindows();}
+        else if(!active) windowRefreshTimer_->stop();
+    }
+    if(workspaceRefreshTimer_) {
+        if(active && !workspaceRefreshTimer_->isActive()) {workspaceRefreshTimer_->start();refreshWorkspaces();}
+        else if(!active) workspaceRefreshTimer_->stop();
+    }
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    syncWindowPolling();
+}
+
+void MainWindow::hideEvent(QHideEvent *event)
+{
+    QMainWindow::hideEvent(event);
+    syncWindowPolling();
+}
+
+void MainWindow::changeEvent(QEvent *event)
+{
+    QMainWindow::changeEvent(event);
+    if(event->type()==QEvent::WindowStateChange) syncWindowPolling();
+}
+
 void MainWindow::refreshExternalWindows()
 {
+    if(!isVisible() || isMinimized()) return;
     if (windowListProcess_ == nullptr || windowListProcess_->state() != QProcess::NotRunning) return;
     windowListProcess_->start(wmctrlPath_, {QStringLiteral("-lp")});
 }
@@ -891,6 +923,7 @@ void MainWindow::cycleExternalWindow()
 
 void MainWindow::refreshWorkspaces()
 {
+    if(!isVisible() || isMinimized()) return;
     if (!workspaceSupportAvailable_ || workspaceListProcess_ == nullptr
         || workspaceListProcess_->state() != QProcess::NotRunning)
         return;

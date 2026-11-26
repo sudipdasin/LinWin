@@ -21,6 +21,8 @@ class QAction;
 class QHBoxLayout;
 class QDialog;
 class QCloseEvent;
+class QShowEvent;
+class QHideEvent;
 class QLabel;
 class QKeyEvent;
 class QMenu;
@@ -40,6 +42,9 @@ public:
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
+    void hideEvent(QHideEvent *event) override;
+    void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
@@ -56,6 +61,7 @@ private:
     void initializeToolTaskbarActions();
     void updateShellGeometry();
     void refreshExternalWindows();
+    void syncWindowPolling();
     void updateExternalWindows(const QString &output);
     void activateExternalWindow(const QString &id);
     void cycleExternalWindow();

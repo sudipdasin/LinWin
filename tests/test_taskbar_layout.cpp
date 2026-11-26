@@ -28,6 +28,8 @@
 #include <QProgressBar>
 #include "shell_icons.h"
 #include <QCheckBox>
+#include <QTemporaryDir>
+#include <QFile>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -402,5 +404,26 @@ int main(int argc, char **argv)
     app.processEvents();
     if (!require(probe.size()==original.size(), "Restore must recover the previous native window size.")) return 1;
     probe.close();
+    // Use a harmless fake wmctrl only in this isolated test process.
+    QTemporaryDir fixture;
+    if(!require(fixture.isValid(),"Window polling fixture directory must exist.")) return 1;
+    QFile fake(fixture.filePath(QStringLiteral("wmctrl")));
+    if(!require(fake.open(QIODevice::WriteOnly),"Fake wmctrl must be writable.")) return 1;
+    fake.write("#!/bin/sh\nexit 0\n");fake.close();
+    if(!require(fake.setPermissions(QFileDevice::ReadOwner|QFileDevice::WriteOwner|QFileDevice::ExeOwner),"Fake wmctrl must be executable.")) return 1;
+    qputenv("PATH",fixture.path().toLocal8Bit()+":"+qgetenv("PATH"));
+    qputenv("XDG_SESSION_TYPE","x11");qunsetenv("WAYLAND_DISPLAY");
+    MainWindow pollingShell(true,false);
+    auto *windowPoll=pollingShell.findChild<QTimer *>(QStringLiteral("linwinExternalWindowPoll"));
+    auto *workspacePoll=pollingShell.findChild<QTimer *>(QStringLiteral("linwinExternalWorkspacePoll"));
+    if(!require(windowPoll&&workspacePoll&&!windowPoll->isActive()&&!workspacePoll->isActive(),"Hidden shell must not run external polling timers.")) return 1;
+    pollingShell.show();app.processEvents();
+    if(!require(windowPoll->isActive()&&workspacePoll->isActive(),"Visible shell must resume external polling.")) return 1;
+    pollingShell.showMinimized();app.processEvents();
+    if(!require(!windowPoll->isActive()&&!workspacePoll->isActive(),"Minimized shell must stop both external polling timers.")) return 1;
+    pollingShell.showNormal();app.processEvents();
+    if(!require(windowPoll->isActive()&&workspacePoll->isActive(),"Restored shell must resume both polling timers.")) return 1;
+    pollingShell.close();app.processEvents();
+    if(!require(!windowPoll->isActive()&&!workspacePoll->isActive(),"Closed shell must stop both polling timers.")) return 1;
     return 0;
 }
