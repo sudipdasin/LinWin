@@ -27,7 +27,7 @@ public:
         auto *layout=new QVBoxLayout(this);
         layout->setContentsMargins(0,14,0,0); layout->setSpacing(12);
         clock_=new QLabel(this); clock_->setObjectName(QStringLiteral("widgetClock"));
-        clock_->setAlignment(Qt::AlignVCenter|Qt::AlignLeft); clock_->setFixedHeight(100); layout->addWidget(clock_);
+        clock_->setAlignment(Qt::AlignVCenter|Qt::AlignLeft); clock_->setTextFormat(Qt::RichText); clock_->setFixedHeight(112); layout->addWidget(clock_);
         auto *calendar=new QCalendarWidget(this);
         calendar->setObjectName(QStringLiteral("linwinDesktopCalendar"));
         calendar->setVerticalHeaderFormat(QCalendarWidget::NoVerticalHeader);
@@ -90,7 +90,9 @@ private:
         return value ? QString::number(*value)+QStringLiteral("%") : QObject::tr("Unavailable");
     }
     void refresh() {
-        clock_->setText(QDateTime::currentDateTime().toString(QStringLiteral("hh:mm:ss\nddd, dd MMM yyyy")));
+        const auto now=QDateTime::currentDateTime();
+        clock_->setText(QStringLiteral("<span style='font-size:38px;font-weight:600'>%1</span> <span style='font-size:14px'>%2</span><br/><span style='font-size:16px;font-weight:400'>%3</span>")
+            .arg(now.toString(QStringLiteral("h:mm")),now.toString(QStringLiteral("AP")),now.toString(QStringLiteral("ddd, MMM d, yyyy")).toHtmlEscaped()));
         QFile stat(QStringLiteral("/proc/stat")); std::optional<int> cpuPercent;
         if (stat.open(QIODevice::ReadOnly)) {
             auto sample=LinWinMetrics::cpu(stat.readLine().toStdString());

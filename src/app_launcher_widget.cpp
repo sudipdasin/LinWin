@@ -31,10 +31,22 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QLinearGradient>
+#include <QResizeEvent>
 
 #include <algorithm>
 
 namespace {
+class PinnedGrid final:public QListWidget {
+public:
+    using QListWidget::QListWidget;
+protected:
+    void resizeEvent(QResizeEvent *event) override {
+        QListWidget::resizeEvent(event);
+        const int columns=qBound(1,viewport()->width()/72,4);
+        const QSize target(qMax(1,viewport()->width()/columns),78);
+        if(gridSize()!=target)setGridSize(target);
+    }
+};
 const QString kPinnedAppsSetting = QStringLiteral("launcher/pinnedApplications");
 
 QString appName(GAppInfo *appInfo)
@@ -145,12 +157,14 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     auto *pinnedButton=new QPushButton(tr("Pinned"),rail);
     allButton->setObjectName(QStringLiteral("linwinAllApps"));
     pinnedButton->setObjectName(QStringLiteral("linwinPinnedView"));
+    allButton->setIcon(QIcon::fromTheme(QStringLiteral("view-grid"),LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop)));
+    pinnedButton->setIcon(QIcon::fromTheme(QStringLiteral("starred"),LinWinVisual::shellIcon(LinWinVisual::Glyph::More)));
     navigation->addWidget(allButton);
     navigation->addWidget(pinnedButton);
     columns->addWidget(rail);
     auto *pins = new QVBoxLayout;
     pins->addWidget(new QLabel(tr("Pinned"), this));
-    pinnedList_ = new QListWidget(this);
+    pinnedList_ = new PinnedGrid(this);
     pinnedList_->setObjectName(QStringLiteral("pinnedApps"));
     pinnedList_->setViewMode(QListView::IconMode);
     pinnedList_->setResizeMode(QListView::Adjust);
@@ -159,7 +173,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setGridSize(QSize(94,78));
     pinnedList_->setIconSize(QSize(36,36));
     pinnedList_->setTextElideMode(Qt::ElideNone);
-    pinnedList_->setSpacing(2);
+    pinnedList_->setSpacing(0);
     pinnedList_->setWordWrap(true);
     pins->addWidget(pinnedList_, 1);
     auto *pinnedPage=new QWidget(this);
@@ -184,7 +198,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     content->addLayout(recentHeader);
     recentList_=new QListWidget(this);
     recentList_->setObjectName(QStringLiteral("recentDocuments"));
-    recentList_->setMaximumHeight(100);
+    recentList_->setMaximumHeight(112);
     recentList_->setMinimumHeight(44);
     content->addWidget(recentList_);
     connect(recentToggle,&QCheckBox::toggled,this,[this](bool enabled){

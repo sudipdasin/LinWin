@@ -14,6 +14,7 @@
 #include <QHideEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPixmap>
 #include <utility>
 #include <QIcon>
 #include <functional>

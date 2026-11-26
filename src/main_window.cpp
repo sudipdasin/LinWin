@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
+#include "desktop_status_widget.h"
 #include "workspace_profiles.h"
 #include "command_palette.h"
 #include "snap_controller.h"
@@ -469,7 +470,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     taskbarLayout->addWidget(workspaceButton_);
     taskbarLayout->addWidget(windowScroll, 1);
     taskbarLayout->addWidget(systemStatus_);
-    taskbarLayout->addSpacing(14);
+    auto *desktopStatus=new DesktopStatus(taskbar,[this]{showQuickControls();},[this]{showWindowOverview();});
+    desktopStatus->hide();
+    taskbarLayout->addWidget(desktopStatus);
+    taskbarLayout->addSpacing(8);
     taskbarLayout->addWidget(clock_);
     taskbarLayout->addWidget(closeButton_);
     rootLayout->addWidget(taskbar);
@@ -1346,7 +1350,11 @@ void MainWindow::updateTaskbarLayout()
         entry.first->setIconSize(QSize(premium?30:20,premium?30:20));
         entry.first->setMinimumWidth(premium?42:0);
     }
-    if(auto *search=findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"))) search->setVisible(width()>=1450 && startMenuEnabled_);
+    if(auto *search=findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"))) {
+        search->setVisible(width()>=1450 && startMenuEnabled_);
+        search->setMinimumWidth(premium?qBound(200,qRound(width()*.18),345):134);
+        search->setFixedHeight(premium?38:30);
+    }
 
     if (startButton_ != nullptr) startButton_->setVisible(startMenuEnabled_);
     if (homeButton_ != nullptr) homeButton_->setVisible(!compact);
@@ -1370,7 +1378,8 @@ void MainWindow::updateTaskbarLayout()
         workspaceOverflowAction_->setVisible(compact && workspaceSupportAvailable_);
 
     if (windowSwitcher_ != nullptr) windowSwitcher_->setVisible(!hideWindowDetails);
-    if (systemStatus_ != nullptr) systemStatus_->setVisible(!hideWindowDetails);
+    if (systemStatus_ != nullptr) systemStatus_->setVisible(!hideWindowDetails && !premium);
+    if(auto *status=findChild<QFrame *>(QStringLiteral("linwinStatusArea"))) status->setVisible(premium);
 }
 
 void MainWindow::returnToLinuxDesktop()
@@ -1424,8 +1433,11 @@ void MainWindow::updateShellGeometry()
     const int areaWidth = desktopArea_->width();
     const int areaHeight = desktopArea_->height();
     const int inset=areaWidth>650?6:0;
-    const int menuWidth=qMax(1,qMin(660,areaWidth-2*inset));
-    const int menuHeight=qMax(1,qMin(635,areaHeight-2*inset));
+    const bool reference=themeId_==QStringLiteral("neon") && areaWidth>=1450;
+    const int targetWidth=reference?qBound(560,qRound(areaWidth*.347),720):660;
+    const int targetHeight=reference?qBound(540,qRound(areaHeight*.61),660):635;
+    const int menuWidth=qMax(1,qMin(targetWidth,areaWidth-2*inset));
+    const int menuHeight=qMax(1,qMin(targetHeight,areaHeight-2*inset));
     startMenu_->setGeometry(inset,qMax(0,areaHeight-menuHeight-inset),menuWidth,menuHeight);
     if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0) {
         const QPoint origin=desktopSurface_->mapFrom(desktopArea_,startMenu_->pos());
