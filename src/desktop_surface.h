@@ -113,7 +113,7 @@ private:
         const QColor sky(LinWinVisual::qstr(theme.sky)), horizon(LinWinVisual::qstr(theme.horizon));
         if (themeId_ == QStringLiteral("minimal")) { p.fillRect(r, sky); return; }
         base.setColorAt(0.0, sky);
-        base.setColorAt(1.0, themeId_==QStringLiteral("neon")?QColor("#051a35"):horizon);
+        base.setColorAt(1.0, themeId_==QStringLiteral("neon")?QColor("#020d20"):horizon);
         p.fillRect(r, base);
         if (!effectsEnabled()) return;
         const QPointF center(r.left() + r.width()*0.72, r.top() + r.height()*0.43);
@@ -142,7 +142,7 @@ private:
         }
 #endif
         const bool usedShader = !frame.isNull();
-        if (usedShader) { QPainter painter(&frame); LinWinVisual::drawNeonLandscape(painter,frame.rect()); }
+        if (usedShader) { QPainter painter(&frame); painter.fillRect(frame.rect(),QColor(2,13,32,190)); LinWinVisual::drawNeonLandscape(painter,frame.rect()); }
         if (frame.isNull()) {
             frame = QImage(pixels, QImage::Format_RGB32);
             if (frame.isNull()) return;
