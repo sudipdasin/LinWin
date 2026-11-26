@@ -38,7 +38,7 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
     const QString radius=t.effects ? QStringLiteral("9px") : QStringLiteral("0px");
     const QString subtle=t.light ? QStringLiteral("#b8c9db") : QStringLiteral("#365575");
     const QString muted=t.light ? QStringLiteral("#425773") : QStringLiteral("#b9d3e9");
-    return QStringLiteral(
+    QString style=QStringLiteral(
         "#taskbar, #startMenuPanel { background:%1; color:%2; border:1px solid %7; border-radius:%4; }"
         "#taskbar QWidget, #startMenuPanel QLabel { background:transparent; color:%2; }"
         "#taskbar QPushButton, #startMenuPanel QPushButton { color:%2; background:transparent; border:0; padding:6px; }"
@@ -62,5 +62,20 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
         "#taskbar #startButton, #taskbar #panelClock, #taskbar #panelStatus, #taskbar #windowSwitcherStatus { color:%2; }"
         "#taskbar #windowSwitcher QPushButton { background:%5; color:%2; border-bottom:2px solid %3; }"
     ).arg(panel,fg,accent,radius,hover,field,subtle,muted);
+    for(const QString &name: {QStringLiteral("linwinCommandPalette"),QStringLiteral("linwinQuickControls"),QStringLiteral("linwinWindowOverview")}) {
+        const QString scope=QStringLiteral("#")+name;
+        style+=QStringLiteral(
+            "%1 { background:%2; color:%3; }"
+            "%1 QLabel, %1 QCheckBox { color:%3; background:transparent; }"
+            "%1 QLineEdit, %1 QListWidget, %1 QComboBox { color:%3; background:%4; border:1px solid %5; border-radius:%6; padding:6px; }"
+            "%1 QLineEdit:focus, %1 QComboBox:focus, %1 QListWidget:focus { border-color:%7; }"
+            "%1 QListWidget::item { padding:5px; border-radius:%6; }"
+            "%1 QListWidget::item:hover, %1 QListWidget::item:selected { background:%8; color:%3; }"
+            "%1 QPushButton { color:%3; background:%8; border:1px solid %5; border-radius:%6; padding:7px 14px; }"
+            "%1 QPushButton:hover, %1 QPushButton:focus { border-color:%7; }"
+            "%1 QPushButton:disabled, %1 QCheckBox:disabled { color:%9; background:%2; }"
+        ).arg(scope,panel,fg,field,subtle,radius,accent,hover,muted);
+    }
+    return style;
 }
 }

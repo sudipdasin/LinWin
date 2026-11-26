@@ -459,7 +459,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     connect(settingsButton_, &QPushButton::clicked, this, &MainWindow::showSettingsHub);
     connect(clipboardOverflowAction_, &QAction::triggered, this, &MainWindow::showClipboardCenter);
     connect(settingsOverflowAction_, &QAction::triggered, this, &MainWindow::showSettingsHub);
-    connect(desktopOverflowAction_, &QAction::triggered, this, [this]() { showPage(0); });
+    connect(desktopOverflowAction_, &QAction::triggered, this, &MainWindow::toggleWorkspaceVisibility);
     connect(workspaceOverflowAction_, &QAction::triggered, this, [this]() {
         if (workspaceMenu_ != nullptr && overflowButton_ != nullptr)
             workspaceMenu_->popup(overflowButton_->mapToGlobal(QPoint(0, overflowButton_->height())));

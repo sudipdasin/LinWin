@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include <QDialog>
+#include <QIcon>
+#include <utility>
 #include <QDialogButtonBox>
 #include <QLabel>
 #include <QLineEdit>

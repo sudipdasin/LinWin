@@ -359,7 +359,20 @@ int main(int argc, char **argv)
     });
     QMetaObject::invokeMethod(floatingQuick,"activated",Qt::DirectConnection);
     if(!require(files->isVisible() && tasks->isVisible(),"Saved profile must restore both native tools.")) return 1;
+    const QRect finalFilesGeometry=files->geometry();
     floating.close();
+    app.processEvents();
+    if(!require(settings.value(QStringLiteral("workspace/toolGeometry/v1/1")).toRect()==finalFilesGeometry,
+                 "Closing LinWin must preserve the last valid tool geometry.")) return 1;
+    MainWindow reopenedShell(true,false);
+    reopenedShell.resize(1180,760);reopenedShell.show();app.processEvents();
+    auto *reopenedIcons=reopenedShell.findChild<QListWidget *>(QStringLiteral("desktopIcons"));
+    auto *reopenedFiles=reopenedShell.findChild<QDialog *>(QStringLiteral("linwinToolWindow_1"));
+    if(!require(reopenedIcons && reopenedFiles && !reopenedFiles->isVisible(),"Recall must not auto-launch tools.")) return 1;
+    reopenedIcons->itemDoubleClicked(reopenedIcons->item(0));app.processEvents();
+    if(!require(reopenedFiles->isVisible() && reopenedFiles->size()==finalFilesGeometry.size(),
+                 "Reopened shell must recover the saved tool size.")) return 1;
+    reopenedShell.close();
     // Exercise the real controller on a small native dialog independently of
     // the content minimum sizes of the full File Explorer and Task Manager.
     QDialog probe;
