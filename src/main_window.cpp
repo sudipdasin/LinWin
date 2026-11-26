@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
+#include "snap_controller.h"
 #include "desktop_surface.h"
 #include "theme_visuals.h"
 #include "desktop_widgets.h"
@@ -828,6 +829,12 @@ void MainWindow::initializeToolWindows()
         window->setAttribute(Qt::WA_DeleteOnClose, false);
         auto *layout = new QVBoxLayout(window);
         layout->setContentsMargins(0,0,0,0);
+        auto *snapBar=new QHBoxLayout;
+        snapBar->setContentsMargins(8,4,8,4);
+        auto *snap=new SnapController(window,desktopArea_);
+        snapBar->addWidget(snap->createButton());
+        snapBar->addStretch();
+        layout->addLayout(snapBar);
         layout->addWidget(tool.first);
         tool.first->show();
         window->resize(index == 3 ? 560 : 900, index == 3 ? 500 : 650);

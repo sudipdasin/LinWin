@@ -21,6 +21,7 @@
 #include <QDir>
 #include <QPixmap>
 #include <QDialog>
+#include <QToolButton>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -215,6 +216,9 @@ int main(int argc, char **argv)
     app.processEvents();
     if (!require(files->isVisible() && tasks->isVisible() && files->isWindow() && tasks->isWindow()
                  && floatingPages->currentIndex()==0, "Two tools must coexist over the desktop.")) return 1;
+    auto *snap=files->findChild<QToolButton *>(QStringLiteral("linwinSnapMenu"));
+    if (!require(snap && snap->menu() && snap->menu()->actions().size()==9,
+                 "Each native tool must expose seven snap zones and restore.")) return 1;
     if (!evidence.isEmpty()) {
         if (!files->grab().save(QDir(evidence).filePath(QStringLiteral("native-file-explorer.png")))
             || !tasks->grab().save(QDir(evidence).filePath(QStringLiteral("native-task-manager.png")))) return 1;
