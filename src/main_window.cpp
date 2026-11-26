@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
+#include "shell_layout_policy.h"
 #include "desktop_status_widget.h"
 #include "place_icons.h"
 #include "pinned_tile_delegate.h"
@@ -758,10 +759,13 @@ void MainWindow::updateExternalWindows(const QString &output)
             windowButtonsLayout_->addWidget(button);
         }
         const bool premium=themeId_==QStringLiteral("neon") && width()>=1450;
-        button->setText(premium?QString():title.size()>20?title.left(19)+QChar(0x2026):title);
-        button->setMinimumWidth(premium?42:0);
-        button->setMaximumWidth(premium?48:180);
-        button->setIconSize(QSize(premium?26:16,premium?26:16));
+    QSettings visual;
+    const bool small=visual.value("visual/smallTaskbar",false).toBool();
+    const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());
+        button->setText(compactWindows?QString():title.size()>20?title.left(19)+QChar(0x2026):title);
+        button->setMinimumWidth(compactWindows?42:0);
+        button->setMaximumWidth(compactWindows?48:180);
+        button->setIconSize(QSize(premium&&!small?26:16,premium&&!small?26:16));
         button->setToolTip(title);
         button->setAccessibleName(title);
     }
@@ -1365,26 +1369,29 @@ void MainWindow::updateTaskbarLayout()
     const bool compact = width() < 920;
     const bool hideWindowDetails = width() < 920;
     const bool premium=themeId_==QStringLiteral("neon") && width()>=1450;
-    if(auto *panel=findChild<QFrame *>(QStringLiteral("taskbar"))) panel->setFixedHeight(premium?58:44);
-    if(windowSwitcher_) windowSwitcher_->setFixedHeight(premium?48:38);
+    QSettings visual;
+    const bool small=visual.value("visual/smallTaskbar",false).toBool();
+    const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());
+    if(auto *panel=findChild<QFrame *>(QStringLiteral("taskbar"))) panel->setFixedHeight(LinWinLayout::taskbarHeight(premium,small));
+    if(windowSwitcher_) windowSwitcher_->setFixedHeight(premium&&!small?48:38);
     for(auto *button:windowButtons_) {
         const QString title=button->toolTip();
-        button->setText(premium?QString():title.size()>20?title.left(19)+QChar(0x2026):title);
-        button->setMinimumWidth(premium?42:0);
-        button->setMaximumWidth(premium?48:180);
-        button->setIconSize(QSize(premium?26:16,premium?26:16));
+        button->setText(compactWindows?QString():title.size()>20?title.left(19)+QChar(0x2026):title);
+        button->setMinimumWidth(compactWindows?42:0);
+        button->setMaximumWidth(compactWindows?48:180);
+        button->setIconSize(QSize(premium&&!small?26:16,premium&&!small?26:16));
     }
     for(const auto &entry:QList<QPair<QPushButton *,QString>>{{startButton_,tr("LinWin")},{homeButton_,tr("Desktop")},{filesButton_,tr("Files")},{tasksButton_,tr("Tasks")},{clipboardButton_,tr("Clipboard")},{settingsButton_,tr("Settings")}}) {
         if(!entry.first) continue;
         entry.first->setAccessibleName(entry.second);
         entry.first->setText(premium?QString():entry.second);
-        entry.first->setIconSize(QSize(premium?30:20,premium?30:20));
+        entry.first->setIconSize(QSize(premium&&!small?30:20,premium&&!small?30:20));
         entry.first->setMinimumWidth(premium?42:0);
     }
     if(auto *search=findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"))) {
-        search->setVisible(width()>=1450 && startMenuEnabled_);
+        search->setVisible(width()>=1450 && startMenuEnabled_ && visual.value("visual/taskbarSearch",true).toBool());
         search->setMinimumWidth(premium?qBound(200,qRound(width()*.18),345):134);
-        search->setFixedHeight(premium?38:30);
+        search->setFixedHeight(premium&&!small?38:30);
     }
 
     if (startButton_ != nullptr) startButton_->setVisible(startMenuEnabled_);
@@ -1410,7 +1417,8 @@ void MainWindow::updateTaskbarLayout()
 
     if (windowSwitcher_ != nullptr) windowSwitcher_->setVisible(!hideWindowDetails);
     if (systemStatus_ != nullptr) systemStatus_->setVisible(!hideWindowDetails && !premium);
-    if(auto *status=findChild<QFrame *>(QStringLiteral("linwinStatusArea"))) status->setVisible(premium);
+    if(auto *status=findChild<QFrame *>(QStringLiteral("linwinStatusArea"))) status->setVisible(premium && visual.value("visual/taskbarStatus",true).toBool());
+    if(clock_)clock_->setVisible(visual.value("visual/taskbarClock",true).toBool());
 }
 
 void MainWindow::returnToLinuxDesktop()
@@ -1461,16 +1469,9 @@ void MainWindow::updateShellGeometry()
 
     pages_->setGeometry(desktopArea_->rect());
     if (desktopWidgets_) desktopWidgets_->setVisible(LinWinVisual::theme(themeId_).widgets && width() >= 1100 && height() >= 640);
-    const int areaWidth = desktopArea_->width();
-    const int areaHeight = desktopArea_->height();
-    const int inset=areaWidth>650?6:0;
-    const bool reference=themeId_==QStringLiteral("neon") && areaWidth>=1450;
-    const int targetWidth=reference?qBound(560,qRound(areaWidth*.347),720):660;
-    const int targetHeight=reference?qBound(540,qRound(areaHeight*.61),660):635;
-    const int menuWidth=qMax(1,qMin(targetWidth,areaWidth-2*inset));
-    const int menuHeight=qMax(1,qMin(targetHeight,areaHeight-2*inset));
-    startMenu_->setGeometry(inset,qMax(0,areaHeight-menuHeight-inset),menuWidth,menuHeight);
-    if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0) {
+    const auto menu=LinWinLayout::start(desktopArea_->width(),desktopArea_->height(),themeId_=="neon",QSettings().value("visual/startFullscreen",false).toBool());
+    startMenu_->setGeometry(menu.x,menu.y,menu.width,menu.height);
+    if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0 && QSettings().value("visual/transparency",true).toBool()) {
         const QPoint origin=desktopSurface_->mapFrom(desktopArea_,startMenu_->pos());
         startMenu_->setGlassBackdrop(desktopSurface_->glassSample(QRect(origin,startMenu_->size())));
     } else startMenu_->setGlassBackdrop(QImage());

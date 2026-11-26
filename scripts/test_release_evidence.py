@@ -41,7 +41,7 @@ class ReleaseEvidenceTests(unittest.TestCase):
 
     def test_success(self):
         evidence = self.run_collect()
-        self.assertEqual(evidence['native_suites_passed'], 19)
+        self.assertEqual(evidence['native_suites_passed'], 20)
         self.assertEqual(len(evidence['resolution_captures']), 4)
         self.assertFalse(evidence['visual_reference_accepted'])
         self.assertFalse(evidence['physical_xfce_certified'])
