@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
 #include "desktop_surface.h"
+#include "settings_hub_widget.h"
 #include "snap_controller.h"
 #include "workspace_state.h"
 
@@ -183,6 +184,18 @@ int main(int argc, char **argv)
         if (!require(bar && bar->minimum()==0 && bar->maximum()==100 && !bar->accessibleName().isEmpty(),
                      "Live metric bars must be bounded and accessible.")) return 1;
     }
+    // Check actual desktop pixels, not merely the preference store.
+    auto *hub=window.findChild<SettingsHubWidget *>();
+    if(!require(hub,"Integrated Settings hub must exist."))return 1;
+    settings.setValue("background/mode","solid");settings.setValue("background/color","#563812");
+    surface->reloadBackground();app.processEvents();
+    auto custom=surface->grab().toImage();
+    if(!require(surface->backgroundMode()=="solid" && custom.pixelColor(custom.width()/2,custom.height()/2)==QColor("#563812"),
+                "Desktop must paint a user-selected solid background without a forced logo."))return 1;
+    surface->setTheme("minimal");app.processEvents();
+    if(!require(surface->backgroundMode()=="solid"&&surface->grab().toImage().pixelColor(custom.width()/2,custom.height()/2)==QColor("#563812"),
+                "Theme switching must preserve user background."))return 1;
+    settings.setValue("background/mode","theme");surface->reloadBackground();surface->setTheme("neon");
     // Test live theme switching, including widget and rendering policy.
     // Capture the real visual effects with the deterministic CPU fallback in offscreen tests.
     surface->setEffectsEnabled(true);

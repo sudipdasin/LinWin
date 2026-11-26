@@ -16,6 +16,8 @@
 #include <QComboBox>
 #include <QTableWidget>
 #include <QGuiApplication>
+#include <QTemporaryDir>
+#include <QImage>
 
 #include <iostream>
 
@@ -154,6 +156,29 @@ int main(int argc, char **argv)
         search->clear();
         application.processEvents();
         passed &= expect(visibleCards(widget) == 12, "clearing search should restore all categories");
+    }
+    search->setText(QStringLiteral("wallpaper"));application.processEvents();
+    bool opened=false;
+    for(auto *card:cards)if(card->property("categoryTitle").toString()=="Personalization"){
+        auto *open=card->findChild<QPushButton *>(QStringLiteral("settingsOpenButton"));
+        if(open&&open->isEnabled()){open->click();opened=true;}
+    }
+    auto *page=widget.findChild<QWidget *>(QStringLiteral("linwinBackgroundSettings"));
+    auto *mode=widget.findChild<QComboBox *>(QStringLiteral("linwinBackgroundMode"));
+    auto *fit=widget.findChild<QComboBox *>(QStringLiteral("linwinBackgroundFit"));
+    auto *apply=widget.findChild<QPushButton *>(QStringLiteral("linwinBackgroundApply"));
+    passed &= expect(opened&&page&&page->isVisible()&&mode&&mode->count()==4&&fit&&fit->count()==6&&apply,"Personalization must open an integrated Background page.");
+    if(mode&&apply&&page){
+        int changed=0;QObject::connect(&widget,&SettingsHubWidget::backgroundChanged,&widget,[&changed]{++changed;});
+        mode->setCurrentIndex(mode->findData("solid"));apply->click();
+        passed &= expect(changed==1&&settings.value("background/mode").toString()=="solid","Applying background must persist and emit a live-change signal.");
+        widget.focusSearch();widget.showBackground();
+        passed &= expect(mode->currentData().toString()=="solid","Reopened Background page must remember the saved mode.");
+        mode->setCurrentIndex(mode->findData("picture"));apply->click();
+        passed &= expect(changed==1&&settings.value("background/mode").toString()=="solid","Missing picture must not overwrite saved background.");
+        mode->setCurrentIndex(mode->findData("theme"));apply->click();
+        widget.focusSearch();
+        passed &= expect(!page->isVisible(),"Back to Settings must return to category overview.");
     }
     return passed ? 0 : 1;
 }
