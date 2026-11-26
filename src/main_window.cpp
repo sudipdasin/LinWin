@@ -30,6 +30,7 @@
 #include <QDir>
 #include <QFileIconProvider>
 #include <QFileInfo>
+#include <QFile>
 #include <QFileSystemWatcher>
 #include <QListWidget>
 #include <QUrl>
@@ -183,7 +184,8 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         icons->setWrapping(true);
         icons->setResizeMode(QListView::Adjust);
         icons->setMovement(QListView::Static);
-        icons->setGridSize(QSize(96, 88));
+        icons->setGridSize(QSize(112, 88));
+        icons->setTextElideMode(Qt::ElideNone);
         icons->setIconSize(QSize(42, 42));
         icons->setSelectionMode(QAbstractItemView::ExtendedSelection);
         icons->setFrameShape(QFrame::NoFrame);
@@ -423,6 +425,12 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     clockTimer->start();
 
     taskbarLayout->addWidget(startButton_);
+    auto *taskbarSearch=new QPushButton(LinWinVisual::shellIcon(LinWinVisual::Glyph::Search),tr("Search apps"),taskbar);
+    taskbarSearch->setObjectName(QStringLiteral("linwinTaskbarSearch"));
+    taskbarSearch->setAccessibleName(tr("Search installed applications"));
+    taskbarSearch->setMinimumWidth(134);
+    connect(taskbarSearch,&QPushButton::clicked,this,[this]{if(componentEnabled(QStringLiteral("start-menu"))) {startButton_->setChecked(true);startMenu_->focusSearch();}});
+    taskbarLayout->addWidget(taskbarSearch);
     taskbarLayout->addWidget(homeButton_);
     taskbarLayout->addWidget(filesButton_);
     taskbarLayout->addWidget(tasksButton_);
@@ -684,7 +692,14 @@ void MainWindow::updateExternalWindows(const QString &output)
         if (!match.hasMatch() || match.captured(3).toLongLong() == ownPid) continue;
         const QString id = match.captured(1);
         const QString title = match.captured(4).trimmed();
-        if (title.isEmpty()) continue;
+        if (title.isEmpty() || currentOrder.contains(id)) continue;
+        // Exclude the host desktop and panel by process identity, not title.
+        const QString pid=match.captured(3);
+        QFile comm(QStringLiteral("/proc/%1/comm").arg(pid));
+        if(comm.open(QIODevice::ReadOnly)) {
+            const QByteArray name=comm.readLine().trimmed();
+            if(name=="xfce4-panel" || name=="xfdesktop") continue;
+        }
         currentOrder.append(id);
         QPushButton *button = windowButtons_.value(id, nullptr);
         if (button == nullptr) {
@@ -1292,6 +1307,7 @@ void MainWindow::updateTaskbarLayout()
 {
     const bool compact = width() < 920;
     const bool hideWindowDetails = width() < 920;
+    if(auto *search=findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"))) search->setVisible(width()>=1450 && startMenuEnabled_);
 
     if (startButton_ != nullptr) startButton_->setVisible(startMenuEnabled_);
     if (homeButton_ != nullptr) homeButton_->setVisible(!compact);

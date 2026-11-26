@@ -25,6 +25,7 @@
 #include <QStackedWidget>
 #include <QFrame>
 #include <QStyleOption>
+#include <QStyle>
 #include <QPainter>
 
 #include <algorithm>
@@ -185,6 +186,11 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         const QString path=item->data(Qt::UserRole).toString();
         if (!LinWinRecent::allowedDocument(path) || !QDesktopServices::openUrl(QUrl::fromLocalFile(path)))
             statusLabel_->setText(tr("This document could not be opened."));
+    });
+    connect(pinnedList_, &QListWidget::currentItemChanged,this,[this](QListWidgetItem *pin,QListWidgetItem *) {
+        if(!pin || pin->isHidden()) return;
+        const auto id=pin->data(Qt::UserRole).toString();
+        for(int row=0;row<applicationList_->count();++row) if(applicationList_->item(row)->data(Qt::UserRole).toString()==id) {applicationList_->setCurrentRow(row);break;}
     });
     connect(pinnedList_, &QListWidget::itemActivated, this, [this](QListWidgetItem *pin) {
         if (!pin || pin->isHidden()) return;

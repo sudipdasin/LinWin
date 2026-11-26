@@ -66,6 +66,11 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
         "#startMenuPanel QListWidget::item:selected { background:%5; color:%2; }"
         "#startMenuPanel #primaryAction { background:%5; color:%2; border:1px solid %3; border-radius:%4; }"
         "#taskbar #startButton, #taskbar #panelClock, #taskbar #panelStatus, #taskbar #windowSwitcherStatus { color:%2; }"
+        "#taskbar #linwinTaskbarSearch { background:%6; border:1px solid %7; border-radius:14px; padding:4px 10px; text-align:left; }"
+        "#taskbar #linwinTaskbarSearch:hover { border-color:%3; }"
+        "#taskbar QScrollBar:horizontal { height:4px; background:%1; }"
+        "#taskbar QScrollBar::handle:horizontal { background:%7; min-width:16px; }"
+        "#taskbar QScrollBar::add-line:horizontal, #taskbar QScrollBar::sub-line:horizontal { width:0; }"
         "#taskbar #windowSwitcher QPushButton { background:%5; color:%2; border-bottom:2px solid %3; }"
     ).arg(panel,fg,accent,radius,hover,field,subtle,muted);
     for(const QString &name: {QStringLiteral("linwinCommandPalette"),QStringLiteral("linwinQuickControls"),QStringLiteral("linwinWindowOverview")}) {

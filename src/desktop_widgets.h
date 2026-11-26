@@ -2,6 +2,9 @@
 #pragma once
 #include "system_metrics.h"
 #include <QCalendarWidget>
+#include <QTableView>
+#include <QHeaderView>
+#include <QSizePolicy>
 #include <QDateTime>
 #include <QFile>
 #include <QFrame>
@@ -18,14 +21,25 @@ class DesktopWidgets final : public QWidget {
 public:
     explicit DesktopWidgets(QWidget *parent=nullptr) : QWidget(parent) {
         setObjectName(QStringLiteral("neonWidgets"));
-        setFixedWidth(236);
+        setFixedWidth(292);
         auto *layout=new QVBoxLayout(this);
-        layout->setContentsMargins(0,0,0,0); layout->setSpacing(10);
+        layout->setContentsMargins(0,14,0,0); layout->setSpacing(12);
         clock_=new QLabel(this); clock_->setObjectName(QStringLiteral("widgetClock"));
-        clock_->setAlignment(Qt::AlignCenter); layout->addWidget(clock_);
+        clock_->setAlignment(Qt::AlignVCenter|Qt::AlignLeft); clock_->setFixedHeight(100); layout->addWidget(clock_);
         auto *calendar=new QCalendarWidget(this);
+        calendar->setObjectName(QStringLiteral("linwinDesktopCalendar"));
         calendar->setVerticalHeaderFormat(QCalendarWidget::NoVerticalHeader);
-        calendar->setGridVisible(false); layout->addWidget(calendar);
+        calendar->setHorizontalHeaderFormat(QCalendarWidget::ShortDayNames);
+        calendar->setGridVisible(false);
+        calendar->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+        calendar->setFixedHeight(246);
+        if(auto *table=calendar->findChild<QTableView *>()) {
+            table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+            table->horizontalHeader()->setMinimumSectionSize(12);
+            table->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+            table->verticalHeader()->setMinimumSectionSize(12);
+        }
+        layout->addWidget(calendar);
         auto *system=new QFrame(this); system->setObjectName(QStringLiteral("widgetMetrics"));
         auto *metrics=new QVBoxLayout(system);
         metrics->setContentsMargins(10,10,10,10); metrics->setSpacing(5);
@@ -47,15 +61,17 @@ public:
         layout->addWidget(system); layout->addStretch();
         setStyleSheet(QStringLiteral(
             "#neonWidgets { background:transparent; }"
-            "#widgetClock,#widgetMetrics,QCalendarWidget { background:#092740; color:#e5f7ff; border:1px solid #148eb7; border-radius:9px; padding:10px; }"
-            "#widgetClock { font-size:20px; font-weight:600; }"
+            "#widgetClock,#widgetMetrics,QCalendarWidget { background:#092740; color:#e5f7ff; border:1px solid #148eb7; border-radius:12px; }"
+            "#widgetClock { font-size:24px; font-weight:600; padding:12px; }"
             "#widgetMetrics { font-size:12px; }"
             "#widgetMetrics QLabel { background:transparent; color:#dbefff; }"
             "#metricTitle { font-size:14px; font-weight:600; }"
             "#widgetMetrics QProgressBar { background:#203f57; border:0; border-radius:2px; }"
             "#widgetMetrics QProgressBar::chunk { background:#25bde4; border-radius:2px; }"
             "QCalendarWidget QWidget { background:#092740; color:#e5f7ff; }"
-            "QCalendarWidget QAbstractItemView { selection-background-color:#087fbc; selection-color:white; }"
+            "QCalendarWidget QAbstractItemView { background:#092740; alternate-background-color:#092740; color:#e5f7ff; selection-background-color:#087fbc; selection-color:white; font-size:12px; border:0; }"
+            "QCalendarWidget QHeaderView::section { background:#092740; color:#c6e7f9; border:0; padding:0; }"
+            "QCalendarWidget QToolButton { background:#092740; color:#e5f7ff; border:0; padding:3px; }"
         ));
         timer_.setInterval(2000);
         connect(&timer_,&QTimer::timeout,this,[this]{refresh();});
