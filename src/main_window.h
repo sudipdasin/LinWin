@@ -11,6 +11,7 @@
 
 class AppLauncherWidget;
 class DesktopSurface;
+class DesktopWidgets;
 class ClipboardHistoryWidget;
 class FileManagerWidget;
 class TaskManagerWidget;
@@ -63,6 +64,7 @@ private:
 
     QWidget *desktopArea_ = nullptr;
     DesktopSurface *desktopSurface_ = nullptr;
+    DesktopWidgets *desktopWidgets_ = nullptr;
     QString themeId_ = QStringLiteral("neon");
     QStackedWidget *pages_ = nullptr;
     AppLauncherWidget *startMenu_ = nullptr;

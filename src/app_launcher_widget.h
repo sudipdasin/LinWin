@@ -33,6 +33,7 @@ private:
 
     QLineEdit *searchField_ = nullptr;
     QListWidget *applicationList_ = nullptr;
+    QListWidget *pinnedList_ = nullptr;
     QLabel *statusLabel_ = nullptr;
     QPushButton *pinButton_ = nullptr;
     QHash<QString, GAppInfo *> applications_;

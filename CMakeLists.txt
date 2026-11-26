@@ -65,6 +65,9 @@ if(BUILD_TESTING)
     add_executable(linwin-theme-catalog-tests tests/test_theme_catalog.cpp)
     target_include_directories(linwin-theme-catalog-tests PRIVATE src)
     add_test(NAME theme-catalog COMMAND linwin-theme-catalog-tests)
+    add_executable(linwin-system-metrics-tests tests/test_system_metrics.cpp)
+    target_include_directories(linwin-system-metrics-tests PRIVATE src)
+    add_test(NAME system-metrics COMMAND linwin-system-metrics-tests)
     add_executable(linwin-task-manager-tests
         tests/test_task_manager.cpp
         src/task_manager_widget.cpp

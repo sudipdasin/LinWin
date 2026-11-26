@@ -2,6 +2,7 @@
 #include "main_window.h"
 #include "desktop_surface.h"
 #include "theme_visuals.h"
+#include "desktop_widgets.h"
 
 #include "app_launcher_widget.h"
 #include "clipboard_history_widget.h"
@@ -180,7 +181,11 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         icons->viewport()->setAttribute(Qt::WA_TranslucentBackground);
         icons->setWordWrap(true);
         icons->setContextMenuPolicy(Qt::CustomContextMenu);
-        desktopLayout->addWidget(icons);
+        auto *desktopRow = new QHBoxLayout;
+        desktopRow->addWidget(icons, 1);
+        desktopWidgets_ = new DesktopWidgets(desktop);
+        desktopRow->addWidget(desktopWidgets_);
+        desktopLayout->addLayout(desktopRow, 1);
         const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
         const auto refreshIcons = [this, icons, desktopPath]() {
             icons->clear();
@@ -833,6 +838,7 @@ void MainWindow::applyTheme(const QString &id)
     themeId_ = LinWinVisual::qstr(theme.id);
     QSettings().setValue(QStringLiteral("appearance/theme"), themeId_);
     if (desktopSurface_) desktopSurface_->setTheme(themeId_);
+    if (desktopWidgets_) desktopWidgets_->setVisible(theme.widgets && width() >= 1100 && height() >= 640);
     applyTextScale(settingsHub_->textScalePercent());
 }
 
@@ -919,6 +925,7 @@ void MainWindow::updateShellGeometry()
     }
 
     pages_->setGeometry(desktopArea_->rect());
+    if (desktopWidgets_) desktopWidgets_->setVisible(LinWinVisual::theme(themeId_).widgets && width() >= 1100 && height() >= 640);
     const int areaWidth = desktopArea_->width();
     const int areaHeight = desktopArea_->height();
     const int menuWidth = qMin(560, qMax(300, areaWidth));

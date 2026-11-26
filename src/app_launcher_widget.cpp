@@ -2,6 +2,7 @@
 #include <gio/gio.h>
 
 #include "app_launcher_widget.h"
+#include "theme_visuals.h"
 
 #include <QAbstractItemView>
 #include <QCollator>
@@ -68,10 +69,14 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     : QWidget(parent)
 {
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(28, 24, 28, 28);
-    layout->setSpacing(14);
+    layout->setContentsMargins(14, 12, 14, 12);
+    layout->setSpacing(8);
 
-    auto *title = new QLabel(tr("Start"), this);
+    auto *brand = new QHBoxLayout;
+    auto *logo = new QLabel(this);
+    logo->setPixmap(LinWinVisual::logoIcon().pixmap(36,36));
+    brand->addWidget(logo);
+    auto *title = new QLabel(tr("LinWin"), this);
     title->setObjectName(QStringLiteral("pageTitle"));
     auto *description = new QLabel(
         tr("Find and open applications installed on this computer. Pin the ones you use most."), this);
@@ -101,10 +106,38 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     statusLabel_->setObjectName(QStringLiteral("launcherStatus"));
     statusLabel_->setWordWrap(true);
 
-    layout->addWidget(title);
+    brand->addWidget(title, 1);
+    layout->addLayout(brand);
     layout->addWidget(description);
     layout->addWidget(searchField_);
-    layout->addWidget(applicationList_, 1);
+    auto *columns = new QHBoxLayout;
+    auto *all = new QVBoxLayout;
+    all->addWidget(new QLabel(tr("All apps"), this));
+    all->addWidget(applicationList_, 1);
+    columns->addLayout(all, 1);
+    auto *pins = new QVBoxLayout;
+    pins->addWidget(new QLabel(tr("Pinned"), this));
+    pinnedList_ = new QListWidget(this);
+    pinnedList_->setObjectName(QStringLiteral("pinnedApps"));
+    pinnedList_->setViewMode(QListView::IconMode);
+    pinnedList_->setResizeMode(QListView::Adjust);
+    pinnedList_->setMovement(QListView::Static);
+    pinnedList_->setIconSize(QSize(32,32));
+    pinnedList_->setGridSize(QSize(90,72));
+    pinnedList_->setWordWrap(true);
+    pins->addWidget(pinnedList_, 1);
+    columns->addLayout(pins, 1);
+    layout->addLayout(columns, 1);
+    connect(pinnedList_, &QListWidget::itemActivated, this, [this](QListWidgetItem *pin) {
+        if (!pin || pin->isHidden()) return;
+        const auto id = pin->data(Qt::UserRole).toString();
+        for (int row=0;row<applicationList_->count();++row) {
+            auto *item=applicationList_->item(row);
+            if (!item->isHidden() && item->data(Qt::UserRole).toString()==id) {
+                applicationList_->setCurrentRow(row); launchSelectedApplication(); break;
+            }
+        }
+    });
     layout->addLayout(actions);
     layout->addWidget(statusLabel_);
 
@@ -179,6 +212,7 @@ void AppLauncherWidget::loadApplications()
 void AppLauncherWidget::refreshList()
 {
     applicationList_->clear();
+    pinnedList_->clear();
     QStringList ids = applications_.keys();
     QCollator collator;
     std::sort(ids.begin(), ids.end(), [this, &collator](const QString &left, const QString &right) {
@@ -198,6 +232,9 @@ void AppLauncherWidget::refreshList()
         item->setToolTip(description.isEmpty() ? appName(appInfo) : description);
         if (pinnedApplicationIds_.contains(id)) {
             item->setText(appName(appInfo) + tr("  •  Pinned"));
+            auto *pin = new QListWidgetItem(appIcon(appInfo), appName(appInfo), pinnedList_);
+            pin->setData(Qt::UserRole, id);
+            pin->setToolTip(description);
         }
     }
 
@@ -225,6 +262,10 @@ void AppLauncherWidget::filterApplications(const QString &query)
         }
     }
 
+    for (int row=0;row<pinnedList_->count();++row) {
+        auto *pin=pinnedList_->item(row);
+        pin->setHidden(!needle.isEmpty() && !(pin->text()+QLatin1Char(' ')+pin->toolTip()).contains(needle, Qt::CaseInsensitive));
+    }
     if (applicationList_->currentItem() != nullptr && applicationList_->currentItem()->isHidden()) {
         applicationList_->setCurrentRow(-1);
     }
