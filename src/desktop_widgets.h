@@ -102,7 +102,7 @@ public:
     }
     bool pollingActive() const { return timer_.isActive(); }
 protected:
-    void resizeEvent(QResizeEvent *e) override { QWidget::resizeEvent(e); if(weather_) weather_->setVisible(height()>=700); }
+    void resizeEvent(QResizeEvent *e) override { QWidget::resizeEvent(e); if(weather_) weather_->setVisible(height()>=790); }
     void showEvent(QShowEvent *e) override { QWidget::showEvent(e); previous_.reset(); refresh(); timer_.start(); }
     void hideEvent(QHideEvent *e) override { timer_.stop(); previous_.reset(); QWidget::hideEvent(e); }
 private:
