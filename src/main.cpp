@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("LinWin"));
     QCoreApplication::setOrganizationName(QStringLiteral("LinWin contributors"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("1.0.0"));
+    QCoreApplication::setApplicationVersion(QString::fromLatin1(LINWIN_BUILD_VERSION));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("LinWin Linux desktop shell"));

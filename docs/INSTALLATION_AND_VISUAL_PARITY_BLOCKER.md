@@ -1,0 +1,9 @@
+# Packaging correction and approved visual parity blocker
+
+User reported GDebi rejecting 1.0.0-8+render.10 because a later version is installed. Exact installed version unknown. Debian compares upstream first, then revision; e.g. 1.0.0-beta.8 and 1.0.0-9 both sort after 1.0.0-8+render.10. New package target 1.0.1~preview.1-1 sorts after tested 1.0.0 variants and before 1.0.1-1. No epoch, downgrade, forced removal, or official stable release. Build checks package metadata and exact installed executable version. Existing built-in updater still uses official release metadata, not Render; don't claim an automatic preview upgrade.
+
+## Neon Fluent acceptance contract
+
+Approved reference is the 1648x928 image showing a cyan ribbon over a detailed mountain lake, luminous triangular loop logo and title centered, desktop icons (This PC, Home, Trash, Network) on the left, four right-side widget cards, a dark bottom taskbar and glass Start panel. Existing source has a simplified procedural wallpaper, text-heavy taskbar, two application lists, three widget cards, no weather and no actual acrylic blur. These are known visual mismatches, not completed parity.
+
+Before claiming visual acceptance: capture the actual installed binary at 1648x928 with representative installed apps and controlled fixture data, compare desktop closed and Start open against the approved reference, audit geometry, iconography, spacing, typography, gradients and actual interactions, verify a second real X11/XFCE session at another resolution, document discrepancies. Do not bake screenshot controls into wallpaper, fabricate weather or present fixture values as live. Do not promote main solely on passing functional tests or PNG checksums. User review is required for visual approval. This candidate is an installation/version correction, not the visual redesign.

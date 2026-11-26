@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
-project(LinWin VERSION 1.0.0 LANGUAGES CXX)
+project(LinWin VERSION 1.0.1 LANGUAGES CXX)
+set(LINWIN_BUILD_VERSION "${PROJECT_VERSION}" CACHE STRING "Version displayed by the executable")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -51,6 +52,7 @@ target_compile_options(linwin PRIVATE
 
 include(GNUInstallDirs)
 target_compile_definitions(linwin PRIVATE
+    LINWIN_BUILD_VERSION="${LINWIN_BUILD_VERSION}"
     LINWIN_SESSION_HELPER_PATH="${CMAKE_INSTALL_FULL_LIBEXECDIR}/linwin-session-helper"
 )
 
