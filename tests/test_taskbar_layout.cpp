@@ -17,6 +17,9 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QLineEdit>
+#include <QComboBox>
+#include <QDir>
+#include <QPixmap>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -49,6 +52,8 @@ int main(int argc, char **argv)
     QCoreApplication::setOrganizationName(QStringLiteral("LinWinTests"));
     QCoreApplication::setApplicationName(QStringLiteral("ResponsiveTaskbar"));
     QSettings settings;
+    settings.clear();
+    settings.setValue(QStringLiteral("appearance/theme"), QStringLiteral("neon"));
     settings.setValue(QStringLiteral("components/start-menu"), true);
     settings.setValue(QStringLiteral("components/files"), true);
     settings.setValue(QStringLiteral("components/task-manager"), true);
@@ -121,6 +126,38 @@ int main(int argc, char **argv)
     QApplication::sendEvent(desktopCanvas, &outside);
     if (!require(!start->isChecked() && menu->isHidden(), "A desktop click must dismiss Start.")) return 1;
 
+    // Test live theme switching, including widget and rendering policy.
+    auto *themes = window.findChild<QComboBox *>(QStringLiteral("linwinThemeSelector"));
+    auto *widgets = window.findChild<QWidget *>(QStringLiteral("neonWidgets"));
+    if (!require(themes && themes->count() == 7 && widgets && widgets->isVisible(),
+                 "Neon must show widgets on a sufficiently large desktop.")) return 1;
+    const QString evidence = qEnvironmentVariable("LINWIN_VISUAL_EVIDENCE_DIR");
+    if (!evidence.isEmpty() && !QDir().mkpath(evidence)) return 1;
+    for (int i=0; i<themes->count(); ++i) {
+        themes->setCurrentIndex(i);
+        app.processEvents();
+        const QString id=themes->currentData().toString();
+        if (!require(settings.value(QStringLiteral("appearance/theme")).toString() == id,
+                     "Theme selection must be persisted.")) return 1;
+        if (!require(widgets->isVisible() == (id == QStringLiteral("neon")),
+                     "Only Neon enables the desktop widgets by default.")) return 1;
+        if (id == QStringLiteral("minimal") &&
+            !require(!surface->effectsEnabled() && !surface->gpuPreferred() &&
+                     surface->property("renderBackend").toString() == QStringLiteral("QPainter solid"),
+                     "Minimal must bypass the wallpaper rendering pipeline.")) return 1;
+        start->click();
+        app.processEvents();
+        if (!require(menu->isVisible() && window.findChild<QListWidget *>(QStringLiteral("pinnedApps")),
+                     "Every theme must retain the functioning Start menu and pinned list.")) return 1;
+        if (!evidence.isEmpty() &&
+            !window.grab().save(QDir(evidence).filePath(id + QStringLiteral("-start.png")))) return 1;
+        start->click();
+        app.processEvents();
+        if (!evidence.isEmpty() &&
+            !window.grab().save(QDir(evidence).filePath(id + QStringLiteral("-desktop.png")))) return 1;
+    }
+    themes->setCurrentIndex(0);
+    app.processEvents();
     window.resize(480, 600);
     app.processEvents();
     if (!require(more->isVisible() && workspaceButton->isHidden() && desktopButton->isHidden()

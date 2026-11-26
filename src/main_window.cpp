@@ -928,7 +928,7 @@ void MainWindow::updateShellGeometry()
     if (desktopWidgets_) desktopWidgets_->setVisible(LinWinVisual::theme(themeId_).widgets && width() >= 1100 && height() >= 640);
     const int areaWidth = desktopArea_->width();
     const int areaHeight = desktopArea_->height();
-    const int menuWidth = qMin(560, qMax(300, areaWidth));
-    const int menuHeight = qMin(620, qMax(280, areaHeight));
+    const int menuWidth = qMax(1, qMin(560, areaWidth));
+    const int menuHeight = qMax(1, qMin(620, areaHeight));
     startMenu_->setGeometry(0, qMax(0, areaHeight - menuHeight), menuWidth, menuHeight);
 }

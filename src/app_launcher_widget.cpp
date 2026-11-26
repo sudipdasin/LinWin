@@ -144,6 +144,18 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     QSettings settings;
     pinnedApplicationIds_ = settings.value(kPinnedAppsSetting).toStringList();
     loadApplications();
+    // Seed only a fresh profile, and only from installed applications.
+    if (!settings.contains(kPinnedAppsSetting)) {
+        const QStringList defaults{QStringLiteral("firefox.desktop"), QStringLiteral("org.mozilla.firefox.desktop"),
+            QStringLiteral("thunar.desktop"), QStringLiteral("org.xfce.Thunar.desktop"),
+            QStringLiteral("libreoffice-writer.desktop"), QStringLiteral("org.libreoffice.LibreOffice.writer.desktop"),
+            QStringLiteral("xfce4-terminal.desktop"), QStringLiteral("org.xfce.mousepad.desktop"),
+            QStringLiteral("org.gnome.Calculator.desktop"), QStringLiteral("vlc.desktop")};
+        for (const auto &id : defaults) {
+            if (applications_.contains(id) && !pinnedApplicationIds_.contains(id)) pinnedApplicationIds_.append(id);
+        }
+        savePinnedApplications();
+    }
     refreshList();
 
     connect(searchField_, &QLineEdit::textChanged,
