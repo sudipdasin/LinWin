@@ -8,6 +8,9 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+include(GNUInstallDirs)
+add_compile_definitions(LINWIN_UPDATE_WORKER_PATH="${CMAKE_INSTALL_FULL_LIBEXECDIR}/linwin/embedded_worker.py")
+
 find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GIO_UNIX REQUIRED IMPORTED_TARGET gio-unix-2.0)
@@ -26,6 +29,7 @@ set(LINWIN_SHELL_SOURCES
     src/system_profile.cpp
     src/settings_hub_widget.cpp
     src/settings_hub_widget.h
+    src/embedded_update_dialog.h
     src/system_profile.h
     src/setup_wizard.cpp
     src/setup_wizard.h
@@ -130,6 +134,8 @@ endif()
 install(TARGETS linwin RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(TARGETS linwin-session-helper RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
 install(PROGRAMS data/linwin-session DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+install(FILES updater/embedded_worker.py updater/linwin-update updater/release_policy.py updater/update_guard.py
+    DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/linwin)
 install(FILES data/linwin.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(FILES data/linwin-setup.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(FILES data/linwin-uninstall.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
@@ -143,6 +149,7 @@ set(CPACK_PACKAGE_CONTACT "See the project repository for maintainer contacts")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "LinWin contributors")
 set(CPACK_DEBIAN_PACKAGE_RELEASE "8")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3 (>= 3.11), apt, dpkg, pkexec, ca-certificates, gpgv")
 set(CPACK_RPM_PACKAGE_LICENSE "GPL-3.0-or-later")
 set(CPACK_RPM_PACKAGE_RELEASE "8")
 set(CPACK_GENERATOR "TGZ;DEB;RPM")

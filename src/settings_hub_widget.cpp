@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "settings_hub_widget.h"
+#include "embedded_update_dialog.h"
 #include "text_scale.h"
 
 #include <QFrame>
@@ -95,9 +96,9 @@ QVector<Category> categories()
              {QStringLiteral("cinnamon-settings"), {QStringLiteral("users")}},
              {QStringLiteral("systemsettings"), {QStringLiteral("kcm_users")}}
          }},
-        {QStringLiteral("LinWin Updates"), QStringLiteral("Check official LinWin releases and review package updates. Install the separate LinWin Update Center companion if unavailable."),
+        {QStringLiteral("LinWin Updates"), QStringLiteral("Check official LinWin releases and install verified updates from within LinWin."),
          QStringLiteral("linwin update release beta preview upgrade updater"), {
-             {QStringLiteral("/usr/bin/linwin-update"), {}}
+             {QStringLiteral("internal:linwin-update"), {}}
          }},
         {QStringLiteral("Updates & Software"), QStringLiteral("Open the update manager or software center provided by this desktop."),
          QStringLiteral("updates upgrade software install applications packages"), {
@@ -135,6 +136,7 @@ QString findAvailableProgram(const QVector<Candidate> &candidates, QStringList *
         return score(left) < score(right);
     });
     for (const Candidate &candidate : ordered) {
+        if (candidate.program == QStringLiteral("internal:linwin-update")) return candidate.program;
         const QString path = QStandardPaths::findExecutable(candidate.program);
         if (!path.isEmpty()) {
             *arguments = candidate.arguments;
@@ -412,6 +414,11 @@ void SettingsHubWidget::openCategory(int index)
     if (index < 0 || index >= targets_.size()) return;
     const LaunchTarget &target = targets_.at(index);
     if (target.program.isEmpty()) return;
+    if (target.program == QStringLiteral("internal:linwin-update")) {
+        EmbeddedUpdateDialog dialog(this);
+        dialog.exec();
+        return;
+    }
     if (!QProcess::startDetached(target.program, target.arguments)) {
         auto *availability = cards_.at(index).frame->findChild<QLabel *>(QStringLiteral("settingsAvailability"));
         if (availability != nullptr) {

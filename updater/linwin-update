@@ -202,7 +202,7 @@ def check(channel, background=False):
             return
         trust = 'Trusted release signature and SHA256 verified.' if signed else 'SHA256 verified against the HTTPS release manifest. No independent release signature is available; publisher authenticity is not independently verified.'
         plan = installation_plan(package, run)
-        if not gui('question', f'{trust}\n\nInstall LinWin package {version}? This requires administrator authorization. Close LinWin before continuing. No unattended installation is performed.\n\nAPT simulation:\n{plan}'):
+        if not gui('question', f'{trust}\n\nInstall LinWin package {version}? This requires administrator authorization. Save your work before continuing and restart LinWin after installation. No unattended installation is performed.\n\nAPT simulation:\n{plan}'):
             return
         # Recheck immediately before requesting authorization; APT refuses removals and downgrades.
         verify_file(package, digest)

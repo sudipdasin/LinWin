@@ -11,6 +11,8 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QVector>
+#include <QDialog>
+#include <QTimer>
 
 #include <iostream>
 
@@ -105,6 +107,20 @@ int main(int argc, char **argv)
             if (!card->isHidden() && card->property("categoryTitle").toString() == QStringLiteral("LinWin Updates"))
                 foundUpdateCard = true;
         passed &= expect(foundUpdateCard, "LinWin Updates must be distinct from host software updates.");
+        for (QFrame *card : cards) {
+            if (card->isHidden() || card->property("categoryTitle").toString() != QStringLiteral("LinWin Updates")) continue;
+            auto *open = card->findChild<QPushButton *>(QStringLiteral("settingsOpenButton"));
+            passed &= expect(open && open->isEnabled(), "Embedded update page must not depend on companion installation.");
+            if (open && open->isEnabled()) {
+                QTimer::singleShot(0, &widget, [&]() {
+                    auto *dialog = widget.findChild<QDialog *>(QStringLiteral("linwinEmbeddedUpdateDialog"));
+                    passed &= expect(dialog && dialog->findChild<QPushButton *>(QStringLiteral("linwinCheckForUpdates")), "Update opens a native LinWin dialog.");
+                    if (dialog) dialog->reject();
+                    else QApplication::closeAllWindows();
+                });
+                open->click();
+            }
+        }
 
         search->setText(QStringLiteral("no matching setting"));
         application.processEvents();

@@ -35,6 +35,11 @@ pkg="$work/packages/$name.deb"
 [ "$(dpkg-deb -f "$pkg" Package)" = linwin ]
 [ "$(dpkg-deb -f "$pkg" Architecture)" = amd64 ]
 [ "$(dpkg-deb -f "$pkg" Version)" = "1.0.0-8+local.$rev" ]
+dpkg-deb -x "$pkg" "$work/package-root"
+for worker in embedded_worker.py linwin-update release_policy.py update_guard.py; do
+  test -f "$work/package-root/usr/libexec/linwin/$worker"
+done
+python3 -B "$work/package-root/usr/libexec/linwin/embedded_worker.py" --help
 cp "$pkg" "$out/"
 (cd "$out" && sha256sum "$name.deb" > "$name.deb.sha256")
 printf 'Candidate package: %s/%s.deb\n' "$out" "$name"

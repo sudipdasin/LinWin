@@ -1,0 +1,5 @@
+# Embedded LinWin updates
+
+Settings → LinWin Updates opens a native Qt dialog with stable/preview channel selection, check for updates, release and package details, and explicit approve/decline controls. The private Python worker reuses the tested release, digest, signature, Debian metadata, and APT plan logic. It communicates over JSON lines; no Zenity windows, separate menu entry, companion installation, or standalone updater package are required. Only the OS authorization prompt is external. CMake includes the worker and modules in the main package. Debian dependencies are declared in CPack. The current engine supports Mint 22.x, Ubuntu 24.04 and Debian 13 amd64.
+
+The six new protocol tests plus 39 existing backend tests passed locally. Native Qt compilation, actual package construction and a desktop session install are unverified. This is a source candidate, not a new published release. No automatic rollback, independently provisioned release key or scheduled in-app checks yet. Legacy companion packaging is retained for historical compatibility only; the new main package does not install its launcher or autostart entry.
