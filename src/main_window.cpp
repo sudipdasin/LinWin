@@ -11,6 +11,7 @@
 
 #include <QApplication>
 #include <QDateTime>
+#include <QEvent>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFileIconProvider>
@@ -381,6 +382,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     taskbarLayout->addWidget(closeButton_);
     rootLayout->addWidget(taskbar);
     setCentralWidget(root);
+    QApplication::instance()->installEventFilter(this);
     updateTaskbarLayout();
 
     connect(startButton_, &QPushButton::toggled, this, [this](bool visible) {
@@ -740,6 +742,30 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     QMainWindow::resizeEvent(event);
     updateTaskbarLayout();
     updateShellGeometry();
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (startMenu_ == nullptr || startButton_ == nullptr || !startMenu_->isVisible())
+        return QMainWindow::eventFilter(watched, event);
+
+    auto *widget = qobject_cast<QWidget *>(watched);
+    if (widget == nullptr || (widget != this && !isAncestorOf(widget)))
+        return QMainWindow::eventFilter(watched, event);
+
+    const bool insideMenu = widget == startMenu_ || startMenu_->isAncestorOf(widget);
+    const bool insideButton = widget == startButton_ || startButton_->isAncestorOf(widget);
+    if (event->type() == QEvent::MouseButtonPress && !insideMenu && !insideButton) {
+        // Let the original click continue to its intended control.
+        startButton_->setChecked(false);
+    } else if (event->type() == QEvent::KeyPress
+               && static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape
+               && (insideMenu || insideButton)) {
+        startButton_->setChecked(false);
+        startButton_->setFocus(Qt::ShortcutFocusReason);
+        return true;
+    }
+    return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)

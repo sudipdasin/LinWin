@@ -13,6 +13,9 @@
 #include <QLabel>
 #include <QFrame>
 #include <QListWidget>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QLineEdit>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -96,6 +99,21 @@ int main(int argc, char **argv)
     if (!require(pages->currentIndex() == 1, "Double-clicking Files must open Files.")) return 1;
     desktopButton->click();
     if (!require(pages->currentIndex() == 0, "Desktop button must return to the workspace.")) return 1;
+
+    auto *start = window.findChild<QPushButton *>(QStringLiteral("startButton"));
+    auto *menu = window.findChild<QWidget *>(QStringLiteral("startMenuPanel"));
+    auto *search = window.findChild<QLineEdit *>(QStringLiteral("applicationSearch"));
+    if (!require(start && menu && search, "Start controls must exist.")) return 1;
+    start->click();
+    if (!require(start->isChecked() && menu->isVisible(), "Start must open the menu.")) return 1;
+    QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+    QApplication::sendEvent(search, &escape);
+    if (!require(!start->isChecked() && menu->isHidden(), "Escape in search must dismiss Start.")) return 1;
+    start->click();
+    QMouseEvent outside(QEvent::MouseButtonPress, QPointF(1, 1), QPointF(1, 1),
+                        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(desktopCanvas, &outside);
+    if (!require(!start->isChecked() && menu->isHidden(), "A desktop click must dismiss Start.")) return 1;
 
     window.resize(480, 600);
     app.processEvents();
