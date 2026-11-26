@@ -12,11 +12,14 @@ for previous in 1.0.0 1.0.0-8 1.0.0-beta.8 1.0.0-8+render.10 1.0.0-9 1.0.0-10 1.
 done
 dpkg --compare-versions "$version" lt 1.0.1-1
 printf "PASS: Debian upgrade ordering against known 1.0.0 variants\n"
-python3 -m unittest discover -s updater -v
-python3 -m unittest discover -s scripts -p test_download_server.py -v
+if ! python3 -m unittest discover -s updater -v > /out/updater-tests.txt 2>&1; then cat /out/updater-tests.txt; exit 1; fi
+cat /out/updater-tests.txt
+if ! python3 -m unittest discover -s scripts -p test_download_server.py -v > /out/download-tests.txt 2>&1; then cat /out/download-tests.txt; exit 1; fi
+cat /out/download-tests.txt
+python3 -m unittest discover -s scripts -p test_release_evidence.py -v
 cmake -S . -B /tmp/linwin-build -DCMAKE_BUILD_TYPE=Release -DLINWIN_BUILD_VERSION="$version" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -UNDEBUG" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBEXECDIR=libexec -DBUILD_TESTING=ON
 cmake --build /tmp/linwin-build --parallel 1
-LINWIN_VISUAL_EVIDENCE_DIR=/out/visuals ctest --test-dir /tmp/linwin-build --output-on-failure
+LINWIN_VISUAL_EVIDENCE_DIR=/out/visuals ctest --test-dir /tmp/linwin-build --output-on-failure --output-junit /out/ctest-results.xml
 for theme in neon aero aurora familiar graphite cobalt minimal; do
     test -s "/out/visuals/$theme-start.png"
     test -s "/out/visuals/$theme-desktop.png"
@@ -73,4 +76,5 @@ python3 -c 'import struct; from pathlib import Path; paths=list(Path("/out/resol
 ln -s "$(basename "$pkg")" /out/linwin-latest.deb
 cd /out
 sha256sum "$(basename "$pkg")" > SHA256SUMS
+python3 /src/scripts/release_evidence.py /out "$(basename "$pkg")" "$version"
 printf '%s\n' 'Native Ubuntu 24.04 amd64 candidate. Build, CTest, updater tests, Xvfb startup, actual container APT install/remove, nineteen native Qt captures with effects enabled, native snap geometry/controller checks, recent-document, landscape and workspace restore, multiresolution icon and metric accessibility, Task View, native taskbar controls, persistent workspace, Quick Controls, Command Palette, per-tool geometry recall and PNG gallery integrity, icon-cache and six native benchmark process checks passed. Debian version ordering and executable version identity verified. Start panel opacity, wallpaper-sampled glass, navigation, calendar width, opt-in weather and two-resolution checks passed. Reference-size Start grid, local network and battery status, and compact status lifecycle checks passed. Pinned tile artwork sizing and exclusive Start navigation checks included. Download attachment and HEAD/GET regression tests passed. Textured terrain determinism, original place artwork and widget toolbar gates included. Visual reference parity is NOT certified. Not a Mint VM or physical GPU certification.' > validation.txt
