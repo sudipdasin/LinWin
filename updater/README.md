@@ -1,5 +1,7 @@
-# Release policy foundation
+# LinWin Update Center 1.0.1
 
-This branch contains the locally regression-tested pure Python release selection policy for the separately packaged LinWin Update Center 1.0.1. Run `python3 updater/test_release_policy.py` without network or CI. The full companion application and DEB are supplied separately; this branch alone does not build the updater GUI.
+Experimental Python and Zenity graphical updater companion. Supports Mint 22.x with Ubuntu noble base, Ubuntu 24.04 and Debian 13 on amd64. Run as a desktop user, not root. Use the Applications menu to choose a channel and review a candidate before installation. XFCE login checks once daily; no unattended installations.
 
-The current CPack beta.N mapping is upstream-version-N. A stable migration needs a Debian versioning policy that orders stable above earlier betas. The presence of a signature asset is not proof of authenticity: callers must verify the signature using an independently provisioned trusted key, then verify package digest, name, architecture and version before requesting installation. No unattended installation.
+Build locally: `sh packaging/build.sh`. Run the release policy tests: `python3 test_release_policy.py`. The complete local test suite is also supplied in the source archive.
+
+A trusted key at /usr/share/keyrings/linwin-release.gpg enables signed-release enforcement. Without a key, unsigned releases need explicit approval and are checked only against HTTPS and SHA256. A signature asset without a trusted key is rejected. The beta.N mapping uses upstream version-N; stable migration needs a Debian versioning policy. No automatic rollback or updater self-update is implemented. Real Mint desktop and network installation are not yet verified.

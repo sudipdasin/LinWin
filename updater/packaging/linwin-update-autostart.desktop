@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=LinWin update check
+Comment=Check for LinWin releases once per day at login; never install automatically
+Exec=/usr/bin/linwin-update --background
+Icon=system-software-update
+Terminal=false
+OnlyShowIn=XFCE;
+X-GNOME-Autostart-enabled=true
