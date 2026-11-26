@@ -28,6 +28,10 @@
 #include <QProgressBar>
 #include "shell_icons.h"
 #include <QCheckBox>
+#include <QCalendarWidget>
+#include <QTableView>
+#include <QHeaderView>
+#include <QImage>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -79,6 +83,7 @@ int main(int argc, char **argv)
     QPushButton *clipboard = nullptr;
     QPushButton *settingsButton = nullptr;
     for (auto *button : window.findChildren<QPushButton *>()) {
+        if (button->objectName()!=QStringLiteral("navigationButton")) continue;
         if (button->text() == QStringLiteral("Clipboard")) clipboard = button;
         if (button->text() == QStringLiteral("Settings")) settingsButton = button;
     }
@@ -232,8 +237,40 @@ int main(int argc, char **argv)
         if (!evidence.isEmpty() &&
             !window.grab().save(QDir(evidence).filePath(id + QStringLiteral("-desktop.png")))) return 1;
     }
-    themes->setCurrentIndex(0);
+    themes->setCurrentIndex(themes->findData(QStringLiteral("neon")));
+    window.resize(1920,1080);
     app.processEvents();
+    auto *calendar=window.findChild<QCalendarWidget *>(QStringLiteral("linwinDesktopCalendar"));
+    auto *calendarTable=calendar?calendar->findChild<QTableView *>():nullptr;
+    auto *taskbarSearch=window.findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"));
+    if(!require(window.size()==QSize(1920,1080) && calendar && calendarTable && taskbarSearch && taskbarSearch->isVisible(),
+                "1920x1080 reference test must expose full desktop widgets and taskbar search."))return 1;
+    if(!require(calendarTable->horizontalHeader()->length()<=calendarTable->viewport()->width()+1,
+                "All calendar columns must fit inside the visible viewport."))return 1;
+    QString physicalEvidence;
+    if(!evidence.isEmpty()) {
+        physicalEvidence=QDir(evidence).filePath(QStringLiteral("../resolution-checks"));
+        if(!QDir().mkpath(physicalEvidence) || !window.grab().save(QDir(physicalEvidence).filePath(QStringLiteral("neon-1920x1080-desktop.png")))) return 1;
+    }
+    taskbarSearch->click();app.processEvents();
+    auto *views=window.findChild<QStackedWidget *>(QStringLiteral("linwinStartViews"));
+    auto *allApps=window.findChild<QPushButton *>(QStringLiteral("linwinAllApps"));
+    auto *pinned=window.findChild<QPushButton *>(QStringLiteral("linwinPinnedView"));
+    if(!require(menu->isVisible() && menu->testAttribute(Qt::WA_StyledBackground) && views && views->currentIndex()==0 && allApps && pinned,
+                "Start must paint its own background and open the pinned view."))return 1;
+    const auto image=menu->grab().toImage();
+    const QColor pixel=image.pixelColor(8,image.height()/2);
+    const QColor expected(QStringLiteral("#09233e"));
+    if(!require(pixel.alpha()==255 && qAbs(pixel.red()-expected.red())<=12 && qAbs(pixel.green()-expected.green())<=12 && qAbs(pixel.blue()-expected.blue())<=12,
+                "Start panel must have an opaque theme-colored interior, not exposed wallpaper."))return 1;
+    if(!physicalEvidence.isEmpty() && !window.grab().save(QDir(physicalEvidence).filePath(QStringLiteral("neon-1920x1080-start.png"))))return 1;
+    allApps->click();app.processEvents();
+    if(!require(views->currentIndex()==1,"All apps must switch to the installed application list."))return 1;
+    pinned->click();app.processEvents();
+    if(!require(views->currentIndex()==0,"Pinned must restore the grid."))return 1;
+    search->setText(QStringLiteral("test query"));app.processEvents();
+    if(!require(views->currentIndex()==1,"Search must show filtered all-app results."))return 1;
+    search->clear();start->click();
     window.resize(480, 600);
     app.processEvents();
     if (!require(more->isVisible() && workspaceButton->isHidden() && desktopButton->isHidden()
