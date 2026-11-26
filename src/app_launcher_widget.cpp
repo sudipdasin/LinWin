@@ -5,6 +5,7 @@
 #include "theme_visuals.h"
 #include "shell_icons.h"
 #include "recent_documents.h"
+#include "pinned_tile_delegate.h"
 #include <QDesktopServices>
 #include <QFileIconProvider>
 #include <QCheckBox>
@@ -43,7 +44,7 @@ protected:
     void resizeEvent(QResizeEvent *event) override {
         QListWidget::resizeEvent(event);
         const int columns=qBound(1,viewport()->width()/72,4);
-        const QSize target(qMax(1,viewport()->width()/columns),78);
+        const QSize target(qMax(1,viewport()->width()/columns),92);
         if(gridSize()!=target)setGridSize(target);
     }
 };
@@ -159,6 +160,9 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedButton->setObjectName(QStringLiteral("linwinPinnedView"));
     allButton->setIcon(QIcon::fromTheme(QStringLiteral("view-grid"),LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop)));
     pinnedButton->setIcon(QIcon::fromTheme(QStringLiteral("starred"),LinWinVisual::shellIcon(LinWinVisual::Glyph::More)));
+    allButton->setCheckable(true);pinnedButton->setCheckable(true);
+    allButton->setIconSize(QSize(23,23));pinnedButton->setIconSize(QSize(23,23));
+    pinnedButton->setChecked(true);
     navigation->addWidget(allButton);
     navigation->addWidget(pinnedButton);
     columns->addWidget(rail);
@@ -170,8 +174,10 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setResizeMode(QListView::Adjust);
     pinnedList_->setMovement(QListView::Static);
     pinnedList_->setIconSize(QSize(32,32));
-    pinnedList_->setGridSize(QSize(94,78));
-    pinnedList_->setIconSize(QSize(36,36));
+    pinnedList_->setGridSize(QSize(94,92));
+    pinnedList_->setIconSize(QSize(44,44));
+    pinnedList_->setItemDelegate(new LinWinVisual::PinnedTileDelegate(pinnedList_));
+    pinnedList_->setMouseTracking(true);
     pinnedList_->setTextElideMode(Qt::ElideNone);
     pinnedList_->setSpacing(0);
     pinnedList_->setWordWrap(true);
@@ -183,6 +189,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     appViews_->setObjectName(QStringLiteral("linwinStartViews"));
     appViews_->addWidget(pinnedPage);
     appViews_->addWidget(applicationList_);
+    connect(appViews_,&QStackedWidget::currentChanged,this,[allButton,pinnedButton](int index){allButton->setChecked(index==1);pinnedButton->setChecked(index==0);});
     auto *content=new QVBoxLayout;
     content->addWidget(appViews_,1);
     columns->addLayout(content,1);
@@ -233,7 +240,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         button->setObjectName(QStringLiteral("linwinStartTool_%1").arg(tool.first));
         const LinWinVisual::Glyph glyphs[]{LinWinVisual::Glyph::Files,LinWinVisual::Glyph::Tasks,LinWinVisual::Glyph::Clipboard,LinWinVisual::Glyph::Settings};
         button->setIcon(LinWinVisual::shellIcon(glyphs[tool.first-1]));
-        button->setIconSize(QSize(18,18));
+        button->setIconSize(QSize(23,23));
         quick->addWidget(button);
         connect(button,&QPushButton::clicked,this,[this,tool]{ emit toolRequested(tool.first); });
     }

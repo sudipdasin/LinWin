@@ -51,6 +51,7 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
         "#startMenuPanel #launcherTagline { color:%8; font-size:11px; }"
         "#startMenuPanel #pinnedApps { border:0; background:transparent; }"
         "#startMenuPanel #linwinAllApps, #startMenuPanel #linwinPinnedView { border-radius:6px; }"
+        "#startMenuPanel #linwinStartRail QPushButton:checked { background:%5; color:%2; border:1px solid %7; }"
         "#startMenuPanel #pageTitle { color:%2; font-size:24px; font-weight:600; }"
         "#startMenuPanel QScrollBar:vertical { background:%1; width:7px; margin:0; }"
         "#startMenuPanel QScrollBar::handle:vertical { background:%7; border-radius:3px; min-height:18px; }"

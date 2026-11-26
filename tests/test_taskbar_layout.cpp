@@ -34,6 +34,7 @@
 #include <QImage>
 #include <QEventLoop>
 #include "weather_widget.h"
+#include "pinned_tile_delegate.h"
 #include "desktop_status_widget.h"
 
 namespace {
@@ -282,6 +283,11 @@ int main(int argc, char **argv)
     if(!require(menu->width()>=650 && menu->width()<=680 && grid && grid->gridSize().width()>=72
                 && grid->viewport()->width()/grid->gridSize().width()==4,
                 "1920-wide reference Start must preserve its proportional width and four-column grid."))return 1;
+    if(!require(grid->iconSize()==QSize(44,44) && grid->gridSize().height()==92 && pinned->isChecked() && !allApps->isChecked(),
+                "Pinned tiles must use large icons and active navigation state."))return 1;
+    // Even a theme providing only a tiny 16px bitmap must occupy the intended slot.
+    if(!require(LinWinVisual::fittedIconRect(QRect(0,0,44,44),QSize(16,16))==QRect(0,0,44,44),
+                "Small source icons must fill their native tile without changing aspect ratio."))return 1;
     const auto image=menu->grab().toImage();
     const QColor pixel=image.pixelColor(8,image.height()/2);
     const QColor expected(QStringLiteral("#09233e"));
@@ -289,7 +295,7 @@ int main(int argc, char **argv)
                 "Start panel must have an opaque theme-colored interior, not exposed wallpaper."))return 1;
     if(!physicalEvidence.isEmpty() && !window.grab().save(QDir(physicalEvidence).filePath(QStringLiteral("neon-1920x1080-start.png"))))return 1;
     allApps->click();app.processEvents();
-    if(!require(views->currentIndex()==1,"All apps must switch to the installed application list."))return 1;
+    if(!require(views->currentIndex()==1 && allApps->isChecked() && !pinned->isChecked(),"All apps must switch to the installed application list."))return 1;
     pinned->click();app.processEvents();
     if(!require(views->currentIndex()==0,"Pinned must restore the grid."))return 1;
     search->setText(QStringLiteral("test query"));app.processEvents();
