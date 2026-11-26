@@ -763,6 +763,20 @@ void MainWindow::showQuickControls()
     connect(gpu,&QCheckBox::toggled,desktopSurface_,&DesktopSurface::setGpuPreferred);
     connect(previews,&QCheckBox::toggled,&panel,[](bool enabled){QSettings().setValue(QStringLiteral("appearance/taskViewPreviews"),enabled);});
     refreshControls();
+    if(!toolWindows_.isEmpty()) {
+        auto *profiles=new QComboBox(&panel);
+        profiles->setObjectName(QStringLiteral("linwinQuickWorkspaceSlot"));
+        for(int slot=1;slot<=3;++slot) profiles->addItem(tr("Workspace %1").arg(slot),slot);
+        layout->addWidget(new QLabel(tr("Saved workspaces"),&panel));
+        auto *row=new QHBoxLayout;
+        auto *save=new QPushButton(tr("Save"),&panel);
+        save->setObjectName(QStringLiteral("linwinQuickSaveWorkspace"));
+        auto *restore=new QPushButton(tr("Restore"),&panel);
+        restore->setObjectName(QStringLiteral("linwinQuickRestoreWorkspace"));
+        row->addWidget(profiles,1);row->addWidget(save);row->addWidget(restore);layout->addLayout(row);
+        connect(save,&QPushButton::clicked,&panel,[this,profiles]{saveWorkspaceProfile(profiles->currentData().toInt());});
+        connect(restore,&QPushButton::clicked,&panel,[this,profiles,&panel]{const int slot=profiles->currentData().toInt();panel.accept();loadWorkspaceProfile(slot);});
+    }
     layout->addStretch();
     auto *done=new QDialogButtonBox(QDialogButtonBox::Close,&panel);
     connect(done,&QDialogButtonBox::rejected,&panel,&QDialog::reject);

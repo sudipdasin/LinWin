@@ -314,6 +314,30 @@ int main(int argc, char **argv)
     app.processEvents();
     if (!require(files->isVisible() && tasks->isVisible() && files->geometry()==filesPosition && tasks->geometry()==tasksPosition,
                  "Restore workspace must recover both windows without recentering.")) return 1;
+    auto *floatingQuick=floating.findChild<QShortcut *>(QStringLiteral("linwinQuickControlsShortcut"));
+    if(!require(floatingQuick,"Floating quick controls must exist.")) return 1;
+    bool savedOk=false;
+    QTimer::singleShot(0,&floating,[&]{
+        auto *panel=floating.findChild<QDialog *>(QStringLiteral("linwinQuickControls"));
+        auto *save=panel?panel->findChild<QPushButton *>(QStringLiteral("linwinQuickSaveWorkspace")):nullptr;
+        if(save) {
+            save->click();
+            savedOk=settings.contains(QStringLiteral("workspace/profiles/v1/1"));
+        }
+        if(panel) panel->reject(); else QApplication::closeAllWindows();
+    });
+    QMetaObject::invokeMethod(floatingQuick,"activated",Qt::DirectConnection);
+    if(!require(savedOk,"Quick controls must save a persistent workspace.")) return 1;
+    files->close();tasks->close();app.processEvents();
+    QTimer::singleShot(0,&floating,[&]{
+        auto *panel=floating.findChild<QDialog *>(QStringLiteral("linwinQuickControls"));
+        auto *restore=panel?panel->findChild<QPushButton *>(QStringLiteral("linwinQuickRestoreWorkspace")):nullptr;
+        if(restore) restore->click();
+        else if(panel) panel->reject();
+        else QApplication::closeAllWindows();
+    });
+    QMetaObject::invokeMethod(floatingQuick,"activated",Qt::DirectConnection);
+    if(!require(files->isVisible() && tasks->isVisible(),"Saved profile must restore both native tools.")) return 1;
     floating.close();
     // Exercise the real controller on a small native dialog independently of
     // the content minimum sizes of the full File Explorer and Task Manager.
