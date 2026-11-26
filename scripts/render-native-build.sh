@@ -23,11 +23,13 @@ for mode in overlay shell; do
     fi
     test "$code" -eq 124
 done
-cpack --config /tmp/linwin-build/CPackConfig.cmake -G DEB -B /tmp/linwin-package -D CPACK_DEBIAN_PACKAGE_RELEASE=8+render.2 -D CPACK_PACKAGE_FILE_NAME=linwin-1.0.0-8+render.2-ubuntu-24.04-amd64
-pkg=/tmp/linwin-package/linwin-1.0.0-8+render.2-ubuntu-24.04-amd64.deb
+test -s /out/visuals/native-file-explorer.png
+test -s /out/visuals/native-task-manager.png
+cpack --config /tmp/linwin-build/CPackConfig.cmake -G DEB -B /tmp/linwin-package -D CPACK_DEBIAN_PACKAGE_RELEASE=8+render.3 -D CPACK_PACKAGE_FILE_NAME=linwin-1.0.0-8+render.3-ubuntu-24.04-amd64
+pkg=/tmp/linwin-package/linwin-1.0.0-8+render.3-ubuntu-24.04-amd64.deb
 test "$(dpkg-deb -f "$pkg" Package)" = linwin
 test "$(dpkg-deb -f "$pkg" Architecture)" = amd64
-test "$(dpkg-deb -f "$pkg" Version)" = '1.0.0-8+render.2'
+test "$(dpkg-deb -f "$pkg" Version)" = '1.0.0-8+render.3'
 dpkg-deb -x "$pkg" /tmp/linwin-extracted
 for f in embedded_worker.py linwin-update release_policy.py update_guard.py; do
     test -f "/tmp/linwin-extracted/usr/libexec/linwin/$f"
@@ -38,7 +40,7 @@ python3 -B /tmp/linwin-extracted/usr/libexec/linwin/embedded_worker.py --help
 # Install the actual package in the disposable Ubuntu builder, not on the user's host.
 apt-get update
 apt-get install -y --no-install-recommends "$pkg"
-test "$(dpkg-query -W -f='${Version}' linwin)" = '1.0.0-8+render.2'
+test "$(dpkg-query -W -f='${Version}' linwin)" = '1.0.0-8+render.3'
 test -f /usr/libexec/linwin/embedded_worker.py
 /usr/bin/linwin --version
 code=0
@@ -51,4 +53,4 @@ cp "$pkg" /out/
 ln -s "$(basename "$pkg")" /out/linwin-latest.deb
 cd /out
 sha256sum "$(basename "$pkg")" > SHA256SUMS
-printf '%s\n' 'Native Ubuntu 24.04 amd64 candidate. Build, CTest, updater tests, Xvfb startup, actual container APT install/remove, and fourteen native Qt captures passed. Not a Mint VM or physical GPU certification.' > validation.txt
+printf '%s\n' 'Native Ubuntu 24.04 amd64 candidate. Build, CTest, updater tests, Xvfb startup, actual container APT install/remove, and sixteen native Qt captures passed. Not a Mint VM or physical GPU certification.' > validation.txt
