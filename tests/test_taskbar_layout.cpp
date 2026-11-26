@@ -244,6 +244,11 @@ int main(int argc, char **argv)
     if (!require(files->isVisible(), "A closed tool must be reopenable.")) return 1;
     floating.findChild<QPushButton *>(QStringLiteral("desktopButton"))->click();
     if (!require(!files->isVisible() && !tasks->isVisible(), "Show desktop must hide native tools.")) return 1;
+    const QRect filesPosition=files->geometry(),tasksPosition=tasks->geometry();
+    floating.findChild<QPushButton *>(QStringLiteral("desktopButton"))->click();
+    app.processEvents();
+    if (!require(files->isVisible() && tasks->isVisible() && files->geometry()==filesPosition && tasks->geometry()==tasksPosition,
+                 "Restore workspace must recover both windows without recentering.")) return 1;
     floating.close();
     // Exercise the real controller on a small native dialog independently of
     // the content minimum sizes of the full File Explorer and Task Manager.

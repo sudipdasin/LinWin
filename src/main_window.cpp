@@ -252,6 +252,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 menu.addSeparator();
             }
             menu.addAction(tr("Refresh"), this, refreshIcons);
+            if (!toolWindows_.isEmpty()) {
+                auto *restore=menu.addAction(tr("Restore hidden workspace"),this,&MainWindow::restoreHiddenWorkspace);
+                restore->setEnabled(!hiddenWorkspace_.isEmpty());
+            }
             auto *visual = menu.addMenu(tr("Visual effects"));
             auto *glow = visual->addAction(tr("Desktop lighting"));
             glow->setCheckable(true);
@@ -422,7 +426,8 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             startMenu_->focusSearch();
         }
     });
-    connect(homeButton_, &QPushButton::clicked, this, [this]() { showPage(0); });
+    connect(homeButton_, &QPushButton::clicked, this, &MainWindow::toggleWorkspaceVisibility);
+    homeButton_->setToolTip(tr("Show desktop or restore hidden tools (Ctrl+Alt+D)"));
     connect(filesButton_, &QPushButton::clicked, this, [this]() { showPage(1); });
     connect(tasksButton_, &QPushButton::clicked, this, [this]() { showPage(2); });
     connect(clipboardButton_, &QPushButton::clicked, this, &MainWindow::showClipboardCenter);
@@ -451,6 +456,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     }
     connect(closeButton_, &QPushButton::clicked, this, &QWidget::close);
     connect(closeOverflowAction_, &QAction::triggered, this, &QWidget::close);
+    auto *workspaceVisibilityShortcut=new QShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+D")),this);
+    workspaceVisibilityShortcut->setObjectName(QStringLiteral("linwinWorkspaceVisibilityShortcut"));
+    workspaceVisibilityShortcut->setContext(Qt::ApplicationShortcut);
+    connect(workspaceVisibilityShortcut,&QShortcut::activated,this,&MainWindow::toggleWorkspaceVisibility);
     auto *settingsShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+,")), this);
     settingsShortcut->setObjectName(QStringLiteral("settingsHubShortcut"));
     settingsShortcut->setContext(Qt::ApplicationShortcut);
@@ -851,6 +860,28 @@ void MainWindow::hideToolWindows()
     syncToolButtons();
 }
 
+void MainWindow::toggleWorkspaceVisibility()
+{
+    if (toolWindows_.isEmpty()) { showPage(0); return; }
+    bool anyVisible=false;
+    for (auto *window:toolWindows_) if (window->isVisible()) { anyVisible=true; break; }
+    if (!anyVisible && !hiddenWorkspace_.isEmpty()) { restoreHiddenWorkspace(); return; }
+    showPage(0);
+}
+
+void MainWindow::restoreHiddenWorkspace()
+{
+    const auto saved=hiddenWorkspace_;
+    hiddenWorkspace_.clear();
+    for (int index:saved) {
+        auto *window=toolWindows_.value(index,nullptr);
+        if (!window || !window->isEnabled()) continue;
+        if (window->isMinimized()) window->showNormal(); else window->show();
+        window->raise();
+    }
+    syncToolButtons();
+}
+
 void MainWindow::syncToolButtons()
 {
     if (toolWindows_.isEmpty() || !homeButton_) return;
@@ -866,6 +897,7 @@ void MainWindow::syncToolButtons()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    hiddenWorkspace_.clear();
     hideToolWindows();
     QMainWindow::closeEvent(event);
 }
@@ -879,7 +911,16 @@ void MainWindow::showPage(int index)
     startMenu_->hide();
     startButton_->setChecked(false);
     if (!toolWindows_.isEmpty()) {
-        if (index == 0) { hideToolWindows(); return; }
+        if (index == 0) {
+            hiddenWorkspace_.clear();
+            for (int i=1;i<=4;++i) {
+                auto *window=toolWindows_.value(i,nullptr);
+                if (window && window->isVisible() && !window->isMinimized()) hiddenWorkspace_.append(i);
+            }
+            hideToolWindows();
+            return;
+        }
+        hiddenWorkspace_.removeAll(index);
         auto *window = toolWindows_.value(index, nullptr);
         if (!window) return;
         if (!window->isVisible()) {
@@ -971,6 +1012,7 @@ void MainWindow::updateTaskbarLayout()
 void MainWindow::returnToLinuxDesktop()
 {
     if (shellSessionMode_) return;
+    hiddenWorkspace_.clear();
     hideToolWindows();
     showMinimized();
 }
@@ -999,7 +1041,7 @@ void MainWindow::applyComponentVisibility(const QString &component, bool enabled
     else if (component == QStringLiteral("clipboard")) clipboardEnabled_ = enabled;
     if (auto *window = toolWindows_.value(pageIndex, nullptr)) {
         window->setEnabled(enabled);
-        if (!enabled) window->hide();
+        if (!enabled) { window->hide(); hiddenWorkspace_.removeAll(pageIndex); }
         syncToolButtons();
     } else pages_->widget(pageIndex)->setEnabled(enabled);
     if (component == QStringLiteral("clipboard")) clipboardHistory_->setComponentEnabled(enabled);

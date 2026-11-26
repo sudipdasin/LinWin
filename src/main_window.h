@@ -47,6 +47,8 @@ private:
     void showPage(int index);
     void initializeToolWindows();
     void hideToolWindows();
+    void toggleWorkspaceVisibility();
+    void restoreHiddenWorkspace();
     void syncToolButtons();
     void updateShellGeometry();
     void refreshExternalWindows();
@@ -69,6 +71,7 @@ private:
     bool componentEnabled(const QString &component) const;
 
     QHash<int, QDialog *> toolWindows_;
+    QList<int> hiddenWorkspace_;
     QWidget *desktopArea_ = nullptr;
     DesktopSurface *desktopSurface_ = nullptr;
     DesktopWidgets *desktopWidgets_ = nullptr;
