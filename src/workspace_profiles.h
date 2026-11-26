@@ -4,6 +4,7 @@
 #include <QRect>
 #include <QList>
 #include <QSet>
+#include <QVariant>
 namespace LinWinWorkspace {
 struct Placement { int tool; QRect geometry; bool maximized; };
 inline QString key(int slot) { return QStringLiteral("workspace/profiles/v1/%1").arg(slot); }

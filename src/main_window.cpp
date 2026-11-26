@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
+#include "workspace_profiles.h"
 #include "snap_controller.h"
 #include "desktop_surface.h"
 #include "theme_visuals.h"
@@ -258,6 +259,14 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             if (!toolWindows_.isEmpty()) {
                 auto *restore=menu.addAction(tr("Restore hidden workspace"),this,&MainWindow::restoreHiddenWorkspace);
                 restore->setEnabled(!hiddenWorkspace_.isEmpty());
+                auto *profiles=menu.addMenu(tr("Workspace profiles"));
+                QSettings settings;
+                for(int slot=1;slot<=3;++slot) {
+                    auto *profile=profiles->addMenu(tr("Workspace %1").arg(slot));
+                    profile->addAction(tr("Save open tools"),this,[this,slot]{saveWorkspaceProfile(slot);});
+                    auto *load=profile->addAction(tr("Restore saved tools"),this,[this,slot]{loadWorkspaceProfile(slot);});
+                    load->setEnabled(!LinWinWorkspace::load(settings,slot).isEmpty());
+                }
             }
             auto *visual = menu.addMenu(tr("Visual effects"));
             auto *glow = visual->addAction(tr("Desktop lighting"));
@@ -935,6 +944,45 @@ void MainWindow::restoreHiddenWorkspace()
         if (!window || !window->isEnabled()) continue;
         if (window->isMinimized()) window->showNormal(); else window->show();
         window->raise();
+    }
+    syncToolButtons();
+}
+
+void MainWindow::saveWorkspaceProfile(int slot)
+{
+    QList<LinWinWorkspace::Placement> placements;
+    for(int index=1;index<=4;++index) {
+        auto *window=toolWindows_.value(index,nullptr);
+        if(!window || !window->isEnabled() || (!window->isVisible() && !hiddenWorkspace_.contains(index))) continue;
+        const bool maximized=window->isMaximized();
+        const QRect geometry=(maximized || window->isMinimized()) ? window->normalGeometry() : window->geometry();
+        placements.append({index,geometry,maximized});
+    }
+    QSettings settings;
+    if(placements.isEmpty()) { QMessageBox::information(this,tr("Workspace profiles"),tr("Open at least one LinWin tool before saving.")); return; }
+    if(!LinWinWorkspace::load(settings,slot).isEmpty() &&
+        QMessageBox::question(this,tr("Workspace profiles"),tr("Replace saved workspace %1?").arg(slot),
+            QMessageBox::Yes|QMessageBox::No,QMessageBox::No)!=QMessageBox::Yes) return;
+    if(!LinWinWorkspace::save(settings,slot,placements))
+        QMessageBox::warning(this,tr("Workspace profiles"),tr("The workspace could not be saved."));
+}
+
+void MainWindow::loadWorkspaceProfile(int slot)
+{
+    QSettings settings;
+    const auto saved=LinWinWorkspace::load(settings,slot);
+    if(saved.isEmpty()) return;
+    for(const auto &placement:saved) {
+        auto *window=toolWindows_.value(placement.tool,nullptr);
+        if(!window || !window->isEnabled()) continue;
+        QScreen *display=QGuiApplication::screenAt(placement.geometry.center());
+        if(!display) display=screen();
+        if(!display) continue;
+        showPage(placement.tool);
+        window->showNormal();
+        const QRect target=LinWinWorkspace::fit(placement.geometry,display->availableGeometry());
+        if(target.isValid()) window->setGeometry(target);
+        if(placement.maximized) window->showMaximized();
     }
     syncToolButtons();
 }

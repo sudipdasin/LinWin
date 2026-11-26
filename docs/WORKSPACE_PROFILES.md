@@ -1,0 +1,2 @@
+# Persistent workspace profiles
+Three explicit local save/restore slots are accessible from the desktop context menu. Only LinWin tool IDs, window geometry and maximized state are stored in QSettings. No document contents or external apps are saved or automatically launched. Existing slots require overwrite confirmation. Restore opens saved enabled tools without closing unrelated tools, and fits placement to an available monitor. The Qt Core test checks persistence, invalid values, duplicates and monitor fitting; native build pending.

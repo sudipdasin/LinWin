@@ -49,6 +49,8 @@ private:
     void hideToolWindows();
     void toggleWorkspaceVisibility();
     void restoreHiddenWorkspace();
+    void saveWorkspaceProfile(int slot);
+    void loadWorkspaceProfile(int slot);
     void syncToolButtons();
     void initializeToolTaskbarActions();
     void updateShellGeometry();
