@@ -1,0 +1,3 @@
+# Render validation candidate 2
+
+The first Render deployment successfully produced a native DEB with 10/10 CTest suites and 45 updater tests. Candidate 2 adds live seven-theme checks and fourteen actual Qt offscreen captures, default pins from installed apps for new profiles, compact Start geometry and actual APT installation/removal in a disposable Ubuntu 24.04 container. The download endpoint exposes linwin-latest.deb and the versioned candidate after every gate passes. Captures use test settings and the build container's real application registry; they are not mockups or proof of Mint hardware behavior. No CI usage, main promotion or release publication. New gates are pending the Render build.
