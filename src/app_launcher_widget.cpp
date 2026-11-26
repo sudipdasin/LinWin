@@ -148,12 +148,18 @@ AppLauncherWidget::~AppLauncherWidget()
 
 void AppLauncherWidget::focusSearch()
 {
+    // Re-enumerate the host desktop registry when Start opens, including new packages.
+    loadApplications();
     searchField_->clear();
+    refreshList();
     searchField_->setFocus(Qt::OtherFocusReason);
 }
 
 void AppLauncherWidget::loadApplications()
 {
+    // Release previous references so removed applications are no longer offered.
+    for (GAppInfo *appInfo : applications_) g_object_unref(appInfo);
+    applications_.clear();
     GList *registeredApps = g_app_info_get_all();
     for (GList *node = registeredApps; node != nullptr; node = node->next) {
         auto *appInfo = G_APP_INFO(node->data);
@@ -234,8 +240,8 @@ void AppLauncherWidget::filterApplications(const QString &query)
 void AppLauncherWidget::launchSelectedApplication()
 {
     QListWidgetItem *item = applicationList_->currentItem();
-    if (item == nullptr) {
-        statusLabel_->setText(tr("Select an app to open."));
+    if (item == nullptr || item->isHidden()) {
+        statusLabel_->setText(tr("Select a visible app to open."));
         return;
     }
 
@@ -267,8 +273,8 @@ void AppLauncherWidget::launchSelectedApplication()
 void AppLauncherWidget::togglePinnedApplication()
 {
     QListWidgetItem *item = applicationList_->currentItem();
-    if (item == nullptr) {
-        statusLabel_->setText(tr("Select an app to pin or unpin."));
+    if (item == nullptr || item->isHidden()) {
+        statusLabel_->setText(tr("Select a visible app to pin or unpin."));
         return;
     }
 

@@ -1,0 +1,260 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""LinWin Update Center: graphical, opt-in package installation."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.request
+from urllib.parse import urlsplit
+from release_policy import version_key, select_release, beta_package_version, verify_release_version
+from update_guard import update_lock, installation_plan, confirm_plan
+
+REPO = 'sudipdasin/LinWin'
+API = 'https://api.github.com/repos/' + REPO + '/releases'
+BASE = 'https://github.com/' + REPO + '/releases/download/'
+KEY = Path('/usr/share/keyrings/linwin-release.gpg')
+MAX_DEB = 200 * 1024 * 1024
+
+
+def run(*args):
+    return subprocess.run(args, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, env=dict(os.environ, LC_ALL="C"))
+
+
+def platform_suffix(values, arch):
+    if arch != 'amd64':
+        raise ValueError('This updater supports 64-bit x86 Debian packages only.')
+    if values.get('ID') == 'debian' and values.get('VERSION_ID', '').split('.')[0] == '13':
+        return 'debian-13'
+    if values.get('ID') == 'ubuntu' and values.get('VERSION_ID') == '24.04':
+        return 'ubuntu-24.04'
+    if values.get('ID') == 'linuxmint' and values.get('VERSION_ID', '').split('.')[0] == '22' and values.get('UBUNTU_CODENAME') == 'noble':
+        return 'ubuntu-24.04'
+    raise ValueError('No verified package mapping for this distribution. Use the official release page.')
+
+
+def system_suffix():
+    values = {}
+    for line in Path('/etc/os-release').read_text().splitlines():
+        if '=' in line and not line.startswith('#'):
+            key, value = line.split('=', 1)
+            values[key] = value.strip('"\'')
+    return platform_suffix(values, run('dpkg', '--print-architecture').stdout.strip())
+
+
+def trusted_url(url):
+    u = urlsplit(url)
+    return u.scheme == 'https' and u.hostname in {'api.github.com', 'github.com', 'release-assets.githubusercontent.com', 'objects.githubusercontent.com'} and u.username is None and u.password is None and u.port in (None, 443)
+
+
+class Redirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not trusted_url(newurl):
+            raise ValueError('Unexpected download redirect.')
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fetch(url, limit, target=None):
+    if not trusted_url(url):
+        raise ValueError('Untrusted download URL.')
+    request = urllib.request.Request(url, headers={'User-Agent': 'LinWin-Update-Center/1.0.3', 'Accept': 'application/vnd.github+json' if url.startswith(API) else '*/*'})
+    with urllib.request.build_opener(Redirect()).open(request, timeout=25) as response:
+        if not trusted_url(response.geturl()):
+            raise ValueError('Unexpected download host.')
+        if target is None:
+            data = response.read(limit + 1)
+            if len(data) > limit:
+                raise ValueError('Response exceeds size limit.')
+            return data
+        size = 0
+        with open(target, 'xb') as out:
+            while chunk := response.read(65536):
+                size += len(chunk)
+                if size > limit:
+                    raise ValueError('Package exceeds size limit.')
+                out.write(chunk)
+
+
+def releases():
+    # Bounded pagination; fail rather than claim latest if catalogue is too large.
+    result = []
+    for page in range(1, 11):
+        part = json.loads(fetch(f'{API}?per_page=100&page={page}', 12 * 1024 * 1024))
+        if not isinstance(part, list):
+            raise ValueError('Invalid release response.')
+        result.extend(part)
+        if len(part) < 100:
+            return result
+    raise ValueError('Release catalogue exceeds supported size.')
+
+
+def asset_url(tag, name, asset):
+    expected = BASE + tag + '/' + name
+    if asset.get('browser_download_url') != expected:
+        raise ValueError('Release asset URL does not match the official repository.')
+    return expected
+
+
+def expected_hash(manifest, filename):
+    matches = []
+    for line in manifest.decode('ascii').splitlines():
+        match = re.fullmatch(r'([a-fA-F0-9]{64}) [ *](?:\./)?([^\r\n]+)', line)
+        if match and match[2] == filename:
+            matches.append(match[1].lower())
+    if len(matches) != 1:
+        raise ValueError('Missing or ambiguous package checksum.')
+    return matches[0]
+
+
+def verify_file(path, digest):
+    with open(path, 'rb') as stream:
+        actual = hashlib.file_digest(stream, 'sha256').hexdigest()
+    if actual != digest:
+        raise ValueError('SHA256 mismatch. Package rejected.')
+
+
+def installed_version():
+    r = run('dpkg-query', '-W', '-f=${db:Status-Status}\t${Version}', 'linwin')
+    status, _, version = r.stdout.partition('\t')
+    return version.strip() if r.returncode == 0 and status == 'installed' else ''
+
+
+def newer(candidate, installed):
+    return not installed or run('dpkg', '--compare-versions', candidate, 'gt', installed).returncode == 0
+
+
+def inspect_deb(path, current):
+    def field(name):
+        r = run('dpkg-deb', '-f', str(path), name)
+        if r.returncode:
+            raise ValueError('Invalid Debian package.')
+        return r.stdout.strip()
+    if field('Package') != 'linwin' or field('Architecture') != 'amd64':
+        raise ValueError('Package name or architecture mismatch.')
+    version = field('Version')
+    if not version or run('dpkg', '--validate-version', version).returncode != 0:
+        raise ValueError('Invalid package version.')
+    return version, newer(version, current)
+
+
+def gui(kind, message):
+    return subprocess.run(['zenity', '--' + kind, '--title=LinWin Update Center', '--width=480', '--no-markup', '--text=' + message], check=False).returncode == 0
+
+
+def channel_choice():
+    r = run('zenity', '--list', '--radiolist', '--title=LinWin Update Center', '--text=Choose release channel', '--column=Use', '--column=Channel', 'TRUE', 'preview', 'FALSE', 'stable', '--height=260', '--width=420')
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def notify(message):
+    if shutil.which('notify-send'):
+        run('notify-send', 'LinWin Update Center', message)
+
+
+def check(channel, background=False):
+    current = installed_version()
+    tag, name, assets = select_release(releases(), system_suffix(), channel, require_signature=KEY.is_file())
+    expected = beta_package_version(tag)
+    if expected is not None and not newer(expected, current):
+        if not background:
+            gui('info', 'LinWin is already equal to or newer than this beta release.')
+        return
+    if background:
+        # No downloads or privileged action at login. A candidate is not a verified update.
+        state = Path(os.environ.get('XDG_CACHE_HOME', str(Path.home() / '.cache'))) / 'linwin-update' / 'last-candidate'
+        candidate = f'{channel}:{tag}:{current}'
+        if not state.exists() or state.read_text() != candidate:
+            notify(f'Compatible release {tag} is listed. Open LinWin Update Center to verify whether an update is needed.')
+            state.write_text(candidate)
+        return
+    if not gui('question', f'Installed package: {current or "Not installed"}\nAvailable release: {tag}\n\nDownload and verify the candidate? No changes will be made yet.'):
+        return
+    with tempfile.TemporaryDirectory(prefix='linwin-update-') as temp:
+        directory = Path(temp)
+        manifest = fetch(asset_url(tag, 'SHA256SUMS', assets['SHA256SUMS']), 1024 * 1024)
+        signed = False
+        sig = next((n for n in ('SHA256SUMS.sig', 'SHA256SUMS.asc') if n in assets), None)
+        if KEY.is_file() and not sig:
+            raise ValueError('A trusted key is installed but the release is unsigned. Package rejected.')
+        if sig:
+            if not KEY.is_file():
+                raise ValueError('Release signature exists but no trusted LinWin key is installed. Contact the maintainer.')
+            (directory / 'SHA256SUMS').write_bytes(manifest)
+            fetch(asset_url(tag, sig, assets[sig]), 1024 * 1024, directory / sig)
+            if run('gpgv', '--keyring', str(KEY), str(directory / sig), str(directory / 'SHA256SUMS')).returncode:
+                raise ValueError('Release signature verification failed.')
+            signed = True
+        digest = expected_hash(manifest, name)
+        package = directory / name
+        fetch(asset_url(tag, name, assets[name]), MAX_DEB, package)
+        verify_file(package, digest)
+        version, upgrade = inspect_deb(package, installed_version())
+        verify_release_version(tag, version)
+        if not upgrade:
+            gui('info', 'The installed LinWin package is already equal to or newer than this candidate. No changes made.')
+            return
+        trust = 'Trusted release signature and SHA256 verified.' if signed else 'SHA256 verified against the HTTPS release manifest. No independent release signature is available; publisher authenticity is not independently verified.'
+        plan = installation_plan(package, run)
+        if not gui('question', f'{trust}\n\nInstall LinWin package {version}? This requires administrator authorization. Close LinWin before continuing. No unattended installation is performed.\n\nAPT simulation:\n{plan}'):
+            return
+        # Recheck immediately before requesting authorization; APT refuses removals and downgrades.
+        verify_file(package, digest)
+        if not inspect_deb(package, installed_version())[1]:
+            raise ValueError('Installed package changed; refusing downgrade or reinstall.')
+        confirm_plan(package, run, plan)
+        result = run('pkexec', '/usr/bin/apt-get', '--no-remove', '--no-install-recommends', '-y', 'install', str(package))
+        if result.returncode:
+            raise ValueError('Installation was cancelled or failed.\n' + (result.stderr or result.stdout)[-1800:])
+        if installed_version() != version:
+            raise ValueError('Installation returned success but the installed version could not be verified.')
+        gui('info', f'LinWin {version} installed. Reopen LinWin to use the new version.')
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--background', action='store_true')
+    p.add_argument('--channel', choices=['stable', 'preview'])
+    args = p.parse_args()
+    if os.geteuid() == 0:
+        print('Run Update Center as your desktop user, not root.', file=sys.stderr)
+        return 1
+    try:
+        if args.background:
+            time.sleep(15)
+        cache = Path(os.environ.get('XDG_CACHE_HOME', str(Path.home() / '.cache'))) / 'linwin-update'
+        with update_lock(cache) as acquired:
+            if not acquired:
+                if not args.background:
+                    gui('info', 'Another LinWin update check is already running.')
+                return 0
+            if args.background:
+                stamp = cache / 'last-check'
+                if stamp.exists() and time.time() - stamp.stat().st_mtime < 86400:
+                    return 0
+                channel_file = cache / 'channel'
+                channel = args.channel or (channel_file.read_text().strip() if channel_file.exists() else 'preview')
+                check(channel if channel in ('preview', 'stable') else 'preview', True)
+                stamp.touch()
+            else:
+                channel = args.channel or channel_choice()
+                if channel:
+                    (cache / 'channel').write_text(channel)
+                    check(channel)
+        return 0
+    except Exception as exc:
+        if args.background:
+            print(f'LinWin update check: {exc}', file=sys.stderr)
+        else:
+            gui('error', str(exc))
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

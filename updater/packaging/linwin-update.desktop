@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=LinWin Update Center
+Comment=Find, verify and install official LinWin releases
+Exec=/usr/bin/linwin-update
+Icon=system-software-update
+Terminal=false
+Categories=System;Settings;
+StartupNotify=true

@@ -1,0 +1,13 @@
+Package: linwin-update-center
+Version: 1.0.3-1
+Section: utils
+Priority: optional
+Architecture: all
+Depends: python3 (>= 3.11), zenity, pkexec, apt, dpkg, ca-certificates, gpgv
+Recommends: libnotify-bin
+Maintainer: LinWin Update Center contributors
+Homepage: https://github.com/sudipdasin/LinWin
+Description: Graphical release updater companion for LinWin on XFCE
+ Checks official LinWin releases and verifies Debian package checksums.
+ Supports compatible Mint 22, Ubuntu 24.04 and Debian 13 amd64 systems.
+ Automatic checks run at XFCE login; installation requires approval.
