@@ -33,6 +33,9 @@
 #include <QHeaderView>
 #include <QImage>
 #include <QEventLoop>
+#include <QTemporaryDir>
+#include <QFile>
+#include <QStandardPaths>
 #include "weather_widget.h"
 #include "pinned_tile_delegate.h"
 #include "desktop_status_widget.h"
@@ -76,6 +79,17 @@ int main(int argc, char **argv)
     settings.setValue(QStringLiteral("components/task-manager"), true);
     settings.setValue(QStringLiteral("components/clipboard"), true);
 
+    // Isolated, harmless installed-app registry entries for real launch/filter tests.
+    QTemporaryDir appRegistry;
+    if(!require(appRegistry.isValid(),"App fixture registry must exist."))return 1;
+    qputenv("XDG_DATA_HOME",appRegistry.path().toLocal8Bit());
+    if(!QDir(appRegistry.path()).mkpath("applications"))return 1;
+    for(const QString &suffix:{QStringLiteral("alpha"),QStringLiteral("beta")}){
+        QFile desktop(appRegistry.filePath("applications/linwin-regression-"+suffix+".desktop"));
+        if(!desktop.open(QIODevice::WriteOnly))return 1;
+        const QByteArray body="[Desktop Entry]\nType=Application\nName=LinWin Regression "+suffix.toUtf8()+"\nComment=Harmless fixture\nExec=/bin/true\nCategories=Utility;\n";
+        if(desktop.write(body)!=body.size())return 1;
+    }
     MainWindow window(true, false);
     window.show();
     window.resize(1180, 760);
@@ -124,6 +138,7 @@ int main(int argc, char **argv)
                      && desktopIcons->viewMode() == QListView::IconMode
                      && desktopIcons->selectionMode() == QAbstractItemView::ExtendedSelection,
                  "Desktop should present selectable workspace icons.")) return 1;
+    for(int i=0;i<4;++i)if(!require(!desktopIcons->item(i)->icon().pixmap(44,44).isNull(),"Native place icon artwork must exist."))return 1;
     desktopIcons->setCurrentRow(0);
     if (!require(pages->currentIndex() == 0, "Selecting an icon must not open it.")) return 1;
     desktopIcons->itemDoubleClicked(desktopIcons->item(0));
@@ -301,9 +316,19 @@ int main(int argc, char **argv)
     if(!require(views->currentIndex()==1 && allApps->isChecked() && !pinned->isChecked(),"All apps must switch to the installed application list."))return 1;
     pinned->click();app.processEvents();
     if(!require(views->currentIndex()==0,"Pinned must restore the grid."))return 1;
-    search->setText(QStringLiteral("test query"));app.processEvents();
-    if(!require(views->currentIndex()==1,"Search must show filtered all-app results."))return 1;
-    search->clear();start->click();
+    search->setText(QStringLiteral("Regression LinWin"));app.processEvents();
+    auto *allList=menu->findChild<QListWidget *>(QStringLiteral("applicationList"));
+    if(!require(views->currentIndex()==1 && allList,"Search must show filtered all-app results."))return 1;
+    int shown=0;for(int i=0;i<allList->count();++i)if(!allList->item(i)->isHidden())++shown;
+    if(!require(shown==2,"Multiword search must find two registered fixtures independent of word order."))return 1;
+    allList->setCurrentRow(-1);
+    QKeyEvent down(QEvent::KeyPress,Qt::Key_Down,Qt::NoModifier);
+    QApplication::sendEvent(search,&down);
+    if(!require(allList->currentItem()&&!allList->currentItem()->isHidden(),"Down in search must select a visible app."))return 1;
+    QKeyEvent enter(QEvent::KeyPress,Qt::Key_Return,Qt::NoModifier);
+    QApplication::sendEvent(search,&enter);app.processEvents();
+    if(!require(menu->isHidden()&&!start->isChecked(),"Launching a harmless installed application must dismiss Start."))return 1;
+    search->clear();
     window.resize(1672,941);app.processEvents();
     {QEventLoop settle;QTimer::singleShot(350,&settle,&QEventLoop::quit);settle.exec();}
     if(!require(window.size()==QSize(1672,941),"Approved reference resolution must be preserved."))return 1;

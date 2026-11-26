@@ -225,6 +225,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             for (const QFileInfo &entry : entries) {
                 auto *item = new QListWidgetItem(provider.icon(entry), entry.fileName(), icons);
                 item->setData(Qt::UserRole + 1, entry.absoluteFilePath());
+                item->setForeground(Qt::white);
                 item->setToolTip(entry.absoluteFilePath());
                 item->setTextAlignment(Qt::AlignHCenter);
             }

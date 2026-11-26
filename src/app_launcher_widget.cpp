@@ -40,6 +40,7 @@
 #include <QEvent>
 
 #include <algorithm>
+#include <utility>
 
 namespace {
 class PinnedGrid final:public QListWidget {
@@ -293,6 +294,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
 
     QSettings settings;
     pinnedApplicationIds_ = settings.value(kPinnedAppsSetting).toStringList();
+    pinnedApplicationIds_.removeDuplicates();
     loadApplications();
     // Fresh profiles only; existing pins change only through the explicit Edit action.
     if (!settings.contains(kPinnedAppsSetting)) {addSuggestedPins();savePinnedApplications();}
