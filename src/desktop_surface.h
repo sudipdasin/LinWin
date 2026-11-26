@@ -2,6 +2,7 @@
 #pragma once
 #include "wallpaper_shader.h"
 #include "theme_visuals.h"
+#include "neon_landscape.h"
 #include <QApplication>
 #include <QImage>
 #include <QLinearGradient>
@@ -98,6 +99,7 @@ private:
         QColor glow(LinWinVisual::qstr(theme.accent)); glow.setAlpha(100);
         halo.setColorAt(0.0, glow); glow.setAlpha(0); halo.setColorAt(1.0, glow);
         p.fillRect(r, halo);
+        if (themeId_ == QStringLiteral("neon")) LinWinVisual::drawNeonLandscape(p,r);
     }
     void rebuild()
     {
@@ -118,6 +120,7 @@ private:
         }
 #endif
         const bool usedShader = !frame.isNull();
+        if (usedShader) { QPainter painter(&frame); LinWinVisual::drawNeonLandscape(painter,frame.rect()); }
         if (frame.isNull()) {
             frame = QImage(pixels, QImage::Format_RGB32);
             if (frame.isNull()) return;
