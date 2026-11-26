@@ -12,6 +12,7 @@
 #include <QDebug>
 #include <QLabel>
 #include <QFrame>
+#include <QListWidget>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -83,6 +84,18 @@ int main(int argc, char **argv)
                      && returnDesktop->isVisible() && closeLinWin->isVisible()
                      && switcher->isVisible() && systemStatus->isVisible(),
                  "Wide taskbar should show its full navigation and window details.")) return 1;
+
+    auto *desktopIcons = window.findChild<QListWidget *>(QStringLiteral("desktopIcons"));
+    if (!require(desktopIcons && desktopIcons->count() >= 3
+                     && desktopIcons->viewMode() == QListView::IconMode
+                     && desktopIcons->selectionMode() == QAbstractItemView::ExtendedSelection,
+                 "Desktop should present selectable workspace icons.")) return 1;
+    desktopIcons->setCurrentRow(0);
+    if (!require(pages->currentIndex() == 0, "Selecting an icon must not open it.")) return 1;
+    desktopIcons->itemDoubleClicked(desktopIcons->item(0));
+    if (!require(pages->currentIndex() == 1, "Double-clicking Files must open Files.")) return 1;
+    desktopButton->click();
+    if (!require(pages->currentIndex() == 0, "Desktop button must return to the workspace.")) return 1;
 
     window.resize(480, 600);
     app.processEvents();

@@ -9,7 +9,15 @@
 #include "task_manager_widget.h"
 #include "text_scale.h"
 
+#include <QApplication>
 #include <QDateTime>
+#include <QDesktopServices>
+#include <QDir>
+#include <QFileIconProvider>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
+#include <QListWidget>
+#include <QUrl>
 #include <algorithm>
 #include <QCoreApplication>
 #include <QKeySequence>
@@ -152,29 +160,104 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         auto *desktop = new QWidget(pages_);
         desktop->setObjectName(QStringLiteral("windowsDesktop"));
         auto *desktopLayout = new QVBoxLayout(desktop);
-        desktopLayout->setContentsMargins(20, 20, 20, 20);
-        desktopLayout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-        auto *shortcutColumn = new QVBoxLayout;
-        shortcutColumn->setSpacing(8);
-        const auto addDesktopShortcut = [this, desktop, shortcutColumn](const QString &text,
-                                                                        QStyle::StandardPixmap icon,
-                                                                        int pageIndex) {
-            auto *shortcut = new QToolButton(desktop);
-            shortcut->setObjectName(QStringLiteral("desktopShortcut"));
-            shortcut->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-            shortcut->setIcon(style()->standardIcon(icon));
-            shortcut->setIconSize(QSize(40, 40));
-            shortcut->setText(text);
-            shortcut->setFixedSize(92, 82);
-            shortcut->setFocusPolicy(Qt::StrongFocus);
-            connect(shortcut, &QToolButton::clicked, this, [this, pageIndex]() { showPage(pageIndex); });
-            shortcutColumn->addWidget(shortcut, 0, Qt::AlignLeft);
+        desktopLayout->setContentsMargins(10, 10, 10, 10);
+        auto *icons = new QListWidget(desktop);
+        icons->setObjectName(QStringLiteral("desktopIcons"));
+        icons->setViewMode(QListView::IconMode);
+        icons->setFlow(QListView::TopToBottom);
+        icons->setWrapping(true);
+        icons->setResizeMode(QListView::Adjust);
+        icons->setMovement(QListView::Static);
+        icons->setGridSize(QSize(96, 88));
+        icons->setIconSize(QSize(42, 42));
+        icons->setSelectionMode(QAbstractItemView::ExtendedSelection);
+        icons->setFrameShape(QFrame::NoFrame);
+        icons->setWordWrap(true);
+        icons->setContextMenuPolicy(Qt::CustomContextMenu);
+        desktopLayout->addWidget(icons);
+        const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+        const auto refreshIcons = [this, icons, desktopPath]() {
+            icons->clear();
+            const auto addShortcut = [this, icons](const QString &name, QStyle::StandardPixmap icon, int page) {
+                auto *item = new QListWidgetItem(style()->standardIcon(icon), name, icons);
+                item->setData(Qt::UserRole, page);
+                item->setTextAlignment(Qt::AlignHCenter);
+            };
+            addShortcut(tr("Files"), QStyle::SP_DirHomeIcon, 1);
+            addShortcut(tr("Task Manager"), QStyle::SP_ComputerIcon, 2);
+            addShortcut(tr("Settings"), QStyle::SP_FileDialogDetailedView, 4);
+            if (desktopPath.isEmpty() || !QDir(desktopPath).exists()) return;
+            QFileIconProvider provider;
+            const auto entries = QDir(desktopPath).entryInfoList(
+                QDir::AllEntries | QDir::NoDotAndDotDot, QDir::DirsFirst | QDir::Name | QDir::IgnoreCase);
+            for (const QFileInfo &entry : entries) {
+                auto *item = new QListWidgetItem(provider.icon(entry), entry.fileName(), icons);
+                item->setData(Qt::UserRole + 1, entry.absoluteFilePath());
+                item->setToolTip(entry.absoluteFilePath());
+                item->setTextAlignment(Qt::AlignHCenter);
+            }
         };
-        addDesktopShortcut(tr("Files"), QStyle::SP_DirHomeIcon, 1);
-        addDesktopShortcut(tr("Task Manager"), QStyle::SP_ComputerIcon, 2);
-        addDesktopShortcut(tr("Settings"), QStyle::SP_FileDialogDetailedView, 4);
-        desktopLayout->addLayout(shortcutColumn);
-        desktopLayout->addStretch();
+        const auto openIcon = [this](QListWidgetItem *item) {
+            if (item == nullptr) return;
+            if (item->data(Qt::UserRole).isValid()) {
+                showPage(item->data(Qt::UserRole).toInt());
+                return;
+            }
+            const QString path = item->data(Qt::UserRole + 1).toString();
+            if (path.isEmpty() || !QFileInfo::exists(path)) {
+                QMessageBox::information(this, tr("Desktop"), tr("This item is no longer available."));
+                return;
+            }
+            const QFileInfo info(path);
+            if (info.isExecutable() && !info.isDir()) {
+                QMessageBox::information(this, tr("Desktop"),
+                    tr("Open executable files using your trusted file manager."));
+                return;
+            }
+            if (!QDesktopServices::openUrl(QUrl::fromLocalFile(path)))
+                QMessageBox::warning(this, tr("Desktop"), tr("No application could open this item."));
+        };
+        connect(icons, &QListWidget::itemDoubleClicked, this, openIcon);
+        for (const auto key : {Qt::Key_Return, Qt::Key_Enter}) {
+            auto *openShortcut = new QShortcut(QKeySequence(key), icons);
+            openShortcut->setContext(Qt::WidgetShortcut);
+            connect(openShortcut, &QShortcut::activated, this, [icons, openIcon]() {
+                openIcon(icons->currentItem());
+            });
+        }
+        auto *refreshShortcut = new QShortcut(QKeySequence(Qt::Key_F5), icons);
+        refreshShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(refreshShortcut, &QShortcut::activated, this, refreshIcons);
+        connect(icons, &QListWidget::customContextMenuRequested, this,
+                [this, icons, openIcon, refreshIcons, desktopPath](const QPoint &position) {
+            QMenu menu(this);
+            if (auto *item = icons->itemAt(position)) {
+                icons->setCurrentItem(item);
+                menu.addAction(tr("Open"), this, [openIcon, icons]() { openIcon(icons->currentItem()); });
+                menu.addSeparator();
+            }
+            menu.addAction(tr("Refresh"), this, refreshIcons);
+            if (!desktopPath.isEmpty() && QDir(desktopPath).exists()) {
+                menu.addAction(tr("Open desktop folder"), this, [desktopPath]() {
+                    QDesktopServices::openUrl(QUrl::fromLocalFile(desktopPath));
+                });
+            }
+            menu.addSeparator();
+            menu.addAction(tr("Settings"), this, &MainWindow::showSettingsHub);
+            if (!shellSessionMode_)
+                menu.addAction(tr("Return to Linux desktop"), this, &MainWindow::returnToLinuxDesktop);
+            menu.exec(icons->viewport()->mapToGlobal(position));
+        });
+        refreshIcons();
+        if (!desktopPath.isEmpty() && QDir(desktopPath).exists()) {
+            auto *watcher = new QFileSystemWatcher(icons);
+            watcher->addPath(desktopPath);
+            connect(watcher, &QFileSystemWatcher::directoryChanged, this,
+                    [icons, refreshIcons](const QString &) {
+                // Do not invalidate item pointers while a desktop context menu is running.
+                if (QApplication::activePopupWidget() == nullptr) refreshIcons();
+            });
+        }
         pages_->addWidget(desktop);
     } else {
         scroll->hide();
@@ -200,12 +283,12 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
 
     auto *taskbar = new QFrame(root);
     taskbar->setObjectName(QStringLiteral("taskbar"));
-    taskbar->setFixedHeight(62);
+    taskbar->setFixedHeight(44);
     auto *taskbarLayout = new QHBoxLayout(taskbar);
-    taskbarLayout->setContentsMargins(12, 7, 12, 7);
-    taskbarLayout->setSpacing(8);
+    taskbarLayout->setContentsMargins(3, 2, 3, 2);
+    taskbarLayout->setSpacing(2);
 
-    startButton_ = makePanelButton(QStringLiteral("⊞  Start"), QStringLiteral("startButton"), taskbar);
+    startButton_ = makePanelButton(QStringLiteral("LinWin"), QStringLiteral("startButton"), taskbar);
     startButton_->setToolTip(tr("Open the app menu (Super or Ctrl+Esc)"));
     homeButton_ = makePanelButton(QStringLiteral("Desktop"), QStringLiteral("desktopButton"), taskbar);
     filesButton_ = makePanelButton(QStringLiteral("Files"), QStringLiteral("navigationButton"), taskbar);
@@ -253,7 +336,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     windowScroll->setFrameShape(QFrame::NoFrame);
     windowScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     windowScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    windowScroll->setFixedHeight(44);
+    windowScroll->setFixedHeight(38);
     auto *windowList = new QWidget(windowScroll);
     windowButtonsLayout_ = new QHBoxLayout(windowList);
     windowButtonsLayout_->setContentsMargins(2, 0, 2, 0);
@@ -400,8 +483,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         "QMainWindow, QWidget { background: #f4f6fa; color: #172033; font-family: 'Sans Serif'; }"
         "#desktopArea { background: #f4f6fa; }"
         "#windowsDesktop { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #0b4c9e, stop:0.55 #2478c9, stop:1 #77b9df); }"
-        "#desktopShortcut { background: transparent; color: white; border: 1px solid transparent; border-radius: 5px; padding: 4px; }"
-        "#desktopShortcut:hover { background: rgba(255,255,255,28); border-color: rgba(255,255,255,65); }"
+        "#desktopIcons { background: transparent; color: white; border: none; outline: none; font-size: 12px; }"
+        "#desktopIcons::item { background: transparent; border: 1px solid transparent; padding: 3px; }"
+        "#desktopIcons::item:hover { background: rgba(220,240,255,35); border-color: rgba(220,240,255,85); }"
+        "#desktopIcons::item:selected { background: rgba(135,205,255,95); border-color: rgba(220,240,255,180); color: white; }"
         "#eyebrow { color: #3568d4; font-size: 11px; font-weight: 700; letter-spacing: 1px; }"
         "#pageTitle { color: #111a2b; font-size: 30px; font-weight: 700; }"
         "#sectionTitle { color: #172033; font-size: 18px; font-weight: 650; margin-top: 6px; }"
@@ -422,18 +507,18 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         "#dangerAction:hover { background: #ffe1df; }"
         "#secondaryAction { background: white; color: #263853; border: 1px solid #d5deeb; border-radius: 6px; padding: 8px 12px; }"
         "#secondaryAction:hover { background: #edf3ff; }"
-        "#taskbar { background: #17243a; border-top: 1px solid #263853; }"
-        "#taskbar QPushButton { background: transparent; color: #e5ecf7; border: 0; border-radius: 7px; padding: 9px 13px; font-size: 13px; }"
+        "#taskbar { background: #181b20; border-top: 1px solid #30353d; }"
+        "#taskbar QPushButton { background: transparent; color: #f2f2f2; border: 0; border-radius: 0px; padding: 5px 8px; font-size: 12px; min-height: 25px; }"
         "#taskbar QPushButton:hover { background: #263853; }"
         "#taskbar QPushButton:checked { background: #2d4770; color: white; }"
-        "#taskbar #startButton { background: #315fc0; color: white; font-weight: 700; padding-left: 16px; padding-right: 16px; }"
-        "#taskbar #startButton:hover { background: #3b6dd5; }"
+        "#taskbar #startButton { background: transparent; color: white; font-weight: 600; padding-left: 12px; padding-right: 12px; }"
+        "#taskbar #startButton:hover { background: #353a42; color: #80caff; }"
         "#windowSwitcherStatus { color: #9dabc2; font-size: 11px; padding: 0 8px; }"
-        "#windowSwitcher QPushButton { background: #243550; color: #e5ecf7; border: 1px solid #354966; border-radius: 6px; padding: 6px 9px; }"
+        "#windowSwitcher QPushButton { background: #292d34; color: #f2f2f2; border: 0; border-bottom: 2px solid #64b8f0; border-radius: 0px; padding: 3px 8px; }"
         "#windowSwitcher QPushButton:hover { background: #31496c; }"
         "#panelStatus { color: #b8c5d9; font-size: 12px; }"
         "#panelClock { color: #f3f6fb; font-size: 12px; font-weight: 600; min-width: 72px; }"
-        "#startMenuPanel { background: #ffffff; border: 1px solid #d8e0ec; border-radius: 14px; }"
+        "#startMenuPanel { background: #ffffff; border: 1px solid #b9c5d0; border-radius: 0px; }"
         "#startMenuPanel #pageTitle { font-size: 24px; }"
         "#startMenuPanel #applicationSearch { background: #f8faff; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
         "#startMenuPanel #primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }");
@@ -783,7 +868,7 @@ void MainWindow::updateShellGeometry()
     pages_->setGeometry(desktopArea_->rect());
     const int areaWidth = desktopArea_->width();
     const int areaHeight = desktopArea_->height();
-    const int menuWidth = qMin(440, qMax(300, areaWidth - 24));
-    const int menuHeight = qMin(570, qMax(280, areaHeight - 24));
-    startMenu_->setGeometry(12, qMax(12, areaHeight - menuHeight - 12), menuWidth, menuHeight);
+    const int menuWidth = qMin(560, qMax(300, areaWidth));
+    const int menuHeight = qMin(620, qMax(280, areaHeight));
+    startMenu_->setGeometry(0, qMax(0, areaHeight - menuHeight), menuWidth, menuHeight);
 }
