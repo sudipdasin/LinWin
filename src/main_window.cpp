@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
+#include "desktop_surface.h"
 
 #include "app_launcher_widget.h"
 #include "clipboard_history_widget.h"
@@ -158,8 +159,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     scroll->setWidget(content);
 
     if (overlayMode_) {
-        auto *desktop = new QWidget(pages_);
-        desktop->setObjectName(QStringLiteral("windowsDesktop"));
+        auto *desktop = new DesktopSurface(pages_);
         auto *desktopLayout = new QVBoxLayout(desktop);
         desktopLayout->setContentsMargins(10, 10, 10, 10);
         auto *icons = new QListWidget(desktop);
@@ -173,6 +173,9 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         icons->setIconSize(QSize(42, 42));
         icons->setSelectionMode(QAbstractItemView::ExtendedSelection);
         icons->setFrameShape(QFrame::NoFrame);
+        icons->setAutoFillBackground(false);
+        icons->viewport()->setAutoFillBackground(false);
+        icons->viewport()->setAttribute(Qt::WA_TranslucentBackground);
         icons->setWordWrap(true);
         icons->setContextMenuPolicy(Qt::CustomContextMenu);
         desktopLayout->addWidget(icons);
@@ -230,7 +233,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         refreshShortcut->setContext(Qt::WidgetWithChildrenShortcut);
         connect(refreshShortcut, &QShortcut::activated, this, refreshIcons);
         connect(icons, &QListWidget::customContextMenuRequested, this,
-                [this, icons, openIcon, refreshIcons, desktopPath](const QPoint &position) {
+                [this, desktop, icons, openIcon, refreshIcons, desktopPath](const QPoint &position) {
             QMenu menu(this);
             if (auto *item = icons->itemAt(position)) {
                 icons->setCurrentItem(item);
@@ -238,6 +241,15 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 menu.addSeparator();
             }
             menu.addAction(tr("Refresh"), this, refreshIcons);
+            auto *visual = menu.addMenu(tr("Visual effects"));
+            auto *glow = visual->addAction(tr("Desktop lighting"));
+            glow->setCheckable(true);
+            glow->setChecked(desktop->effectsEnabled());
+            connect(glow, &QAction::toggled, desktop, &DesktopSurface::setEffectsEnabled);
+            auto *gpu = visual->addAction(tr("Prefer OpenGL rendering"));
+            gpu->setCheckable(true);
+            gpu->setChecked(desktop->gpuPreferred());
+            connect(gpu, &QAction::toggled, desktop, &DesktopSurface::setGpuPreferred);
             if (!desktopPath.isEmpty() && QDir(desktopPath).exists()) {
                 menu.addAction(tr("Open desktop folder"), this, [desktopPath]() {
                     QDesktopServices::openUrl(QUrl::fromLocalFile(desktopPath));
@@ -484,7 +496,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     baseStyleSheet_ = QStringLiteral(
         "QMainWindow, QWidget { background: #f4f6fa; color: #172033; font-family: 'Sans Serif'; }"
         "#desktopArea { background: #f4f6fa; }"
-        "#windowsDesktop { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #0b4c9e, stop:0.55 #2478c9, stop:1 #77b9df); }"
+        "#windowsDesktop, #desktopIcons, #desktopIcons QWidget { background: transparent; }"
         "#desktopIcons { background: transparent; color: white; border: none; outline: none; font-size: 12px; }"
         "#desktopIcons::item { background: transparent; border: 1px solid transparent; padding: 3px; }"
         "#desktopIcons::item:hover { background: rgba(220,240,255,35); border-color: rgba(220,240,255,85); }"
@@ -509,9 +521,9 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         "#dangerAction:hover { background: #ffe1df; }"
         "#secondaryAction { background: white; color: #263853; border: 1px solid #d5deeb; border-radius: 6px; padding: 8px 12px; }"
         "#secondaryAction:hover { background: #edf3ff; }"
-        "#taskbar { background: #181b20; border-top: 1px solid #30353d; }"
+        "#taskbar { background: qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #222b37,stop:1 #111820); border-top: 1px solid #4b6176; }"
         "#taskbar QPushButton { background: transparent; color: #f2f2f2; border: 0; border-radius: 0px; padding: 5px 8px; font-size: 12px; min-height: 25px; }"
-        "#taskbar QPushButton:hover { background: #263853; }"
+        "#taskbar QPushButton:hover { background: #35465a; border-bottom: 2px solid #82c8ff; }"
         "#taskbar QPushButton:checked { background: #2d4770; color: white; }"
         "#taskbar #startButton { background: transparent; color: white; font-weight: 600; padding-left: 12px; padding-right: 12px; }"
         "#taskbar #startButton:hover { background: #353a42; color: #80caff; }"
@@ -520,7 +532,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         "#windowSwitcher QPushButton:hover { background: #31496c; }"
         "#panelStatus { color: #b8c5d9; font-size: 12px; }"
         "#panelClock { color: #f3f6fb; font-size: 12px; font-weight: 600; min-width: 72px; }"
-        "#startMenuPanel { background: #ffffff; border: 1px solid #b9c5d0; border-radius: 0px; }"
+        "#startMenuPanel { background: #f4f7fb; border: 1px solid #8498ac; border-radius: 0px; }"
         "#startMenuPanel #pageTitle { font-size: 24px; }"
         "#startMenuPanel #applicationSearch { background: #f8faff; border: 1px solid #cfd9e8; border-radius: 8px; padding: 10px 12px; }"
         "#startMenuPanel #primaryAction { background: #3568d4; color: white; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; }");

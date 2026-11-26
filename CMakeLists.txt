@@ -12,12 +12,15 @@ include(GNUInstallDirs)
 add_compile_definitions(LINWIN_UPDATE_WORKER_PATH="${CMAKE_INSTALL_FULL_LIBEXECDIR}/linwin/embedded_worker.py")
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 6.4 QUIET COMPONENTS OpenGL)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GIO_UNIX REQUIRED IMPORTED_TARGET gio-unix-2.0)
 
 set(LINWIN_SHELL_SOURCES
     src/main_window.cpp
     src/main_window.h
+    src/desktop_surface.h
+    src/wallpaper_shader.h
     src/app_launcher_widget.cpp
     src/app_launcher_widget.h
     src/clipboard_history_widget.cpp
@@ -38,6 +41,10 @@ set(LINWIN_SHELL_SOURCES
 qt_add_executable(linwin src/main.cpp ${LINWIN_SHELL_SOURCES})
 
 target_link_libraries(linwin PRIVATE Qt6::Widgets PkgConfig::GIO_UNIX)
+if(TARGET Qt6::OpenGL)
+    target_link_libraries(linwin PRIVATE Qt6::OpenGL)
+    target_compile_definitions(linwin PRIVATE LINWIN_HAS_OPENGL=1)
+endif()
 target_compile_options(linwin PRIVATE
     "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>"
 )
@@ -116,6 +123,10 @@ if(BUILD_TESTING)
     )
     target_include_directories(linwin-taskbar-layout-tests PRIVATE src)
     target_link_libraries(linwin-taskbar-layout-tests PRIVATE Qt6::Widgets PkgConfig::GIO_UNIX)
+    if(TARGET Qt6::OpenGL)
+        target_link_libraries(linwin-taskbar-layout-tests PRIVATE Qt6::OpenGL)
+        target_compile_definitions(linwin-taskbar-layout-tests PRIVATE LINWIN_HAS_OPENGL=1)
+    endif()
     target_compile_definitions(linwin-taskbar-layout-tests PRIVATE LINWIN_SESSION_HELPER_PATH="/nonexistent/linwin-session-helper")
     target_compile_options(linwin-taskbar-layout-tests PRIVATE
         "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow>"

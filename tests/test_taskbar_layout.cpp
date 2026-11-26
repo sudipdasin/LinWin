@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
+#include "desktop_surface.h"
 #include "workspace_state.h"
 
 #include <QAction>
@@ -76,6 +77,11 @@ int main(int argc, char **argv)
     auto *pages = window.findChild<QStackedWidget *>(QStringLiteral("shellPages"));
 
     auto *desktopCanvas = window.findChild<QWidget *>(QStringLiteral("windowsDesktop"));
+    auto *surface = static_cast<DesktopSurface *>(desktopCanvas);
+    if (!require(surface != nullptr, "Desktop visual surface should exist.")) return 1;
+    surface->setEffectsEnabled(false);
+    surface->setGpuPreferred(false);
+    if (!require(!surface->effectsEnabled() && !surface->gpuPreferred(), "Desktop effects and OpenGL should be independently disableable.")) return 1;
     if (!require(more && workspaceButton && desktopButton && clipboard && settingsButton && returnDesktop && closeLinWin
                      && switcher && systemStatus && pages && desktopCanvas
                      && taskbar && clock,
