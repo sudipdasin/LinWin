@@ -1391,7 +1391,7 @@ void MainWindow::updateTaskbarLayout()
     const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());
     if(auto *panel=findChild<QFrame *>(QStringLiteral("taskbar"))) {
         panel->setFixedHeight(LinWinLayout::taskbarHeight(premium,small));
-        if(auto *rootLayout=qobject_cast<QVBoxLayout *>(centralWidget()->layout())){
+        if(auto *rootLayout=qobject_cast<QVBoxLayout *>(panel->parentWidget()->layout())){
             const int target=visual.value("visual/taskbarPosition","bottom").toString()=="top"?0:1;
             if(rootLayout->indexOf(panel)!=target){
                 rootLayout->removeWidget(panel);rootLayout->insertWidget(target,panel);

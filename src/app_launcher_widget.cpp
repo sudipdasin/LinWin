@@ -529,6 +529,14 @@ void AppLauncherWidget::filterApplications(const QString &query)
     if (applicationList_->currentItem() != nullptr && applicationList_->currentItem()->isHidden()) {
         applicationList_->setCurrentRow(-1);
     }
+    // A typed query must leave a usable selection, not a disabled Pin/Open
+    // action. Never select an invisible item or launch anything automatically.
+    if(!needle.isEmpty()&&(!applicationList_->currentItem()||applicationList_->currentItem()->isHidden())){
+        for(int row=0;row<applicationList_->count();++row)if(!applicationList_->item(row)->isHidden()){
+            applicationList_->setCurrentRow(row);break;
+        }
+    }
+    updatePinButton();
 
     if (!needle.isEmpty() && visibleCount == 0) {
         statusLabel_->setText(tr("No apps match “%1”. Check the spelling or clear the search.").arg(needle));
