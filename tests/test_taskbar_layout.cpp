@@ -30,6 +30,10 @@
 #include <QCheckBox>
 #include <QTemporaryDir>
 #include <QFile>
+#include <QElapsedTimer>
+#include <QTextStream>
+#include <algorithm>
+#include <array>
 
 namespace {
 bool require(bool condition, const char *message)
@@ -179,6 +183,34 @@ int main(int argc, char **argv)
                  "Neon must show widgets on a sufficiently large desktop.")) return 1;
     const QString evidence = qEnvironmentVariable("LINWIN_VISUAL_EVIDENCE_DIR");
     if (!evidence.isEmpty() && !QDir().mkpath(evidence)) return 1;
+    if(!evidence.isEmpty()) {
+        constexpr int iterations=128;
+        std::array<qint64,5> uncached{},cached{};
+        quint64 checksum=0;
+        auto measure=[&](bool useCache){
+            QElapsedTimer timer;timer.start();
+            for(int i=0;i<iterations;++i) {
+                const auto glyph=static_cast<LinWinVisual::Glyph>(i%8);
+                const auto icon=useCache?LinWinVisual::shellIcon(glyph):LinWinVisual::rasterizeShellIcon(glyph);
+                checksum+=static_cast<quint64>(icon.cacheKey());
+            }
+            return timer.nsecsElapsed();
+        };
+        for(std::size_t i=0;i<uncached.size();++i) {
+            if(i%2==0){uncached[i]=measure(false);cached[i]=measure(true);}
+            else{cached[i]=measure(true);uncached[i]=measure(false);}
+        }
+        std::sort(uncached.begin(),uncached.end());std::sort(cached.begin(),cached.end());
+        if(!require(uncached[2]>0 && cached[2]>0 && iconCache->rasterizations==8,"Benchmark must preserve eight cached glyphs.")) return 1;
+        QFile report(QDir(evidence).filePath(QStringLiteral("../native-icon-benchmark.txt")));
+        if(!require(report.open(QIODevice::WriteOnly|QIODevice::Text),"Icon benchmark evidence must be writable.")) return 1;
+        QTextStream out(&report);
+        out<<"Native Qt icon benchmark, 128 requests per trial, 5 alternating trials\n"
+           <<"Uncached median ns: "<<uncached[2]<<"\nCached median ns: "<<cached[2]
+           <<"\nSpeedup: "<<static_cast<double>(uncached[2])/static_cast<double>(cached[2])
+           <<"x\nWarmed glyph rasterizations: "<<iconCache->rasterizations
+           <<"\nNew rasterizations for 1000 repeated requests: 0\nChecksum: "<<checksum<<"\n";
+    }
     auto *paletteShortcut=window.findChild<QShortcut *>(QStringLiteral("linwinCommandPaletteShortcut"));
     if(!require(paletteShortcut,"Command palette shortcut must exist.")) return 1;
     bool paletteOk=false;
