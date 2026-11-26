@@ -202,14 +202,16 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
         const auto refreshIcons = [this, icons, desktopPath]() {
             icons->clear();
-            const auto addShortcut = [icons](const QString &name, LinWinVisual::Glyph icon, int page) {
-                auto *item = new QListWidgetItem(LinWinVisual::shellIcon(icon), name, icons);
-                item->setData(Qt::UserRole, page);
+            const auto addPlace = [icons](const QString &name,const QString &iconName,LinWinVisual::Glyph fallback,const QString &place) {
+                auto *item=new QListWidgetItem(QIcon::fromTheme(iconName,LinWinVisual::shellIcon(fallback)),name,icons);
+                item->setData(Qt::UserRole+2,place);
                 item->setTextAlignment(Qt::AlignHCenter);
+                item->setToolTip(name);
             };
-            addShortcut(tr("Files"), LinWinVisual::Glyph::Files, 1);
-            addShortcut(tr("Task Manager"), LinWinVisual::Glyph::Tasks, 2);
-            addShortcut(tr("Settings"), LinWinVisual::Glyph::Settings, 4);
+            addPlace(tr("This PC"),QStringLiteral("computer"),LinWinVisual::Glyph::Desktop,QStringLiteral("computer"));
+            addPlace(tr("Home"),QStringLiteral("user-home"),LinWinVisual::Glyph::Files,QStringLiteral("home"));
+            addPlace(tr("Trash"),QStringLiteral("user-trash"),LinWinVisual::Glyph::Files,QStringLiteral("trash"));
+            addPlace(tr("Network"),QStringLiteral("network-workgroup"),LinWinVisual::Glyph::Desktop,QStringLiteral("network"));
             if (desktopPath.isEmpty() || !QDir(desktopPath).exists()) return;
             QFileIconProvider provider;
             const auto entries = QDir(desktopPath).entryInfoList(
@@ -223,6 +225,23 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         };
         const auto openIcon = [this](QListWidgetItem *item) {
             if (item == nullptr) return;
+            const QString place=item->data(Qt::UserRole+2).toString();
+            if(place==QStringLiteral("computer") || place==QStringLiteral("home")) {
+                if(!componentEnabled(QStringLiteral("files"))) {
+                    QMessageBox::information(this,tr("Desktop"),tr("Enable File Explorer in Settings first."));
+                    return;
+                }
+                fileManager_->openLocation(place==QStringLiteral("home")?QDir::homePath():QDir::rootPath());
+                showPage(1);
+                return;
+            }
+            if(place==QStringLiteral("trash") || place==QStringLiteral("network")) {
+                const QString gio=QStandardPaths::findExecutable(QStringLiteral("gio"));
+                const QString uri=place==QStringLiteral("trash")?QStringLiteral("trash:///"):QStringLiteral("network:///");
+                if(gio.isEmpty() || !QProcess::startDetached(gio,{QStringLiteral("open"),uri}))
+                    QMessageBox::information(this,tr("Desktop"),tr("The host file manager could not open this location."));
+                return;
+            }
             if (item->data(Qt::UserRole).isValid()) {
                 showPage(item->data(Qt::UserRole).toInt());
                 return;

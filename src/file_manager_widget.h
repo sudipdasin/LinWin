@@ -15,6 +15,7 @@ class FileManagerWidget final : public QWidget {
     Q_OBJECT
 public:
     explicit FileManagerWidget(QWidget *parent = nullptr);
+    void openLocation(const QString &path) { navigateTo(path); }
 
 private:
     QStringList selectedPaths() const;

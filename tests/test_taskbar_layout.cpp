@@ -114,7 +114,9 @@ int main(int argc, char **argv)
                  "Wide taskbar should show its full navigation and window details.")) return 1;
 
     auto *desktopIcons = window.findChild<QListWidget *>(QStringLiteral("desktopIcons"));
-    if (!require(desktopIcons && desktopIcons->count() >= 3
+    if (!require(desktopIcons && desktopIcons->count() >= 4 && desktopIcons->item(0)->text()==QStringLiteral("This PC")
+                     && desktopIcons->item(1)->text()==QStringLiteral("Home") && desktopIcons->item(2)->text()==QStringLiteral("Trash")
+                     && desktopIcons->item(3)->text()==QStringLiteral("Network")
                      && desktopIcons->viewMode() == QListView::IconMode
                      && desktopIcons->selectionMode() == QAbstractItemView::ExtendedSelection,
                  "Desktop should present selectable workspace icons.")) return 1;
@@ -256,7 +258,9 @@ int main(int argc, char **argv)
     auto *views=window.findChild<QStackedWidget *>(QStringLiteral("linwinStartViews"));
     auto *allApps=window.findChild<QPushButton *>(QStringLiteral("linwinAllApps"));
     auto *pinned=window.findChild<QPushButton *>(QStringLiteral("linwinPinnedView"));
-    if(!require(menu->isVisible() && menu->testAttribute(Qt::WA_StyledBackground) && views && views->currentIndex()==0 && allApps && pinned,
+    if(!require(menu->isVisible() && menu->testAttribute(Qt::WA_StyledBackground) && views && views->currentIndex()==0 && allApps && pinned
+                && menu->findChild<QFrame *>(QStringLiteral("linwinStartFooter")) && menu->findChild<QPushButton *>(QStringLiteral("linwinStartPower"))
+                && start->text().isEmpty() && !start->accessibleName().isEmpty(),
                 "Start must paint its own background and open the pinned view."))return 1;
     const auto image=menu->grab().toImage();
     const QColor pixel=image.pixelColor(8,image.height()/2);
@@ -322,7 +326,11 @@ int main(int argc, char **argv)
     if (!require(icons && files && tasks && floatingPages && !files->isVisible() && !tasks->isVisible(),
                  "Independent native tools must begin closed.")) return 1;
     icons->itemDoubleClicked(icons->item(0));
-    icons->itemDoubleClicked(icons->item(1));
+    QPushButton *taskbarTasks=nullptr;
+    for(auto *button:floating.findChildren<QPushButton *>())
+        if(button->objectName()==QStringLiteral("navigationButton") && button->text()==QStringLiteral("Tasks"))taskbarTasks=button;
+    if(!require(taskbarTasks,"Task Manager must remain accessible from taskbar."))return 1;
+    taskbarTasks->click();
     app.processEvents();
     if (!require(files->isVisible() && tasks->isVisible() && files->isWindow() && tasks->isWindow()
                  && floatingPages->currentIndex()==0, "Two tools must coexist over the desktop.")) return 1;
