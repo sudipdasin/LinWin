@@ -306,6 +306,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
     startMenu_->setWindowFlags(Qt::Widget);
     startMenu_->hide();
+    connect(startMenu_,&AppLauncherWidget::toolRequested,this,&MainWindow::showPage);
 
     auto *taskbar = new QFrame(root);
     taskbar->setObjectName(QStringLiteral("taskbar"));

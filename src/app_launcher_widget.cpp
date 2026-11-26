@@ -3,6 +3,10 @@
 
 #include "app_launcher_widget.h"
 #include "theme_visuals.h"
+#include "recent_documents.h"
+#include <QDesktopServices>
+#include <QFileIconProvider>
+#include <QCheckBox>
 
 #include <QAbstractItemView>
 #include <QCollator>
@@ -128,6 +132,28 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pins->addWidget(pinnedList_, 1);
     columns->addLayout(pins, 1);
     layout->addLayout(columns, 1);
+    auto *recentHeader=new QHBoxLayout;
+    recentHeader->addWidget(new QLabel(tr("Recommended documents"),this));
+    auto *recentToggle=new QCheckBox(tr("Show recent"),this);
+    recentToggle->setObjectName(QStringLiteral("linwinRecentToggle"));
+    recentToggle->setChecked(QSettings().value(QStringLiteral("launcher/showRecent"),true).toBool());
+    recentHeader->addStretch(); recentHeader->addWidget(recentToggle);
+    layout->addLayout(recentHeader);
+    recentList_=new QListWidget(this);
+    recentList_->setObjectName(QStringLiteral("recentDocuments"));
+    recentList_->setMaximumHeight(100);
+    recentList_->setMinimumHeight(44);
+    layout->addWidget(recentList_);
+    connect(recentToggle,&QCheckBox::toggled,this,[this](bool enabled){
+        QSettings().setValue(QStringLiteral("launcher/showRecent"),enabled);
+        refreshRecentDocuments();
+    });
+    connect(recentList_,&QListWidget::itemActivated,this,[this](QListWidgetItem *item){
+        if (!item || item->isHidden()) return;
+        const QString path=item->data(Qt::UserRole).toString();
+        if (!LinWinRecent::allowedDocument(path) || !QDesktopServices::openUrl(QUrl::fromLocalFile(path)))
+            statusLabel_->setText(tr("This document could not be opened."));
+    });
     connect(pinnedList_, &QListWidget::itemActivated, this, [this](QListWidgetItem *pin) {
         if (!pin || pin->isHidden()) return;
         const auto id = pin->data(Qt::UserRole).toString();
@@ -139,7 +165,16 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         }
     });
     layout->addLayout(actions);
+    auto *quick=new QHBoxLayout;
+    for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Files")},{2,tr("Tasks")},{3,tr("Clipboard")},{4,tr("Settings")}}) {
+        auto *button=new QPushButton(tool.second,this);
+        button->setObjectName(QStringLiteral("linwinStartTool_%1").arg(tool.first));
+        quick->addWidget(button);
+        connect(button,&QPushButton::clicked,this,[this,tool]{ emit toolRequested(tool.first); });
+    }
+    layout->addLayout(quick);
     layout->addWidget(statusLabel_);
+    refreshRecentDocuments();
 
     QSettings settings;
     pinnedApplicationIds_ = settings.value(kPinnedAppsSetting).toStringList();
@@ -197,7 +232,26 @@ void AppLauncherWidget::focusSearch()
     loadApplications();
     searchField_->clear();
     refreshList();
+    refreshRecentDocuments();
     searchField_->setFocus(Qt::OtherFocusReason);
+}
+
+void AppLauncherWidget::refreshRecentDocuments()
+{
+    recentList_->clear();
+    const bool enabled=QSettings().value(QStringLiteral("launcher/showRecent"),true).toBool();
+    recentList_->setVisible(enabled);
+    if (!enabled) return;
+    QFileIconProvider icons;
+    for (const auto &entry: LinWinRecent::read(LinWinRecent::registryPath())) {
+        auto *item=new QListWidgetItem(icons.icon(QFileInfo(entry.path)),QFileInfo(entry.path).fileName(),recentList_);
+        item->setData(Qt::UserRole,entry.path);
+        item->setToolTip(QDir::toNativeSeparators(entry.path));
+    }
+    if (recentList_->count()==0) {
+        auto *item=new QListWidgetItem(tr("No recent documents available"),recentList_);
+        item->setFlags(Qt::NoItemFlags);
+    }
 }
 
 void AppLauncherWidget::loadApplications()

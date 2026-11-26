@@ -20,6 +20,9 @@ public:
     ~AppLauncherWidget() override;
     void focusSearch();
 
+signals:
+    void toolRequested(int index);
+
 private slots:
     void filterApplications(const QString &query);
     void launchSelectedApplication();
@@ -29,11 +32,13 @@ private slots:
 private:
     void loadApplications();
     void refreshList();
+    void refreshRecentDocuments();
     void savePinnedApplications() const;
 
     QLineEdit *searchField_ = nullptr;
     QListWidget *applicationList_ = nullptr;
     QListWidget *pinnedList_ = nullptr;
+    QListWidget *recentList_ = nullptr;
     QLabel *statusLabel_ = nullptr;
     QPushButton *pinButton_ = nullptr;
     QHash<QString, GAppInfo *> applications_;

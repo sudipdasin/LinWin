@@ -41,7 +41,7 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
         "#taskbar QWidget, #startMenuPanel QLabel { background:transparent; color:%2; }"
         "#taskbar QPushButton, #startMenuPanel QPushButton { color:%2; background:transparent; border:0; padding:6px; }"
         "#taskbar QPushButton:hover, #taskbar QPushButton:checked, #startMenuPanel QPushButton:hover { background:%5; border-bottom:2px solid %3; }"
-        "#startMenuPanel #applicationSearch, #startMenuPanel #applicationList, #startMenuPanel #pinnedApps { background:%6; color:%2; border:1px solid %3; border-radius:%4; }"
+        "#startMenuPanel #applicationSearch, #startMenuPanel #applicationList, #startMenuPanel #pinnedApps, #startMenuPanel #recentDocuments { background:%6; color:%2; border:1px solid %3; border-radius:%4; }"
         "#startMenuPanel QListWidget::item:selected { background:%5; color:%2; }"
         "#startMenuPanel #primaryAction { background:%5; color:%2; border:1px solid %3; border-radius:%4; }"
         "#taskbar #startButton, #taskbar #panelClock, #taskbar #panelStatus, #taskbar #windowSwitcherStatus { color:%2; }"
