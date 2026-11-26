@@ -4,6 +4,7 @@
 #include "desktop_surface.h"
 #include "theme_visuals.h"
 #include "shell_icons.h"
+#include "window_overview.h"
 #include "desktop_widgets.h"
 
 #include "app_launcher_widget.h"
@@ -253,6 +254,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 menu.addSeparator();
             }
             menu.addAction(tr("Refresh"), this, refreshIcons);
+            menu.addAction(tr("Task View (Ctrl+Shift+F9)"),this,&MainWindow::showWindowOverview);
             if (!toolWindows_.isEmpty()) {
                 auto *restore=menu.addAction(tr("Restore hidden workspace"),this,&MainWindow::restoreHiddenWorkspace);
                 restore->setEnabled(!hiddenWorkspace_.isEmpty());
@@ -463,6 +465,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     }
     connect(closeButton_, &QPushButton::clicked, this, &QWidget::close);
     connect(closeOverflowAction_, &QAction::triggered, this, &QWidget::close);
+    auto *overviewShortcut=new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F9")),this);
+    overviewShortcut->setObjectName(QStringLiteral("linwinOverviewShortcut"));
+    overviewShortcut->setContext(Qt::ApplicationShortcut);
+    connect(overviewShortcut,&QShortcut::activated,this,&MainWindow::showWindowOverview);
     auto *workspaceVisibilityShortcut=new QShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+D")),this);
     workspaceVisibilityShortcut->setObjectName(QStringLiteral("linwinWorkspaceVisibilityShortcut"));
     workspaceVisibilityShortcut->setContext(Qt::ApplicationShortcut);
@@ -689,6 +695,38 @@ void MainWindow::activateExternalWindow(const QString &id)
 {
     if (!QRegularExpression(QStringLiteral("^0x[0-9a-fA-F]+$")).match(id).hasMatch()) return;
     QProcess::startDetached(wmctrlPath_, {QStringLiteral("-ia"), id});
+}
+
+void MainWindow::showWindowOverview()
+{
+    if (overviewOpen_) return;
+    overviewOpen_=true;
+    QList<LinWinVisual::WindowCard> cards;
+    for (int index=1;index<=4;++index) {
+        auto *window=toolWindows_.value(index,nullptr);
+        if (!window || !window->isEnabled() || (!window->isVisible() && !hiddenWorkspace_.contains(index))) continue;
+        QIcon preview=window->windowIcon();
+        const bool visible=window->isVisible() && !window->isMinimized();
+        if (visible) {
+            const QPixmap pixels=window->grab().scaled(192,108,Qt::KeepAspectRatio,Qt::SmoothTransformation);
+            if (!pixels.isNull()) preview=QIcon(pixels);
+        }
+        cards.append({window->windowTitle(),visible?tr("Native window preview"):tr("Hidden or minimized tool"),QStringLiteral("tool:%1").arg(index),preview});
+    }
+    for (const auto &id:windowOrder_) {
+        auto *button=windowButtons_.value(id,nullptr);
+        if (button) cards.append({button->toolTip(),tr("External X11 application"),id,LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop)});
+        if(cards.size()>=48) break;
+    }
+    LinWinVisual::WindowOverview overview(cards,this);
+    const int result=overview.exec();
+    overviewOpen_=false;
+    if(result!=QDialog::Accepted) return;
+    const QString key=overview.chosenKey();
+    if(key.startsWith(QStringLiteral("tool:"))) {
+        bool ok=false;const int index=key.mid(5).toInt(&ok);
+        if(ok && toolWindows_.contains(index)) showPage(index);
+    } else if(windowOrder_.contains(key)) activateExternalWindow(key);
 }
 
 void MainWindow::cycleExternalWindow()

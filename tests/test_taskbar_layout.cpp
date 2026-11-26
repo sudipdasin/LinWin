@@ -23,6 +23,8 @@
 #include <QPixmap>
 #include <QDialog>
 #include <QToolButton>
+#include <QShortcut>
+#include <QTimer>
 #include <QProgressBar>
 #include "shell_icons.h"
 #include <QCheckBox>
@@ -245,6 +247,20 @@ int main(int argc, char **argv)
     app.processEvents();
     if (!require(files->isVisible() && tasks->isVisible() && files->isWindow() && tasks->isWindow()
                  && floatingPages->currentIndex()==0, "Two tools must coexist over the desktop.")) return 1;
+    auto *overviewShortcut=floating.findChild<QShortcut *>(QStringLiteral("linwinOverviewShortcut"));
+    if (!require(overviewShortcut,"Task View keyboard control must exist.")) return 1;
+    bool overviewOk=false;
+    QTimer::singleShot(0,&floating,[&]{
+        auto *overview=floating.findChild<QDialog *>(QStringLiteral("linwinWindowOverview"));
+        auto *cards=overview?overview->findChild<QListWidget *>(QStringLiteral("linwinWindowCards")):nullptr;
+        overviewOk=cards && cards->count()==2 && cards->item(0)->data(Qt::UserRole).toString()==QStringLiteral("tool:1")
+            && cards->item(1)->data(Qt::UserRole).toString()==QStringLiteral("tool:2");
+        if (overviewOk && !evidence.isEmpty()) overviewOk=overview->grab().save(QDir(evidence).filePath(QStringLiteral("native-task-view.png")));
+        if(overview) overview->reject();
+        else QApplication::closeAllWindows();
+    });
+    QMetaObject::invokeMethod(overviewShortcut,"activated",Qt::DirectConnection);
+    if (!require(overviewOk,"Task View must list the two real open native tools.")) return 1;
     auto *snap=files->findChild<QToolButton *>(QStringLiteral("linwinSnapMenu"));
     if (!require(snap && snap->menu() && snap->menu()->actions().size()==9,
                  "Each native tool must expose seven snap zones and restore.")) return 1;
