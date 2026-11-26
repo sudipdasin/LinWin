@@ -46,6 +46,7 @@ protected:
 private:
     void showPage(int index);
     void initializeToolWindows();
+    void rememberToolGeometry(int index);
     void hideToolWindows();
     void toggleWorkspaceVisibility();
     void restoreHiddenWorkspace();

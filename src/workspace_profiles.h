@@ -40,6 +40,17 @@ inline QList<Placement> load(QSettings &s,int slot) {
     }
     return result;
 }
+inline QString geometryKey(int tool) {return QStringLiteral("workspace/toolGeometry/v1/%1").arg(tool);}
+inline bool rememberGeometry(QSettings &s,int tool,const QRect &geometry) {
+    if(!s.value(QStringLiteral("appearance/rememberToolGeometry"),true).toBool() || !valid({tool,geometry,false})) return false;
+    s.setValue(geometryKey(tool),geometry);
+    return true;
+}
+inline QRect rememberedGeometry(QSettings &s,int tool) {
+    if(!s.value(QStringLiteral("appearance/rememberToolGeometry"),true).toBool() || tool<1 || tool>4) return {};
+    const auto geometry=s.value(geometryKey(tool)).toRect();
+    return valid({tool,geometry,false})?geometry:QRect();
+}
 inline QRect fit(const QRect &r,const QRect &area) {
     if(!r.isValid() || !area.isValid()) return {};
     const QSize size=r.size().boundedTo(area.size());

@@ -19,5 +19,10 @@ int main(int argc,char **argv) {
     if(save(s,2,{{5,QRect(0,0,400,400),false}})||save(s,2,{{1,QRect(0,0,1,1),false}}))return 6;
     s.setValue(key(3),QVariantList{QVariantMap{{"tool",1},{"geometry",QRect(0,0,400,400)}},QVariantMap{{"tool",1},{"geometry",QRect(0,0,500,500)}}});
     if(!load(s,3).isEmpty())return 7;
-    std::cout<<"PASS: persistent workspace slots, validation, duplicate rejection and monitor fitting\n";
+    if(!rememberGeometry(s,1,pair[0].geometry)||rememberGeometry(s,5,pair[0].geometry))return 8;
+    s.sync(); reopened.sync();
+    if(rememberedGeometry(reopened,1)!=pair[0].geometry||rememberedGeometry(reopened,2).isValid())return 9;
+    reopened.setValue(QStringLiteral("appearance/rememberToolGeometry"),false);
+    if(rememberedGeometry(reopened,1).isValid()||rememberGeometry(reopened,1,pair[1].geometry))return 10;
+    std::cout<<"PASS: persistent workspace slots, validation, duplicate rejection, monitor fitting and optional geometry recall\n";
 }

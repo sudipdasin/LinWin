@@ -805,7 +805,15 @@ void MainWindow::showQuickControls()
     auto *previews=new QCheckBox(tr("Show window thumbnails in Task View"),&panel);
     previews->setObjectName(QStringLiteral("linwinQuickPreviews"));
     previews->setChecked(preferences.value(QStringLiteral("appearance/taskViewPreviews"),true).toBool());
-    layout->addWidget(effects);layout->addWidget(gpu);layout->addWidget(previews);
+    auto *remember=new QCheckBox(tr("Remember tool window positions after closing LinWin"),&panel);
+    remember->setObjectName(QStringLiteral("linwinRememberToolGeometry"));
+    remember->setChecked(preferences.value(QStringLiteral("appearance/rememberToolGeometry"),true).toBool());
+    connect(remember,&QCheckBox::toggled,&panel,[](bool enabled){
+        QSettings settings;
+        settings.setValue(QStringLiteral("appearance/rememberToolGeometry"),enabled);
+        if(!enabled) settings.remove(QStringLiteral("workspace/toolGeometry"));
+    });
+    layout->addWidget(effects);layout->addWidget(gpu);layout->addWidget(previews);layout->addWidget(remember);
     auto refreshControls=[themes,effects,gpu]{
         const bool minimal=themes->currentData().toString()==QStringLiteral("minimal");
         effects->setEnabled(!minimal);
@@ -1050,7 +1058,7 @@ void MainWindow::initializeToolWindows()
         tool.first->show();
         window->resize(index == 3 ? 560 : 900, index == 3 ? 500 : 650);
         toolWindows_.insert(index, window);
-        connect(window, &QDialog::finished, this, [this](int) { syncToolButtons(); });
+        connect(window, &QDialog::finished, this, [this,index](int) { rememberToolGeometry(index); syncToolButtons(); });
         ++index;
     }
 }
@@ -1180,8 +1188,18 @@ void MainWindow::syncToolButtons()
     homeButton_->setChecked(!any);
 }
 
+void MainWindow::rememberToolGeometry(int index)
+{
+    auto *window=toolWindows_.value(index,nullptr);
+    if(!window || !window->property("linwinOpenedOnce").toBool()) return;
+    const QRect normal=(window->isMaximized()||window->isMinimized())?window->normalGeometry():window->geometry();
+    QSettings settings;
+    LinWinWorkspace::rememberGeometry(settings,index,normal);
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    for(int index=1;index<=4;++index) rememberToolGeometry(index);
     hiddenWorkspace_.clear();
     hideToolWindows();
     QMainWindow::closeEvent(event);
@@ -1209,10 +1227,15 @@ void MainWindow::showPage(int index)
         auto *window = toolWindows_.value(index, nullptr);
         if (!window) return;
         if (!window->isVisible() && !window->property("linwinOpenedOnce").toBool()) {
-            const QRect area = screen() ? screen()->availableGeometry() : geometry();
-            const QSize size = window->size().boundedTo(area.size());
-            window->resize(size);
-            window->move(area.center() - QPoint(size.width()/2, size.height()/2) + QPoint((index-1)*20,(index-1)*16));
+            QSettings settings;
+            const auto saved=LinWinWorkspace::rememberedGeometry(settings,index);
+            QScreen *display=saved.isValid()?QGuiApplication::screenAt(saved.center()):nullptr;
+            if(!display) display=screen();
+            const QRect area=display?display->availableGeometry():geometry();
+            const QSize size=window->size().boundedTo(area.size());
+            const QRect initial(area.center()-QPoint(size.width()/2,size.height()/2)+QPoint((index-1)*20,(index-1)*16),size);
+            const QRect target=LinWinWorkspace::fit(saved.isValid()?saved:initial,area);
+            if(target.isValid()) window->setGeometry(target);
         }
         window->setProperty("linwinOpenedOnce",true);
         if (window->isMinimized()) window->showNormal(); else window->show();
