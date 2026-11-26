@@ -25,11 +25,13 @@ public:
     void setGlassBackdrop(const QImage &sample) { glassBackdrop_=sample;update(); }
 protected:
     void paintEvent(QPaintEvent *event) override;
+    bool eventFilter(QObject *object,QEvent *event) override;
 public:
 
 signals:
     void toolRequested(int index);
     void exitRequested();
+    void applicationLaunched();
     void returnDesktopRequested();
 
 private slots:

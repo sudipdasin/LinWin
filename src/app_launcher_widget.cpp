@@ -36,6 +36,8 @@
 #include <QLinearGradient>
 #include <QResizeEvent>
 #include <QButtonGroup>
+#include <QKeyEvent>
+#include <QEvent>
 
 #include <algorithm>
 
@@ -119,11 +121,14 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     searchField_->setObjectName(QStringLiteral("applicationSearch"));
     searchField_->setPlaceholderText(tr("Search installed applications"));
     searchField_->setClearButtonEnabled(true);
+    searchField_->setAccessibleName(tr("Search installed applications"));
+    searchField_->installEventFilter(this);
     searchField_->addAction(LinWinVisual::shellIcon(LinWinVisual::Glyph::Search), QLineEdit::LeadingPosition);
 
     applicationList_ = new QListWidget(this);
     applicationList_->setObjectName(QStringLiteral("applicationList"));
     applicationList_->setSelectionMode(QAbstractItemView::SingleSelection);
+    applicationList_->setAccessibleName(tr("All installed applications"));
     applicationList_->setUniformItemSizes(true);
     applicationList_->setIconSize(QSize(32, 32));
 
@@ -138,6 +143,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     statusLabel_ = new QLabel(this);
     statusLabel_->setObjectName(QStringLiteral("launcherStatus"));
     statusLabel_->setWordWrap(true);
+    statusLabel_->setTextFormat(Qt::PlainText);
 
     auto *brandText=new QVBoxLayout;
     brandText->setSpacing(0);
@@ -193,6 +199,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setTextElideMode(Qt::ElideNone);
     pinnedList_->setSpacing(0);
     pinnedList_->setWordWrap(true);
+    pinnedList_->setAccessibleName(tr("Pinned applications"));
     pins->addWidget(pinnedList_, 1);
     auto *pinnedPage=new QWidget(this);
     pins->setContentsMargins(0,0,0,0);
@@ -302,18 +309,22 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
             this, [this](QListWidgetItem *) { launchSelectedApplication(); });
     connect(applicationList_, &QListWidget::currentRowChanged,
             this, [this](int) { updatePinButton(); });
-    connect(searchField_, &QLineEdit::returnPressed,
-            this, [this]() {
-                if (applicationList_->currentItem() == nullptr) {
-                    for (int row = 0; row < applicationList_->count(); ++row) {
-                        if (!applicationList_->item(row)->isHidden()) {
-                            applicationList_->setCurrentRow(row);
-                            break;
-                        }
-                    }
-                }
-                launchSelectedApplication();
-            });
+    connect(searchField_, &QLineEdit::returnPressed,this,[this]{
+        auto *list=appViews_->currentIndex()==0?pinnedList_:applicationList_;
+        if(!list->currentItem()||list->currentItem()->isHidden()){
+            for(int row=0;row<list->count();++row)if(!list->item(row)->isHidden()){
+                list->setCurrentRow(row);break;
+            }
+        }
+        auto *item=list->currentItem();
+        if(!item||item->isHidden())return;
+        if(list==pinnedList_) {
+            const QString id=item->data(Qt::UserRole).toString();
+            for(int row=0;row<applicationList_->count();++row)if(!applicationList_->item(row)->isHidden()&&applicationList_->item(row)->data(Qt::UserRole).toString()==id){
+                applicationList_->setCurrentRow(row);launchSelectedApplication();return;
+            }
+        } else launchSelectedApplication();
+    });
 
     updatePinButton();
 }
@@ -339,6 +350,24 @@ void AppLauncherWidget::paintEvent(QPaintEvent *)
     tint.setColorAt(0,QColor(9,35,62,241));tint.setColorAt(1,QColor(8,34,60,244));
     painter.fillRect(rect(),tint);painter.restore();
     painter.setBrush(Qt::NoBrush);painter.setPen(QPen(QColor(54,178,225,180),1));painter.drawPath(outline);
+}
+
+bool AppLauncherWidget::eventFilter(QObject *object,QEvent *event)
+{
+    if(object==searchField_&&event->type()==QEvent::KeyPress){
+        const auto *key=static_cast<QKeyEvent *>(event);
+        if(key->key()==Qt::Key_Down||key->key()==Qt::Key_Up){
+            auto *list=appViews_->currentIndex()==0?pinnedList_:applicationList_;
+            const int step=key->key()==Qt::Key_Down?1:-1;
+            int row=list->currentRow();
+            if(row<0)row=step>0?-1:list->count();
+            for(row+=step;row>=0&&row<list->count();row+=step)if(!list->item(row)->isHidden()){
+                list->setCurrentRow(row);list->scrollToItem(list->currentItem());break;
+            }
+            return true;
+        }
+    }
+    return QWidget::eventFilter(object,event);
 }
 
 void AppLauncherWidget::focusSearch()
@@ -455,12 +484,14 @@ void AppLauncherWidget::refreshList()
 
 void AppLauncherWidget::filterApplications(const QString &query)
 {
-    const QString needle = query.trimmed();
+    const QString needle = query.simplified();
+    const auto terms=needle.split(QLatin1Char(' '),Qt::SkipEmptyParts);
+    const auto matchesTerms=[&terms](const QString &text){return std::all_of(terms.cbegin(),terms.cend(),[&text](const QString &word){return text.contains(word,Qt::CaseInsensitive);});};
     int visibleCount = 0;
     for (int row = 0; row < applicationList_->count(); ++row) {
         auto *item = applicationList_->item(row);
         const QString searchable = item->text() + QLatin1Char(' ') + item->toolTip();
-        const bool matches = needle.isEmpty() || searchable.contains(needle, Qt::CaseInsensitive);
+        const bool matches = matchesTerms(searchable);
         item->setHidden(!matches);
         if (matches) {
             ++visibleCount;
@@ -469,7 +500,7 @@ void AppLauncherWidget::filterApplications(const QString &query)
 
     for (int row=0;row<pinnedList_->count();++row) {
         auto *pin=pinnedList_->item(row);
-        pin->setHidden(!needle.isEmpty() && !(pin->text()+QLatin1Char(' ')+pin->toolTip()).contains(needle, Qt::CaseInsensitive));
+        pin->setHidden(!matchesTerms(pin->text()+QLatin1Char(' ')+pin->toolTip()));
     }
     if (applicationList_->currentItem() != nullptr && applicationList_->currentItem()->isHidden()) {
         applicationList_->setCurrentRow(-1);
@@ -514,6 +545,7 @@ void AppLauncherWidget::launchSelectedApplication()
     }
 
     statusLabel_->setText(tr("Opening %1…").arg(appName(appInfo)));
+    emit applicationLaunched();
 }
 
 void AppLauncherWidget::togglePinnedApplication()
@@ -548,7 +580,7 @@ void AppLauncherWidget::updatePinButton()
     const QListWidgetItem *item = applicationList_->currentItem();
     const bool pinned = item != nullptr && pinnedApplicationIds_.contains(item->data(Qt::UserRole).toString());
     pinButton_->setText(pinned ? tr("Unpin") : tr("Pin"));
-    pinButton_->setEnabled(item != nullptr);
+    pinButton_->setEnabled(item != nullptr && !item->isHidden());
 }
 
 void AppLauncherWidget::savePinnedApplications() const

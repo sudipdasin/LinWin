@@ -356,6 +356,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     startMenu_->setWindowFlags(Qt::Widget);
     startMenu_->hide();
     connect(startMenu_,&AppLauncherWidget::toolRequested,this,&MainWindow::showPage);
+    connect(startMenu_,&AppLauncherWidget::applicationLaunched,this,[this]{startButton_->setChecked(false);});
     connect(startMenu_,&AppLauncherWidget::returnDesktopRequested,this,[this]{
         startButton_->setChecked(false);
         if(!shellSessionMode_) returnToLinuxDesktop();
