@@ -304,6 +304,13 @@ int main(int argc, char **argv)
     if(!require(menu->geometry()==area->rect(),"Full-screen Start must occupy the actual desktop area."))return 1;
     start->click();settings.remove("visual");hub->visualChanged();app.processEvents();
     if(!require(visualPanel->height()==58&&visualClock->isVisible()&&visualSearch->isVisible(),"Restoring visual defaults must recover the original taskbar."))return 1;
+    themes->setCurrentIndex(themes->findData("aero"));app.processEvents();
+    settings.setValue("visual/widgets","show");settings.setValue("visual/compactAllThemes",true);
+    hub->visualChanged();app.processEvents();
+    if(!require(widgets->isVisible()&&visualPanel->height()==58,"Widgets and compact taskbar must be available independently of theme."))return 1;
+    settings.setValue("visual/widgets","hide");hub->visualChanged();app.processEvents();
+    if(!require(widgets->isHidden(),"Widget visibility preference must hide actual widgets."))return 1;
+    settings.remove("visual");themes->setCurrentIndex(themes->findData("neon"));hub->visualChanged();app.processEvents();
     auto *statusFrame=window.findChild<QFrame *>(QStringLiteral("linwinStatusArea"));
     auto *statusArea=static_cast<DesktopStatus *>(statusFrame);
     auto *network=statusFrame?statusFrame->findChild<QPushButton *>(QStringLiteral("linwinStatusNetwork")):nullptr;
@@ -348,6 +355,11 @@ int main(int argc, char **argv)
     // Even a theme providing only a tiny 16px bitmap must occupy the intended slot.
     if(!require(LinWinVisual::fittedIconRect(QRect(0,0,44,44),QSize(16,16))==QRect(0,0,44,44),
                 "Small source icons must fill their native tile without changing aspect ratio."))return 1;
+    if(!require(grid->property("linwinSingleClickLaunch").toBool()&&menu->findChild<QPushButton *>("linwinSuggestedPins"),"Pinned tiles need single-click launch and discoverable installed-app suggestions."))return 1;
+    if(grid->count()){
+        const auto rect=grid->visualItemRect(grid->item(0));
+        if(!require(rect.height()>=grid->gridSize().height()-6&&rect.width()>=grid->gridSize().width()-6,"Actual pinned tile rectangle must fill the grid cell."))return 1;
+    }
     const auto image=menu->grab().toImage();
     const QColor pixel=image.pixelColor(8,image.height()/2);
     const QColor expected(QStringLiteral("#09233e"));

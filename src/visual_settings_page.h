@@ -46,9 +46,10 @@ public:
             disabled(tr("Choose folders that appear on Start"));
         }else if(section_=="taskbar"){
             toggle("visual/smallTaskbar",tr("Use small taskbar buttons"),false);
-            toggle("visual/windowLabels",tr("Show running window labels in wide Neon mode"),false);
+            toggle("visual/compactAllThemes",tr("Use compact icon taskbar on all themes (wide screens)"),false);
+            toggle("visual/windowLabels",tr("Show running window labels in compact mode"),false);
             toggle("visual/taskbarSearch",tr("Show search on wide taskbar"),true);
-            toggle("visual/taskbarStatus",tr("Show status controls in wide Neon mode"),true);
+            toggle("visual/taskbarStatus",tr("Show status controls in compact mode"),true);
             toggle("visual/taskbarClock",tr("Show clock"),true);
             disabled(tr("Automatically hide the taskbar"));
             disabled(tr("Taskbar location on screen"));

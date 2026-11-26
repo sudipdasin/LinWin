@@ -37,6 +37,7 @@
 #include <QResizeEvent>
 #include <QButtonGroup>
 #include <QKeyEvent>
+#include <QShortcut>
 #include <QEvent>
 
 #include <algorithm>
@@ -185,6 +186,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     editPins->setObjectName(QStringLiteral("linwinEditPins"));
     auto *editMenu=new QMenu(editPins);
     editMenu->addAction(tr("Add suggested installed apps"),this,[this]{addSuggestedPins();refreshList();});
+    auto *suggest=new QPushButton(tr("Add apps"),this);suggest->setObjectName("linwinSuggestedPins");suggest->setToolTip(tr("Add suggested applications that are installed on this computer"));pinHeader->addWidget(suggest);
+    connect(suggest,&QPushButton::clicked,this,[this]{addSuggestedPins();refreshList();});
     editMenu->addAction(tr("Browse all apps"),this,[this]{appViews_->setCurrentIndex(1);searchField_->setFocus();});
     editPins->setMenu(editMenu);pinHeader->addWidget(editPins);pins->addLayout(pinHeader);
     pinnedList_ = new PinnedGrid(this);
@@ -203,6 +206,15 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setSpacing(0);
     pinnedList_->setWordWrap(true);
     pinnedList_->setAccessibleName(tr("Pinned applications"));
+    pinnedList_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(pinnedList_,&QListWidget::customContextMenuRequested,this,[this](const QPoint &pos){
+        auto *item=pinnedList_->itemAt(pos);if(!item||item->isHidden())return;
+        pinnedList_->setCurrentItem(item);
+        const QString id=item->data(Qt::UserRole).toString();
+        QMenu menu(this);menu.addAction(tr("Open"),this,[this]{launchSelectedApplication();});
+        menu.addAction(tr("Unpin from Start"),this,[this,id]{pinnedApplicationIds_.removeAll(id);savePinnedApplications();refreshList();});
+        menu.exec(pinnedList_->viewport()->mapToGlobal(pos));
+    });
     pins->addWidget(pinnedList_, 1);
     auto *pinnedPage=new QWidget(this);
     pins->setContentsMargins(0,0,0,0);
@@ -246,7 +258,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         const auto id=pin->data(Qt::UserRole).toString();
         for(int row=0;row<applicationList_->count();++row) if(applicationList_->item(row)->data(Qt::UserRole).toString()==id) {applicationList_->setCurrentRow(row);break;}
     });
-    connect(pinnedList_, &QListWidget::itemActivated, this, [this](QListWidgetItem *pin) {
+    const auto launchPin=[this](QListWidgetItem *pin) {
         if (!pin || pin->isHidden()) return;
         const auto id = pin->data(Qt::UserRole).toString();
         for (int row=0;row<applicationList_->count();++row) {
@@ -255,7 +267,14 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
                 applicationList_->setCurrentRow(row); launchSelectedApplication(); break;
             }
         }
-    });
+    };
+    connect(pinnedList_,&QListWidget::itemClicked,this,launchPin);
+    // Enter launches the selected tile; no second launch on double click.
+    pinnedList_->setProperty("linwinSingleClickLaunch",true);
+    auto *enterPin=new QShortcut(QKeySequence(Qt::Key_Return),pinnedList_);enterPin->setContext(Qt::WidgetShortcut);
+    connect(enterPin,&QShortcut::activated,this,[this,launchPin]{launchPin(pinnedList_->currentItem());});
+    auto *keypadPin=new QShortcut(QKeySequence(Qt::Key_Enter),pinnedList_);keypadPin->setContext(Qt::WidgetShortcut);
+    connect(keypadPin,&QShortcut::activated,this,[this,launchPin]{launchPin(pinnedList_->currentItem());});
     content->addLayout(actions);
     auto *quick=navigation;
     for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Files")},{2,tr("Task Manager")},{3,tr("Clipboard")},{4,tr("Settings")}}) {

@@ -65,6 +65,10 @@
 #include <QWidget>
 
 namespace {
+bool useDesktopWidgets(const QString &themeId) {
+    const QString mode=QSettings().value("visual/widgets","theme").toString();
+    return mode=="show"||(mode!="hide"&&LinWinVisual::theme(themeId).widgets);
+}
 QFrame *makeCard(const QString &title, const QString &body, QWidget *parent)
 {
     auto *card = new QFrame(parent);
@@ -291,6 +295,12 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 menu.addSeparator();
             }
             LinWinDesktopView::menu(menu,icons,refreshIcons);
+            auto *widgetsMenu=menu.addMenu(tr("Desktop widgets"));
+            auto *widgetGroup=new QActionGroup(widgetsMenu);widgetGroup->setExclusive(true);
+            for(const auto &entry:QList<QPair<QString,QString>>{{"theme",tr("Theme default")},{"show",tr("Show on large desktops")},{"hide",tr("Hide")}}){
+                auto *action=widgetsMenu->addAction(entry.second);action->setCheckable(true);widgetGroup->addAction(action);action->setChecked(QSettings().value("visual/widgets","theme").toString()==entry.first);
+                connect(action,&QAction::triggered,this,[this,entry]{QSettings().setValue("visual/widgets",entry.first);updateShellGeometry();});
+            }
             menu.addAction(tr("Refresh"), this, refreshIcons);
             menu.addAction(tr("Task View (Ctrl+Shift+F9)"),this,&MainWindow::showWindowOverview);
             menu.addAction(tr("Quick controls (Ctrl+Shift+F10)"),this,&MainWindow::showQuickControls);
@@ -765,7 +775,7 @@ void MainWindow::updateExternalWindows(const QString &output)
             windowButtons_.insert(id, button);
             windowButtonsLayout_->addWidget(button);
         }
-        const bool premium=themeId_==QStringLiteral("neon") && width()>=1450;
+        const bool premium=(themeId_==QStringLiteral("neon") || QSettings().value("visual/compactAllThemes",false).toBool()) && width()>=1450;
     QSettings visual;
     const bool small=visual.value("visual/smallTaskbar",false).toBool();
     const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());
@@ -1353,7 +1363,7 @@ void MainWindow::applyTheme(const QString &id)
     themeId_ = LinWinVisual::qstr(theme.id);
     QSettings().setValue(QStringLiteral("appearance/theme"), themeId_);
     if (desktopSurface_) desktopSurface_->setTheme(themeId_);
-    if (desktopWidgets_) desktopWidgets_->setVisible(theme.widgets && width() >= 1100 && height() >= 640);
+    if (desktopWidgets_) desktopWidgets_->setVisible(useDesktopWidgets(themeId_) && width() >= 1100 && height() >= 640);
     applyTextScale(settingsHub_->textScalePercent());
     updateTaskbarLayout();
     updateShellGeometry();
@@ -1375,7 +1385,7 @@ void MainWindow::updateTaskbarLayout()
 {
     const bool compact = width() < 920;
     const bool hideWindowDetails = width() < 920;
-    const bool premium=themeId_==QStringLiteral("neon") && width()>=1450;
+    const bool premium=(themeId_==QStringLiteral("neon") || QSettings().value("visual/compactAllThemes",false).toBool()) && width()>=1450;
     QSettings visual;
     const bool small=visual.value("visual/smallTaskbar",false).toBool();
     const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());
@@ -1475,7 +1485,7 @@ void MainWindow::updateShellGeometry()
     }
 
     pages_->setGeometry(desktopArea_->rect());
-    if (desktopWidgets_) desktopWidgets_->setVisible(LinWinVisual::theme(themeId_).widgets && width() >= 1100 && height() >= 640);
+    if (desktopWidgets_) desktopWidgets_->setVisible(useDesktopWidgets(themeId_) && width() >= 1100 && height() >= 640);
     const auto menu=LinWinLayout::start(desktopArea_->width(),desktopArea_->height(),themeId_=="neon",QSettings().value("visual/startFullscreen",false).toBool());
     startMenu_->setGeometry(menu.x,menu.y,menu.width,menu.height);
     if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0 && QSettings().value("visual/transparency",true).toBool() && QSettings().value("visual/shellMode","theme").toString()=="theme") {
