@@ -16,6 +16,8 @@
 #include <QComboBox>
 #include <QTableWidget>
 #include <QGuiApplication>
+#include <QTreeWidget>
+#include "windows10_settings_catalog.h"
 #include <QTemporaryDir>
 #include <QImage>
 
@@ -179,6 +181,24 @@ int main(int argc, char **argv)
         mode->setCurrentIndex(mode->findData("theme"));apply->click();
         widget.focusSearch();
         passed &= expect(!page->isVisible(),"Back to Settings must return to category overview.");
+    }
+    widget.showWindowsCatalog();application.processEvents();
+    auto *tree=widget.findChild<QTreeWidget *>("linwinCatalogTree");
+    auto *find=widget.findChild<QLineEdit *>("linwinCatalogSearch");
+    auto *openSetting=widget.findChild<QPushButton *>("linwinCatalogOpen");
+    passed &= expect(tree&&find&&openSetting&&tree->topLevelItemCount()==13,"Windows 10 settings catalog must expose 13 categories.");
+    if(tree&&find&&openSetting){
+        int entries=0;for(int i=0;i<tree->topLevelItemCount();++i)entries+=tree->topLevelItem(i)->childCount();
+        passed &= expect(entries==static_cast<int>(LinWinSettings::catalog.size()),"Every catalog page must be visible.");
+        find->setText("VPN");application.processEvents();
+        auto *item=tree->topLevelItemCount()?tree->topLevelItem(0)->child(0):nullptr;
+        if(item)tree->setCurrentItem(item);
+        passed &= expect(item&&!openSetting->isEnabled(),"Deferred VPN action must be disabled.");
+        find->setText("Background");application.processEvents();
+        item=nullptr;for(int i=0;i<tree->topLevelItemCount();++i)for(int j=0;j<tree->topLevelItem(i)->childCount();++j)if(tree->topLevelItem(i)->child(j)->text(0)=="Background")item=tree->topLevelItem(i)->child(j);
+        if(item)tree->setCurrentItem(item);
+        passed &= expect(item&&openSetting->isEnabled(),"Implemented Background route must be enabled.");
+        if(item&&openSetting->isEnabled()){openSetting->click();passed &= expect(page&&page->isVisible(),"Catalog Background opens native page.");}
     }
     return passed ? 0 : 1;
 }

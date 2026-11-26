@@ -1,5 +1,7 @@
 # Roadmap
 
+**Controlling priority directive:** [Windows 10 desktop blueprint](docs/WINDOWS10_DESKTOP_BLUEPRINT.md) supersedes older sequencing. Complete visual settings and features first, ease of use second; defer all other settings as visible disabled entries. Preserve existing working controls during migration.
+
 LinWin's goal is a lightweight, all-in-one Linux shell that makes Windows switchers feel at home and supports users with no prior Linux or terminal knowledge. The first experimental login-session adapter targets X11 with XFCE tools; it is not yet a broadly supported desktop-panel replacement.
 
 ## Product editions

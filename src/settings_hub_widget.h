@@ -17,6 +17,7 @@ class QScrollArea;
 class QSlider;
 class QStackedWidget;
 class BackgroundSettingsPage;
+class WindowsSettingsCatalogPage;
 
 class SettingsHubWidget final : public QWidget {
     Q_OBJECT
@@ -24,6 +25,7 @@ public:
     explicit SettingsHubWidget(QWidget *parent = nullptr);
     void focusSearch();
     void showBackground();
+    void showWindowsCatalog();
     int textScalePercent() const;
     void setTextScalePercent(int percent);
 
@@ -53,6 +55,7 @@ private:
 
     QStackedWidget *sections_=nullptr;
     BackgroundSettingsPage *backgroundPage_=nullptr;
+    WindowsSettingsCatalogPage *windowsCatalog_=nullptr;
     QLineEdit *search_ = nullptr;
     QLabel *resultStatus_ = nullptr;
     QLabel *emptyState_ = nullptr;

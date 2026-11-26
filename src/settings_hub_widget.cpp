@@ -4,6 +4,7 @@
 #include "display_information_dialog.h"
 #include "theme_visuals.h"
 #include "background_settings_page.h"
+#include "windows_settings_catalog_page.h"
 #include <QStackedWidget>
 #include <QComboBox>
 #include "text_scale.h"
@@ -188,6 +189,8 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     outer->addWidget(eyebrow);
     outer->addWidget(heading);
     outer->addWidget(description);
+    auto *catalogButton=new QPushButton(tr("Windows-style Settings"),this);catalogButton->setObjectName("linwinOpenWindowsCatalog");outer->addWidget(catalogButton);
+    connect(catalogButton,&QPushButton::clicked,this,&SettingsHubWidget::showWindowsCatalog);
 
     auto *componentHeading = new QLabel(tr("LinWin features"), this);
     componentHeading->setObjectName(QStringLiteral("sectionTitle"));
@@ -385,7 +388,20 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     connect(search_, &QLineEdit::textChanged, this, &SettingsHubWidget::filterCategories);
     backgroundPage_=new BackgroundSettingsPage(sections_,[this]{emit backgroundChanged();},[this]{focusSearch();});
     sections_->addWidget(backgroundPage_);
+    windowsCatalog_=new WindowsSettingsCatalogPage(sections_,[this](const QString &route){
+        if(route=="background"){showBackground();return;}
+        focusSearch();
+        if(route=="themes"){if(auto *themes=findChild<QComboBox *>("linwinThemeSelector"))themes->setFocus();}
+        else if(route=="text"){textScaleSlider_->setFocus();}
+        else if(route=="display"){search_->setText("display");if(auto *info=findChild<QPushButton *>("linwinDisplayInfoButton"))info->click();}
+    },[this]{focusSearch();});
+    sections_->addWidget(windowsCatalog_);
     filterCategories({});
+}
+
+void SettingsHubWidget::showWindowsCatalog()
+{
+    sections_->setCurrentWidget(windowsCatalog_);windowsCatalog_->focusSearch();
 }
 
 void SettingsHubWidget::showBackground()

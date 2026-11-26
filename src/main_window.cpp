@@ -1333,7 +1333,7 @@ void MainWindow::showClipboardQuickPicker()
 void MainWindow::showSettingsHub()
 {
     showPage(4);
-    if (settingsHub_ != nullptr) settingsHub_->focusSearch();
+    if (settingsHub_ != nullptr) settingsHub_->showWindowsCatalog();
 }
 
 void MainWindow::applyTheme(const QString &id)
