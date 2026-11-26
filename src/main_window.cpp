@@ -20,6 +20,9 @@
 #include <QDateTime>
 #include <QCloseEvent>
 #include <QDialog>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QDialogButtonBox>
 #include <QScreen>
 #include <QEvent>
 #include <QDesktopServices>
@@ -256,6 +259,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             }
             menu.addAction(tr("Refresh"), this, refreshIcons);
             menu.addAction(tr("Task View (Ctrl+Shift+F9)"),this,&MainWindow::showWindowOverview);
+            menu.addAction(tr("Quick controls (Ctrl+Shift+F10)"),this,&MainWindow::showQuickControls);
             if (!toolWindows_.isEmpty()) {
                 auto *restore=menu.addAction(tr("Restore hidden workspace"),this,&MainWindow::restoreHiddenWorkspace);
                 restore->setEnabled(!hiddenWorkspace_.isEmpty());
@@ -475,6 +479,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     }
     connect(closeButton_, &QPushButton::clicked, this, &QWidget::close);
     connect(closeOverflowAction_, &QAction::triggered, this, &QWidget::close);
+    auto *quickControlsShortcut=new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F10")),this);
+    quickControlsShortcut->setObjectName(QStringLiteral("linwinQuickControlsShortcut"));
+    quickControlsShortcut->setContext(Qt::ApplicationShortcut);
+    connect(quickControlsShortcut,&QShortcut::activated,this,&MainWindow::showQuickControls);
     auto *overviewShortcut=new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F9")),this);
     overviewShortcut->setObjectName(QStringLiteral("linwinOverviewShortcut"));
     overviewShortcut->setContext(Qt::ApplicationShortcut);
@@ -707,6 +715,62 @@ void MainWindow::activateExternalWindow(const QString &id)
     QProcess::startDetached(wmctrlPath_, {QStringLiteral("-ia"), id});
 }
 
+void MainWindow::showQuickControls()
+{
+    if(quickControlsOpen_ || !desktopSurface_) return;
+    quickControlsOpen_=true;
+    QDialog panel(this);
+    panel.setObjectName(QStringLiteral("linwinQuickControls"));
+    panel.setWindowTitle(tr("LinWin Quick Controls"));
+    panel.resize(440,350);
+    auto *layout=new QVBoxLayout(&panel);
+    layout->setContentsMargins(22,18,22,18);
+    layout->setSpacing(12);
+    auto *title=new QLabel(tr("Quick controls"),&panel);
+    title->setObjectName(QStringLiteral("pageTitle"));layout->addWidget(title);
+    auto *intro=new QLabel(tr("Personalize the desktop. Changes apply immediately."),&panel);
+    intro->setWordWrap(true);layout->addWidget(intro);
+    auto *themeLabel=new QLabel(tr("Desktop theme"),&panel);
+    auto *themes=new QComboBox(&panel);
+    themes->setObjectName(QStringLiteral("linwinQuickTheme"));
+    themeLabel->setBuddy(themes);layout->addWidget(themeLabel);layout->addWidget(themes);
+    auto *settingsThemes=settingsHub_->findChild<QComboBox *>(QStringLiteral("linwinThemeSelector"));
+    if(settingsThemes) {
+        for(int i=0;i<settingsThemes->count();++i) themes->addItem(settingsThemes->itemText(i),settingsThemes->itemData(i));
+        themes->setCurrentIndex(settingsThemes->currentIndex());
+    } else themes->setEnabled(false);
+    QSettings preferences;
+    auto *effects=new QCheckBox(tr("Desktop lighting and visual effects"),&panel);
+    effects->setObjectName(QStringLiteral("linwinQuickEffects"));
+    effects->setChecked(preferences.value(QStringLiteral("appearance/desktopEffects"),true).toBool());
+    auto *gpu=new QCheckBox(tr("Prefer OpenGL rendering"),&panel);
+    gpu->setObjectName(QStringLiteral("linwinQuickGpu"));
+    gpu->setChecked(preferences.value(QStringLiteral("appearance/desktopGpu"),true).toBool());
+    auto *previews=new QCheckBox(tr("Show window thumbnails in Task View"),&panel);
+    previews->setObjectName(QStringLiteral("linwinQuickPreviews"));
+    previews->setChecked(preferences.value(QStringLiteral("appearance/taskViewPreviews"),true).toBool());
+    layout->addWidget(effects);layout->addWidget(gpu);layout->addWidget(previews);
+    auto refreshControls=[themes,effects,gpu]{
+        const bool minimal=themes->currentData().toString()==QStringLiteral("minimal");
+        effects->setEnabled(!minimal);
+        gpu->setEnabled(!minimal && effects->isChecked());
+    };
+    connect(themes,qOverload<int>(&QComboBox::currentIndexChanged),&panel,[settingsThemes,refreshControls](int index){
+        if(settingsThemes) settingsThemes->setCurrentIndex(index);
+        refreshControls();
+    });
+    connect(effects,&QCheckBox::toggled,&panel,[this,refreshControls](bool enabled){desktopSurface_->setEffectsEnabled(enabled);refreshControls();});
+    connect(gpu,&QCheckBox::toggled,desktopSurface_,&DesktopSurface::setGpuPreferred);
+    connect(previews,&QCheckBox::toggled,&panel,[](bool enabled){QSettings().setValue(QStringLiteral("appearance/taskViewPreviews"),enabled);});
+    refreshControls();
+    layout->addStretch();
+    auto *done=new QDialogButtonBox(QDialogButtonBox::Close,&panel);
+    connect(done,&QDialogButtonBox::rejected,&panel,&QDialog::reject);
+    layout->addWidget(done);
+    panel.exec();
+    quickControlsOpen_=false;
+}
+
 void MainWindow::showWindowOverview()
 {
     if (overviewOpen_) return;
@@ -717,11 +781,12 @@ void MainWindow::showWindowOverview()
         if (!window || !window->isEnabled() || (!window->isVisible() && !hiddenWorkspace_.contains(index))) continue;
         QIcon preview=window->windowIcon();
         const bool visible=window->isVisible() && !window->isMinimized();
-        if (visible) {
+        const bool capture=visible && index!=3 && QSettings().value(QStringLiteral("appearance/taskViewPreviews"),true).toBool();
+        if (capture) {
             const QPixmap pixels=window->grab().scaled(192,108,Qt::KeepAspectRatio,Qt::SmoothTransformation);
             if (!pixels.isNull()) preview=QIcon(pixels);
         }
-        cards.append({window->windowTitle(),visible?tr("Native window preview"):tr("Hidden or minimized tool"),QStringLiteral("tool:%1").arg(index),preview});
+        cards.append({window->windowTitle(),capture?tr("Native window preview"):(visible?tr("Window icon (privacy)"):tr("Hidden or minimized tool")),QStringLiteral("tool:%1").arg(index),preview});
     }
     for (const auto &id:windowOrder_) {
         auto *button=windowButtons_.value(id,nullptr);

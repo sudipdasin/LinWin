@@ -59,6 +59,8 @@ private:
     void activateExternalWindow(const QString &id);
     void cycleExternalWindow();
     void showWindowOverview();
+    void showQuickControls();
+    bool quickControlsOpen_ = false;
     bool overviewOpen_ = false;
     void refreshWorkspaces();
     void updateWorkspaces(const QString &output);

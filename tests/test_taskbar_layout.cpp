@@ -167,6 +167,27 @@ int main(int argc, char **argv)
                  "Neon must show widgets on a sufficiently large desktop.")) return 1;
     const QString evidence = qEnvironmentVariable("LINWIN_VISUAL_EVIDENCE_DIR");
     if (!evidence.isEmpty() && !QDir().mkpath(evidence)) return 1;
+    auto *quickShortcut=window.findChild<QShortcut *>(QStringLiteral("linwinQuickControlsShortcut"));
+    if (!require(quickShortcut,"Quick controls shortcut must exist.")) return 1;
+    bool quickOk=false;
+    QTimer::singleShot(0,&window,[&]{
+        auto *panel=window.findChild<QDialog *>(QStringLiteral("linwinQuickControls"));
+        auto *choice=panel?panel->findChild<QComboBox *>(QStringLiteral("linwinQuickTheme")):nullptr;
+        auto *effects=panel?panel->findChild<QCheckBox *>(QStringLiteral("linwinQuickEffects")):nullptr;
+        auto *previews=panel?panel->findChild<QCheckBox *>(QStringLiteral("linwinQuickPreviews")):nullptr;
+        if(choice && effects && previews) {
+            choice->setCurrentIndex(choice->findData(QStringLiteral("minimal")));
+            quickOk=!effects->isEnabled() && themes->currentData().toString()==QStringLiteral("minimal") && !surface->effectsEnabled();
+            choice->setCurrentIndex(choice->findData(QStringLiteral("neon")));
+            previews->setChecked(false);
+            quickOk=quickOk && !settings.value(QStringLiteral("appearance/taskViewPreviews")).toBool();
+            previews->setChecked(true);
+            if(quickOk && !evidence.isEmpty()) quickOk=panel->grab().save(QDir(evidence).filePath(QStringLiteral("native-quick-controls.png")));
+        }
+        if(panel) panel->reject(); else QApplication::closeAllWindows();
+    });
+    QMetaObject::invokeMethod(quickShortcut,"activated",Qt::DirectConnection);
+    if(!require(quickOk,"Quick controls must synchronize live themes and privacy preferences.")) return 1;
     for (int i=0; i<themes->count(); ++i) {
         themes->setCurrentIndex(i);
         app.processEvents();
