@@ -23,6 +23,8 @@
 #include <QPixmap>
 #include <QDialog>
 #include <QToolButton>
+#include <QProgressBar>
+#include "shell_icons.h"
 #include <QCheckBox>
 
 namespace {
@@ -142,6 +144,17 @@ int main(int argc, char **argv)
     quickFiles->click();
     if (!require(pages->currentIndex()==1 && menu->isHidden(), "Start Files action must open Files and dismiss Start.")) return 1;
     desktopButton->click();
+    // Verify the original icon family and accessible native metric cards.
+    for (auto glyph : {LinWinVisual::Glyph::Files,LinWinVisual::Glyph::Tasks,LinWinVisual::Glyph::Settings,LinWinVisual::Glyph::Clipboard,LinWinVisual::Glyph::Desktop,LinWinVisual::Glyph::Search,LinWinVisual::Glyph::Snap,LinWinVisual::Glyph::More}) {
+        const auto icon=LinWinVisual::shellIcon(glyph);
+        if (!require(!icon.isNull() && icon.availableSizes().size()==4 && !icon.pixmap(48,48).isNull(),
+                     "Every shell glyph must supply four native raster sizes.")) return 1;
+    }
+    for (int index=0;index<3;++index) {
+        auto *bar=window.findChild<QProgressBar *>(QStringLiteral("linwinMetricBar_%1").arg(index));
+        if (!require(bar && bar->minimum()==0 && bar->maximum()==100 && !bar->accessibleName().isEmpty(),
+                     "Live metric bars must be bounded and accessible.")) return 1;
+    }
     // Test live theme switching, including widget and rendering policy.
     // Capture the real visual effects with the deterministic CPU fallback in offscreen tests.
     surface->setEffectsEnabled(true);

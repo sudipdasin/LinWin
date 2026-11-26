@@ -5,6 +5,7 @@
 #include <QPainterPath>
 #include <QLinearGradient>
 #include <QPixmap>
+#include <QPolygonF>
 namespace LinWinVisual {
 enum class Glyph { Files, Tasks, Settings, Clipboard, Desktop, Search, Snap, More };
 inline QIcon shellIcon(Glyph glyph) {

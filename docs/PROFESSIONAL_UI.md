@@ -1,0 +1,3 @@
+# Professional UI candidate
+
+Render.6 introduces original vector-drawn shell iconography at four sizes, matching icons on Start, taskbar, tool windows and Snap Layouts; refined theme-aware menus and focus states; clearer native window identity; logo typography; and real progress bars for CPU, RAM and disk. Unknown values are labeled unavailable. Native titlebars still come from XFCE. The current changes do not implement compositor blur or guarantee exact reference parity. The existing tests are extended to cover icons and progress-bar ranges/accessibility. Render.5 remains the last verified package until the next build passes.
