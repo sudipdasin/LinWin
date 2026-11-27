@@ -10,7 +10,7 @@ int main(){
     if(!suggestions(apps,{"firefox.desktop","firefox.desktop"},1).empty()||!suggestions({},{}).empty()||!suggestions(apps,{},0).empty())return 4;
     auto reversed=apps;std::reverse(reversed.begin(),reversed.end());if(suggestions(reversed,{})!=suggestions(apps,{}))return 5;
     const std::vector<App> cross{{"multi.desktop",{"WebBrowser","Email"}}};if(suggestions(cross,{}).size()!=1)return 6;
-    const std::vector<App> tools{{"linwin-setup.desktop",{"Settings"}},{"linwin-uninstall.desktop",{"Settings"}},{"galculator.desktop",{"Utility","Calculator"}},{"thunar.desktop",{"FileManager"}}};
+    const std::vector<App> tools{{"linwin.desktop",{"Settings"}},{"linwin-setup.desktop",{"Settings"}},{"linwin-uninstall.desktop",{"Settings"}},{"galculator.desktop",{"Utility","Calculator"}},{"thunar.desktop",{"FileManager"}}};
     if(suggestions(tools,{})!=std::vector<std::string>{"galculator.desktop","thunar.desktop"})return 7;
     std::cout<<"PASS: preferred installed IDs, category fallback, deterministic order, existing pin preservation, missing IDs, limits and duplicate prevention\n";
 }

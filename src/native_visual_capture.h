@@ -57,20 +57,24 @@ inline int run(QApplication &app,const QString &directory) {
                 if(!panel->rect().contains(r))++violations;
                 bounds.append(QJsonObject{{"name",w->objectName()},{"x",r.x()},{"y",r.y()},{"w",r.width()},{"h",r.height()}});
             }
-            int visibleTiles=0,clippedTiles=0,completeTiles=0;
+            int visibleTiles=0,clippedTiles=0,completeTiles=0,firstRowY=-1,firstRowTiles=0;
+            QJsonArray tileBounds;
             for(int i=0;i<grid->count();++i){
                 auto *item=grid->item(i);if(item->isHidden())continue;
                 const QRect r=grid->visualItemRect(item);
                 // Ignore tiles beyond the scroll viewport; examine visible full cells only.
                 if(!grid->viewport()->rect().contains(r.center()))continue;
                 ++visibleTiles;
-                if(grid->viewport()->rect().contains(r))++completeTiles;
+                if(grid->viewport()->rect().contains(r)){
+                    ++completeTiles;if(firstRowY<0)firstRowY=r.top();if(r.top()==firstRowY)++firstRowTiles;
+                    tileBounds.append(QJsonObject{{"x",r.x()},{"y",r.y()},{"w",r.width()},{"h",r.height()}});
+                }
                 if(r.width()<grid->gridSize().width()-6||r.height()<grid->gridSize().height()-6)++clippedTiles;
             }
             const bool popupFits=window.rect().contains(QRect(menu->mapTo(&window,QPoint()),menu->size()));
             QJsonObject report{{"width",full.width()},{"height",full.height()},{"platform",QApplication::platformName()},
                 {"start_width",popup.width()},{"start_height",popup.height()},{"taskbar_controls",controls},
-                {"taskbar_out_of_bounds",violations},{"visible_tiles",visibleTiles},{"complete_tiles",completeTiles},{"registered_pins",grid->count()},{"undersized_tiles",clippedTiles},
+                {"taskbar_out_of_bounds",violations},{"visible_tiles",visibleTiles},{"complete_tiles",completeTiles},{"first_row_tiles",firstRowTiles},{"tile_bounds",tileBounds},{"registered_pins",grid->count()},{"undersized_tiles",clippedTiles},
                 {"start_fits",popupFits},{"taskbar_bounds",bounds}};
             QFile file(out.filePath("layout.json"));if(!file.open(QIODevice::WriteOnly)){app.exit(6);return;}
             file.write(QJsonDocument(report).toJson());file.close();
@@ -78,9 +82,9 @@ inline int run(QApplication &app,const QString &directory) {
                 &&desktop.scaled(768,432,Qt::KeepAspectRatio,Qt::SmoothTransformation).save(out.filePath("desktop-review.jpg"),"JPEG",75)
                 &&popup.scaled(720,720,Qt::KeepAspectRatio,Qt::SmoothTransformation).save(out.filePath("start-review.jpg"),"JPEG",85)
                 &&panel->grab().toImage().scaledToWidth(1440,Qt::SmoothTransformation).save(out.filePath("taskbar-review.jpg"),"JPEG",88);
-            const bool passed=saved&&popupFits&&controls>0&&violations==0&&clippedTiles==0&&completeTiles>=5;
-            qInfo("Installed capture: saved=%d popupFits=%d controls=%d outOfBounds=%d undersizedTiles=%d completeTiles=%d",
-                  int(saved),int(popupFits),controls,violations,clippedTiles,completeTiles);
+            const bool passed=saved&&popupFits&&controls>0&&violations==0&&clippedTiles==0&&completeTiles>=5&&firstRowTiles==4;
+            qInfo("Installed capture: saved=%d popupFits=%d controls=%d outOfBounds=%d undersizedTiles=%d completeTiles=%d firstRowTiles=%d",
+                  int(saved),int(popupFits),controls,violations,clippedTiles,completeTiles,firstRowTiles);
             app.exit(passed?0:7);
         });
     });

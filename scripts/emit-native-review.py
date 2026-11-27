@@ -13,7 +13,7 @@ def packets(root):
     for size in ("1920x1080","1672x941"):
         folder=root/size
         audit=json.loads((folder/"layout.json").read_text())
-        if (audit["width"],audit["height"])!=tuple(map(int,size.split("x"))) or audit["platform"]!="xcb" or not audit["start_fits"] or audit["taskbar_out_of_bounds"] or audit["undersized_tiles"] or audit["complete_tiles"]<5:
+        if (audit["width"],audit["height"])!=tuple(map(int,size.split("x"))) or audit["platform"]!="xcb" or not audit["start_fits"] or audit["taskbar_out_of_bounds"] or audit["undersized_tiles"] or audit["complete_tiles"]<5 or audit["first_row_tiles"]!=4:
             raise ValueError(f"Native installed layout audit failed: {size}")
         audits[size]=audit
         for name in ("desktop.png","start.png","start-detail.png","desktop-review.jpg","start-review.jpg","taskbar-review.jpg"):

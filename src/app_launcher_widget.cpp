@@ -50,8 +50,12 @@ public:
 protected:
     void resizeEvent(QResizeEvent *event) override {
         QListWidget::resizeEvent(event);
-        const int columns=qBound(1,viewport()->width()/72,4);
-        const QSize target(qMax(1,viewport()->width()/columns),106);
+        // QListView reserves a style-dependent scrollbar and layout inset.
+        // An exact viewport/4 division previously produced only three real cells.
+        const int scrollbar=style()->pixelMetric(QStyle::PM_ScrollBarExtent,nullptr,this);
+        const int usable=qMax(1,qMin(viewport()->width(),contentsRect().width()-scrollbar)-12);
+        const int columns=qBound(1,usable/72,4);
+        const QSize target(qMax(1,usable/columns),106);
         if(gridSize()!=target)setGridSize(target);
     }
 };
@@ -204,6 +208,9 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_ = new PinnedGrid(this);
     pinnedList_->setObjectName(QStringLiteral("pinnedApps"));
     pinnedList_->setViewMode(QListView::IconMode);
+    pinnedList_->setFlow(QListView::LeftToRight);
+    pinnedList_->setWrapping(true);
+    pinnedList_->setUniformItemSizes(true);
     pinnedList_->setResizeMode(QListView::Adjust);
     pinnedList_->setMovement(QListView::Static);
     pinnedList_->setIconSize(QSize(32,32));

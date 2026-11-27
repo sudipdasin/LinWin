@@ -35,7 +35,7 @@ inline std::vector<std::string> suggestions(std::vector<App> apps,const std::vec
     for(const auto&role:roles){
         if(chosen.size()>=limit)break;
         auto matches=[&](const App&a){return contains(role.preferred,std::string_view(a.id))||contains(a.categories,role.category);};
-        auto eligible=[](const App&a){return a.id!="linwin-setup.desktop"&&a.id!="linwin-uninstall.desktop"&&a.id!="linwin-update.desktop"&&a.id!="linwin-update-autostart.desktop";};
+        auto eligible=[](const App&a){return a.id!="linwin.desktop"&&a.id!="linwin-setup.desktop"&&a.id!="linwin-uninstall.desktop"&&a.id!="linwin-update.desktop"&&a.id!="linwin-update-autostart.desktop";};
         if(std::any_of(apps.begin(),apps.end(),[&](const App&a){return contains(chosen,a.id)&&matches(a);}))continue;
         std::string next;
         for(auto id:role.preferred)if(!id.empty()&&installed(id)&&!contains(chosen,id)){next=id;break;}
