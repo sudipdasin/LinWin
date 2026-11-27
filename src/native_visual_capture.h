@@ -55,6 +55,8 @@ inline bool verifyWindowActions(MainWindow &window,QJsonObject &report){
         return valid&&actual==valueA;
     });
     report["external_window_activated"]=activated;if(!activated)return false;
+    const bool indicated=until([&]{auto *first=externalButton(window,titleA);auto *second=externalButton(window,titleB);return first&&second&&first->property("linwinActiveWindow").toBool()&&!second->property("linwinActiveWindow").toBool();});
+    report["active_window_indicated"]=indicated;if(!indicated)return false;
     b=externalButton(window,titleB);if(!b)return false;
     auto *close=b->findChild<QAction *>("linwinCloseExternalWindow");if(!close)return false;
     close->trigger();

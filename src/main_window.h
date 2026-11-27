@@ -56,6 +56,7 @@ private:
     void initializeToolTaskbarActions();
     void updateShellGeometry();
     void refreshExternalWindows();
+    void updateActiveWindow(const QString &output);
     void updateExternalWindows(const QString &output);
     void activateExternalWindow(const QString &id);
     void cycleExternalWindow();
@@ -116,7 +117,8 @@ private:
     SettingsHubWidget *settingsHub_ = nullptr;
     QHBoxLayout *windowButtonsLayout_ = nullptr;
     QLabel *windowSwitcherStatus_ = nullptr;
-    QProcess *windowListProcess_ = nullptr;
+    QProcess *windowListProcess_ = nullptr,*activeWindowProcess_=nullptr;
+    QString xpropPath_;
     QTimer *windowRefreshTimer_ = nullptr;
     QProcess *workspaceListProcess_ = nullptr;
     QProcess *workspaceCommandProcess_ = nullptr;

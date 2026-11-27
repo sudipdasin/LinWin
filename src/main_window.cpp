@@ -713,6 +713,13 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 windowSwitcherStatus_->setVisible(windowOrder_.isEmpty());
             }
         });
+        xpropPath_=QStandardPaths::findExecutable("xprop");
+        if(!xpropPath_.isEmpty()){
+            activeWindowProcess_=new QProcess(this);
+            connect(activeWindowProcess_,qOverload<int,QProcess::ExitStatus>(&QProcess::finished),this,[this](int code,QProcess::ExitStatus status){
+                updateActiveWindow(code==0&&status==QProcess::NormalExit?QString::fromLocal8Bit(activeWindowProcess_->readAllStandardOutput()):QString());
+            });
+        }
         windowRefreshTimer_ = new QTimer(this);
         windowRefreshTimer_->setInterval(1500);
         connect(windowRefreshTimer_, &QTimer::timeout, this, &MainWindow::refreshExternalWindows);
@@ -758,8 +765,23 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
 
 void MainWindow::refreshExternalWindows()
 {
-    if (windowListProcess_ == nullptr || windowListProcess_->state() != QProcess::NotRunning) return;
-    windowListProcess_->start(wmctrlPath_, {QStringLiteral("-lp")});
+    if (windowListProcess_ != nullptr && windowListProcess_->state() == QProcess::NotRunning)
+        windowListProcess_->start(wmctrlPath_, {QStringLiteral("-lp")});
+    if(activeWindowProcess_&&activeWindowProcess_->state()==QProcess::NotRunning)
+        activeWindowProcess_->start(xpropPath_,{"-root","_NET_ACTIVE_WINDOW"});
+}
+
+void MainWindow::updateActiveWindow(const QString &output)
+{
+    const auto match=QRegularExpression("0x[0-9a-fA-F]+").match(output);
+    bool ok=false;const auto active=match.captured().toULongLong(&ok,16);
+    for(auto it=windowButtons_.begin();it!=windowButtons_.end();++it){
+        bool valid=false;const auto id=it.key().toULongLong(&valid,16);
+        auto *button=it.value();const bool selected=ok&&valid&&active!=0&&active==id;
+        if(button->property("linwinActiveWindow").toBool()==selected)continue;
+        button->setProperty("linwinActiveWindow",selected);
+        button->style()->unpolish(button);button->style()->polish(button);button->update();
+    }
 }
 
 void MainWindow::updateExternalWindows(const QString &output)

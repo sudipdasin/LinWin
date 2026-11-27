@@ -15,7 +15,7 @@ def packets(root):
         audit=json.loads((folder/"layout.json").read_text())
         if (audit["width"],audit["height"])!=tuple(map(int,size.removeprefix("xfwm-").split("x"))) or audit["platform"]!="xcb" or not audit["start_fits"] or audit["taskbar_out_of_bounds"] or audit["undersized_tiles"] or audit["complete_tiles"]<5 or audit["first_row_tiles"]!=4:
             raise ValueError(f"Native installed layout audit failed: {size}")
-        if size.startswith("xfwm-") and not all(audit.get(key) is True for key in ("external_windows_discovered","external_window_activated","external_window_closed")):
+        if size.startswith("xfwm-") and not all(audit.get(key) is True for key in ("external_windows_discovered","external_window_activated","external_window_closed","active_window_indicated")):
             raise ValueError("Real XFWM external-window actions failed")
         audits[size]=audit
         for name in ("desktop.png","start.png","start-detail.png","desktop-review.jpg","start-review.jpg","taskbar-review.jpg"):
