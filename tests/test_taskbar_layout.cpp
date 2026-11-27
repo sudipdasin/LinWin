@@ -40,6 +40,7 @@
 #include "weather_widget.h"
 #include "pinned_tile_delegate.h"
 #include "desktop_view.h"
+#include "appearance_library_page.h"
 #include "desktop_status_widget.h"
 
 namespace {
@@ -304,6 +305,15 @@ int main(int argc, char **argv)
     if(!require(menu->geometry()==area->rect(),"Full-screen Start must occupy the actual desktop area."))return 1;
     start->click();settings.remove("visual");hub->visualChanged();app.processEvents();
     if(!require(visualPanel->height()==58&&visualClock->isVisible()&&visualSearch->isVisible(),"Restoring visual defaults must recover the original taskbar."))return 1;
+    QString selectedFont;
+    for(const auto &family:QFontDatabase::families())if(LinWinFont::safeFamily(family)&&family!="Sans Serif"){selectedFont=family;break;}
+    if(!require(!selectedFont.isEmpty(),"A real installed font must be available."))return 1;
+    settings.setValue("visual/fontFamily",selectedFont);hub->visualChanged();app.processEvents();
+    if(!require(window.styleSheet().contains(LinWinFont::declaration(selectedFont)),"Font preference must update the real interface stylesheet."))return 1;
+    settings.setValue("visual/fontFamily","invalid';color:red;");
+    hub->visualChanged();app.processEvents();
+    if(!require(!window.styleSheet().contains("invalid';color:red;")&&window.styleSheet().contains("font-family: 'Sans Serif';"),"Invalid font preference must safely fall back."))return 1;
+    settings.remove("visual/fontFamily");
     settings.setValue("visual/shellMode","contrast");hub->visualChanged();app.processEvents();
     if(!require(window.styleSheet().contains("#ffff00")&&window.styleSheet().contains("#000000"),"High contrast must apply a real shell palette."))return 1;
     settings.remove("visual/shellMode");

@@ -13,6 +13,8 @@
 #include <QSettings>
 #include <QSignalBlocker>
 #include <QCheckBox>
+#include <QList>
+#include <QPair>
 #include <functional>
 #include <utility>
 namespace LinWinFont {

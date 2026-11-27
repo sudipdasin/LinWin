@@ -411,8 +411,7 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
         if(route=="background"){showBackground();return;}
         if(route=="fonts"||route=="themes"){showVisualPage(route);return;}
         focusSearch();
-        if(route=="themes"){if(auto *themes=findChild<QComboBox *>("linwinThemeSelector"))themes->setFocus();}
-        else if(route=="text"){textScaleSlider_->setFocus();}
+        if(route=="text"){textScaleSlider_->setFocus();}
         else if(route=="display"){search_->setText("display");if(auto *info=findChild<QPushButton *>("linwinDisplayInfoButton"))info->click();}
     },[this]{focusSearch();});
     sections_->addWidget(windowsCatalog_);
