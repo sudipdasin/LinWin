@@ -15,6 +15,8 @@ class QListWidgetItem;
 class QPushButton;
 class QStackedWidget;
 class QPaintEvent;
+class QResizeEvent;
+class QFrame;
 
 class AppLauncherWidget final : public QWidget {
     Q_OBJECT
@@ -25,6 +27,7 @@ public:
     void setGlassBackdrop(const QImage &sample) { glassBackdrop_=sample;update(); }
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     bool eventFilter(QObject *object,QEvent *event) override;
 public:
 
@@ -46,6 +49,8 @@ private:
     void addSuggestedPins();
     void refreshRecentDocuments();
     void savePinnedApplications() const;
+    void moveCurrentPin(int offset);
+    QFrame *rail_=nullptr;
 
     QImage glassBackdrop_;
     QStackedWidget *appViews_ = nullptr;

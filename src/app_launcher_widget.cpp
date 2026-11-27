@@ -105,7 +105,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     setAttribute(Qt::WA_StyledBackground,true);
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(16, 14, 16, 12);
-    layout->setSpacing(9);
+    layout->setSpacing(10);
 
     auto *brand = new QHBoxLayout;
     auto *logo = new QLabel(this);
@@ -133,6 +133,16 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     applicationList_->setAccessibleName(tr("All installed applications"));
     applicationList_->setUniformItemSizes(true);
     applicationList_->setIconSize(QSize(32, 32));
+    applicationList_->setAlternatingRowColors(false);
+    applicationList_->setMouseTracking(true);
+    applicationList_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(applicationList_,&QListWidget::customContextMenuRequested,this,[this](const QPoint &pos){
+        auto *item=applicationList_->itemAt(pos);if(!item||item->isHidden())return;
+        applicationList_->setCurrentItem(item);
+        QMenu menu(this);menu.addAction(tr("Open"),this,&AppLauncherWidget::launchSelectedApplication);
+        menu.addAction(pinnedApplicationIds_.contains(item->data(Qt::UserRole).toString())?tr("Unpin from Start"):tr("Pin to Start"),this,&AppLauncherWidget::togglePinnedApplication);
+        menu.exec(applicationList_->viewport()->mapToGlobal(pos));
+    });
 
     auto *actions = new QHBoxLayout;
     auto *openButton = new QPushButton(tr("Open"), this);
@@ -146,6 +156,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     statusLabel_ = new QLabel(this);
     statusLabel_->setObjectName(QStringLiteral("launcherStatus"));
     statusLabel_->setWordWrap(true);
+    statusLabel_->setMaximumHeight(44);
     statusLabel_->setTextFormat(Qt::PlainText);
 
     auto *brandText=new QVBoxLayout;
@@ -159,13 +170,12 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     layout->addLayout(brand);
     description->hide();
     auto *columns = new QHBoxLayout;
-    auto *rail = new QFrame(this);
+    auto *rail = new QFrame(this);rail_=rail;
     rail->setObjectName(QStringLiteral("linwinStartRail"));
-    rail->setMinimumWidth(142);
-    rail->setMaximumWidth(205);
+    rail->setFixedWidth(142);
     auto *navigation=new QVBoxLayout(rail);
     navigation->setContentsMargins(0,0,8,0);
-    navigation->setSpacing(6);
+    navigation->setSpacing(4);
     auto *allButton=new QPushButton(tr("All apps"),rail);
     auto *pinnedButton=new QPushButton(tr("Pinned"),rail);
     allButton->setObjectName(QStringLiteral("linwinAllApps"));
@@ -208,11 +218,18 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     pinnedList_->setWordWrap(true);
     pinnedList_->setAccessibleName(tr("Pinned applications"));
     pinnedList_->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(pinnedList_,&QListWidget::customContextMenuRequested,this,[this](const QPoint &pos){
+    auto *earlier=new QAction(tr("Move earlier"),pinnedList_);earlier->setObjectName("linwinPinEarlier");
+    auto *later=new QAction(tr("Move later"),pinnedList_);later->setObjectName("linwinPinLater");
+    connect(earlier,&QAction::triggered,this,[this]{moveCurrentPin(-1);});
+    connect(later,&QAction::triggered,this,[this]{moveCurrentPin(1);});
+    connect(pinnedList_,&QListWidget::customContextMenuRequested,this,[this,earlier,later](const QPoint &pos){
         auto *item=pinnedList_->itemAt(pos);if(!item||item->isHidden())return;
         pinnedList_->setCurrentItem(item);
         const QString id=item->data(Qt::UserRole).toString();
         QMenu menu(this);menu.addAction(tr("Open"),this,[this]{launchSelectedApplication();});
+        const int row=pinnedApplicationIds_.indexOf(id);
+        earlier->setEnabled(row>0);later->setEnabled(row>=0&&row+1<pinnedApplicationIds_.size());
+        menu.addAction(earlier);menu.addAction(later);menu.addSeparator();
         menu.addAction(tr("Unpin from Start"),this,[this,id]{pinnedApplicationIds_.removeAll(id);savePinnedApplications();refreshList();});
         menu.exec(pinnedList_->viewport()->mapToGlobal(pos));
     });
@@ -228,7 +245,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     auto *content=new QVBoxLayout;
     content->addWidget(appViews_,1);
     columns->addLayout(content,5);
-    columns->setStretch(0,3);
+    columns->setSpacing(12);
+    columns->setStretch(0,0);
     layout->addLayout(columns, 1);
     connect(allButton,&QPushButton::clicked,this,[this]{appViews_->setCurrentIndex(1);});
     connect(pinnedButton,&QPushButton::clicked,this,[this]{searchField_->clear();appViews_->setCurrentIndex(0);});
@@ -241,7 +259,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     content->addLayout(recentHeader);
     recentList_=new QListWidget(this);
     recentList_->setObjectName(QStringLiteral("recentDocuments"));
-    recentList_->setMaximumHeight(112);
+    recentList_->setMaximumHeight(100);
     recentList_->setMinimumHeight(44);
     content->addWidget(recentList_);
     connect(recentToggle,&QCheckBox::toggled,this,[this](bool enabled){
@@ -277,6 +295,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     auto *keypadPin=new QShortcut(QKeySequence(Qt::Key_Enter),pinnedList_);keypadPin->setContext(Qt::WidgetShortcut);
     connect(keypadPin,&QShortcut::activated,this,[this,launchPin]{launchPin(pinnedList_->currentItem());});
     content->addLayout(actions);
+    openButton->setMinimumHeight(30);pinButton_->setMinimumHeight(30);
     auto *quick=navigation;
     for (const auto &tool : QList<QPair<int,QString>>{{1,tr("Files")},{2,tr("Task Manager")},{3,tr("Clipboard")},{4,tr("Settings")}}) {
         auto *button=new QPushButton(tool.second,rail);
@@ -296,6 +315,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     connect(back,&QAction::triggered,this,&AppLauncherWidget::returnDesktopRequested);
     connect(exit,&QAction::triggered,this,&AppLauncherWidget::exitRequested);
     power->setMenu(powerMenu);quick->addWidget(power);
+    for(auto *button:rail->findChildren<QPushButton *>()) {button->setProperty("linwinFullLabel",button->text());button->setAccessibleName(button->text());button->setToolTip(button->text());}
     auto *footer=new QFrame(this);footer->setObjectName(QStringLiteral("linwinStartFooter"));
     auto *footerLayout=new QHBoxLayout(footer);footerLayout->setContentsMargins(6,5,6,2);
     auto *account=new QLabel(tr("Local user"),footer);
@@ -358,6 +378,28 @@ AppLauncherWidget::~AppLauncherWidget()
     for (GAppInfo *appInfo : applications_) {
         g_object_unref(appInfo);
     }
+}
+
+void AppLauncherWidget::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    if(!rail_)return;
+    const bool narrow=width()<520;
+    rail_->setFixedWidth(narrow?52:142);
+    for(auto *button:rail_->findChildren<QPushButton *>()){
+        const auto label=button->property("linwinFullLabel").toString();
+        if(!label.isEmpty())button->setText(narrow?QString():label);
+    }
+}
+
+void AppLauncherWidget::moveCurrentPin(int offset)
+{
+    auto *item=pinnedList_->currentItem();if(!item||item->isHidden()||(offset!=1&&offset!=-1))return;
+    const QString id=item->data(Qt::UserRole).toString();
+    const int from=pinnedApplicationIds_.indexOf(id),to=from+offset;
+    if(from<0||to<0||to>=pinnedApplicationIds_.size())return;
+    pinnedApplicationIds_.move(from,to);savePinnedApplications();refreshList();
+    for(int i=0;i<pinnedList_->count();++i)if(pinnedList_->item(i)->data(Qt::UserRole).toString()==id){pinnedList_->setCurrentRow(i);break;}
 }
 
 void AppLauncherWidget::paintEvent(QPaintEvent *)
@@ -470,12 +512,8 @@ void AppLauncherWidget::refreshList()
     QStringList ids = applications_.keys();
     QCollator collator;
     std::sort(ids.begin(), ids.end(), [this, &collator](const QString &left, const QString &right) {
-        const bool leftPinned = pinnedApplicationIds_.contains(left);
-        const bool rightPinned = pinnedApplicationIds_.contains(right);
-        if (leftPinned != rightPinned) {
-            return leftPinned;
-        }
-        return collator.compare(appName(applications_.value(left)), appName(applications_.value(right))) < 0;
+        const int order=collator.compare(appName(applications_.value(left)),appName(applications_.value(right)));
+        return order==0?left<right:order<0;
     });
 
     for (const QString &id : ids) {

@@ -29,6 +29,11 @@ public:
         if(tile.width()<12||tile.height()<20)return;
         p->save();p->setRenderHint(QPainter::Antialiasing);p->setRenderHint(QPainter::SmoothPixmapTransform);
         p->setClipRect(o.rect);
+        const bool pinned=viewIsPinned();
+        if(pinned){
+            QColor surface=o.palette.color(QPalette::Text);surface.setAlpha(12);
+            p->setPen(QPen(surface,1));p->setBrush(surface);p->drawRoundedRect(tile,7,7);
+        }
         if(o.state.testFlag(QStyle::State_Selected)||o.state.testFlag(QStyle::State_MouseOver)) {
             p->setPen(Qt::NoPen);
             p->setBrush(o.palette.color(QPalette::Highlight));
@@ -66,5 +71,7 @@ public:
         if(o.state.testFlag(QStyle::State_HasFocus)){p->setPen(QPen(o.palette.color(QPalette::Highlight),1));p->setBrush(Qt::NoBrush);p->drawRoundedRect(tile,7,7);}
         p->restore();
     }
+private:
+    bool viewIsPinned() const{return parent()&&parent()->objectName()==QStringLiteral("pinnedApps");}
 };
 }
