@@ -25,8 +25,19 @@ inline int run(QApplication &app,const QString &directory) {
     }
     QDir out(directory);if(!out.exists()&&!QDir().mkpath(directory))return 2;
     QSettings prefs;prefs.setValue("appearance/theme","neon");prefs.setValue("launcher/showRecent",false);prefs.setValue("visual/widgets","show");
-    MainWindow window(true,false);window.showFullScreen();
+    // Xvfb has no window manager to honor EWMH fullscreen requests.
+    // Size the frameless overlay explicitly to the real X11 screen geometry.
+    const auto *screen=app.primaryScreen();
+    if(!screen||!screen->geometry().isValid()){qCritical("No valid X11 screen.");return 2;}
+    const QRect screenGeometry=screen->geometry();
+    MainWindow window(true,false);
+    window.setGeometry(screenGeometry);window.show();
+    qInfo("Capture requested screen: %dx%d",screenGeometry.width(),screenGeometry.height());
     QTimer::singleShot(1000,&window,[&]{
+        if(window.size()!=screenGeometry.size()){
+            qCritical("Native overlay size mismatch: actual %dx%d, expected %dx%d",window.width(),window.height(),screenGeometry.width(),screenGeometry.height());
+            app.exit(9);return;
+        }
         auto *panel=window.findChild<QFrame *>("taskbar");
         auto *start=window.findChild<QPushButton *>("startButton");
         auto *menu=window.findChild<QWidget *>("startMenuPanel");

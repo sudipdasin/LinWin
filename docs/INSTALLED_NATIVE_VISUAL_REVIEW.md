@@ -6,3 +6,6 @@ Preview 15 adds a disposable-profile capture mode to the actual installed DEB ex
 
 ## Capture lifetime correction
 Preview 15 first build: all 20 native suites passed, including the corrected confirmation flow; six benchmark processes passed, but installed visual capture failed with a null-image warning and exit 7. The nested asynchronous lambda had captured a stack-local QImage by reference after its lifetime ended. Capture the image by value (Qt implicitly shared image storage), report the exact acceptance fields, and always print the available layout audit before rejecting the candidate. Retain the unreleased Preview 15 version; no failed gate is bypassed.
+
+## X11 capture resolution correction
+Second Preview 15 build: 20/20 native suites passed and both image captures saved, but both were 480x420 (minimum window size), not the requested Xvfb screens. Xvfb has no window manager to honor fullscreen requests. Explicitly set the frameless capture overlay to primary screen geometry and reject any size mismatch before capturing. Keep the exact-resolution manifest gate intact. No claim of visual acceptance; previous verified release remains live.
