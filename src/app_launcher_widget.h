@@ -59,7 +59,7 @@ private:
     QListWidget *applicationList_ = nullptr;
     QListWidget *pinnedList_ = nullptr;
     QListWidget *recentList_ = nullptr;
-    QLabel *statusLabel_ = nullptr;
+    QLabel *statusLabel_ = nullptr,*recentTitle_=nullptr,*emptyPins_=nullptr;
     QPushButton *pinButton_ = nullptr;
     QHash<QString, GAppInfo *> applications_;
     QStringList pinnedApplicationIds_;

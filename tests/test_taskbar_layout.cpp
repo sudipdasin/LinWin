@@ -185,6 +185,8 @@ int main(int argc, char **argv)
     if (!require(recent && toggle && quickFiles && recent->isVisible(), "Start must expose recent documents and quick navigation.")) return 1;
     toggle->setChecked(false);
     if (!require(recent->isHidden() && !settings.value(QStringLiteral("launcher/showRecent")).toBool(), "Recent privacy toggle must persist and hide the list.")) return 1;
+    bool hiddenHeading=false;for(auto *label:menu->findChildren<QLabel *>())if(label->text()=="Recent documents"&&label->isHidden())hiddenHeading=true;
+    if(!require(hiddenHeading,"Disabled recent documents must hide the section heading too."))return 1;
     toggle->setChecked(true);
     quickFiles->click();
     if (!require(pages->currentIndex()==1 && menu->isHidden(), "Start Files action must open Files and dismiss Start.")) return 1;
@@ -395,7 +397,7 @@ int main(int argc, char **argv)
     if(!require(pixel.alpha()==255 && qAbs(pixel.red()-expected.red())<=12 && qAbs(pixel.green()-expected.green())<=12 && qAbs(pixel.blue()-expected.blue())<=12,
                 "Start panel must have an opaque theme-colored interior, not exposed wallpaper."))return 1;
     if(!physicalEvidence.isEmpty() && !window.grab().save(QDir(physicalEvidence).filePath(QStringLiteral("neon-1920x1080-start.png"))))return 1;
-    allApps->click();app.processEvents();
+    menu->findChild<QPushButton *>("linwinSuggestedPins")->click();app.processEvents();
     if(!require(views->currentIndex()==1 && allApps->isChecked() && !pinned->isChecked(),"All apps must switch to the installed application list."))return 1;
     pinned->click();app.processEvents();
     if(!require(views->currentIndex()==0,"Pinned must restore the grid."))return 1;

@@ -88,6 +88,7 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
         "#startMenuPanel #pinnedApps { background:transparent; color:%2; border:0; }"
         "#startMenuPanel #pinnedApps::item { padding:0; }"
         "#startMenuPanel #linwinSuggestedPins { border:1px solid %7; border-radius:5px; padding:4px 8px; }"
+        "#startMenuPanel #linwinEmptyPins { background:%6; border:1px solid %7; border-radius:%4; color:%8; font-size:14px; }"
         "#taskbar #linwinStatusArea QPushButton { padding:2px; border-radius:6px; }"
         "#startMenuPanel QListWidget::item:selected { background:%5; color:%2; }"
         "#startMenuPanel #primaryAction { background:%5; color:%2; border:1px solid %3; border-radius:%4; }"

@@ -197,8 +197,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     editPins->setObjectName(QStringLiteral("linwinEditPins"));
     auto *editMenu=new QMenu(editPins);
     editMenu->addAction(tr("Add suggested installed apps"),this,[this]{addSuggestedPins();refreshList();});
-    auto *suggest=new QPushButton(tr("Add apps"),this);suggest->setObjectName("linwinSuggestedPins");suggest->setToolTip(tr("Add suggested applications that are installed on this computer"));pinHeader->addWidget(suggest);
-    connect(suggest,&QPushButton::clicked,this,[this]{addSuggestedPins();refreshList();});
+    auto *suggest=new QPushButton(tr("Add apps"),this);suggest->setObjectName("linwinSuggestedPins");suggest->setToolTip(tr("Browse installed applications and right-click to pin"));pinHeader->addWidget(suggest);
+    connect(suggest,&QPushButton::clicked,this,[this]{appViews_->setCurrentIndex(1);searchField_->setFocus();});
     editMenu->addAction(tr("Browse all apps"),this,[this]{appViews_->setCurrentIndex(1);searchField_->setFocus();});
     editPins->setMenu(editMenu);pinHeader->addWidget(editPins);pins->addLayout(pinHeader);
     pinnedList_ = new PinnedGrid(this);
@@ -233,6 +233,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         menu.addAction(tr("Unpin from Start"),this,[this,id]{pinnedApplicationIds_.removeAll(id);savePinnedApplications();refreshList();});
         menu.exec(pinnedList_->viewport()->mapToGlobal(pos));
     });
+    emptyPins_=new QLabel(tr("No pinned apps yet. Choose Add apps, then right-click an installed app to pin it here."),this);
+    emptyPins_->setObjectName("linwinEmptyPins");emptyPins_->setWordWrap(true);emptyPins_->setAlignment(Qt::AlignCenter);emptyPins_->setMargin(18);pins->addWidget(emptyPins_);
     pins->addWidget(pinnedList_, 1);
     auto *pinnedPage=new QWidget(this);
     pins->setContentsMargins(0,0,0,0);
@@ -251,8 +253,8 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
     connect(allButton,&QPushButton::clicked,this,[this]{appViews_->setCurrentIndex(1);});
     connect(pinnedButton,&QPushButton::clicked,this,[this]{searchField_->clear();appViews_->setCurrentIndex(0);});
     auto *recentHeader=new QHBoxLayout;
-    auto *recentTitle=new QLabel(tr("Recommended"),this);recentTitle->setObjectName(QStringLiteral("linwinStartSection"));recentHeader->addWidget(recentTitle);
-    auto *recentToggle=new QCheckBox(tr("Show recent"),this);
+    recentTitle_=new QLabel(tr("Recent documents"),this);recentTitle_->setObjectName(QStringLiteral("linwinStartSection"));recentHeader->addWidget(recentTitle_);
+    auto *recentToggle=new QCheckBox(tr("Show recent documents"),this);
     recentToggle->setObjectName(QStringLiteral("linwinRecentToggle"));
     recentToggle->setChecked(QSettings().value(QStringLiteral("launcher/showRecent"),true).toBool());
     recentHeader->addStretch(); recentHeader->addWidget(recentToggle);
@@ -307,7 +309,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         connect(button,&QPushButton::clicked,this,[this,tool]{ emit toolRequested(tool.first); });
     }
     quick->addStretch();
-    auto *power=new QPushButton(QIcon::fromTheme(QStringLiteral("system-shutdown")),tr("Power"),rail);
+    auto *power=new QPushButton(QIcon::fromTheme(QStringLiteral("system-shutdown"),LinWinVisual::shellIcon(LinWinVisual::Glyph::More)),tr("Power"),rail);
     power->setObjectName(QStringLiteral("linwinStartPower"));
     auto *powerMenu=new QMenu(power);
     auto *back=powerMenu->addAction(tr("Return to Linux desktop"));
@@ -463,6 +465,7 @@ void AppLauncherWidget::refreshRecentDocuments()
     recentList_->clear();
     const bool enabled=QSettings().value(QStringLiteral("launcher/showRecent"),true).toBool();
     recentList_->setVisible(enabled);
+    recentTitle_->setVisible(enabled);
     if (!enabled) return;
     QFileIconProvider icons;
     for (const auto &entry: LinWinRecent::read(LinWinRecent::registryPath())) {
@@ -545,12 +548,14 @@ void AppLauncherWidget::refreshList()
         auto *pin=new QListWidgetItem(appIcon(info),appName(info),pinnedList_);
         pin->setData(Qt::UserRole,id);pin->setToolTip(appName(info)+(appDescription(info).isEmpty()?QString():QStringLiteral("\n")+appDescription(info)));
     }
+    emptyPins_->setVisible(pinnedList_->count()==0);
+    pinnedList_->setVisible(pinnedList_->count()!=0);
     filterApplications(searchField_->text());
     updatePinButton();
     if (applications_.isEmpty()) {
         statusLabel_->setText(tr("No installed applications were found in the desktop application registry."));
     } else {
-        statusLabel_->setText(tr("%1 applications found. Click an app to open it. Right-click to manage pins.")
+        statusLabel_->setText(tr("%1 installed apps · Right-click to manage pins")
                                   .arg(static_cast<qlonglong>(applications_.size())));
     }
 }
