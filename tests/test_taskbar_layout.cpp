@@ -23,6 +23,7 @@
 #include <QDir>
 #include <QPixmap>
 #include <QDialog>
+#include <QMessageBox>
 #include <QToolButton>
 #include <QShortcut>
 #include <QTimer>
@@ -289,6 +290,8 @@ int main(int argc, char **argv)
     window.resize(1920,1080);
     app.processEvents();
     {QEventLoop settle;QTimer::singleShot(350,&settle,&QEventLoop::quit);settle.exec();}
+    auto *taskViewButton=window.findChild<QPushButton *>("linwinTaskbarTaskView");
+    if(!require(taskViewButton&&taskViewButton->isVisible()&&!taskViewButton->icon().isNull(),"Wide taskbar must expose a dedicated Task View control."))return 1;
     auto *visualPanel=window.findChild<QFrame *>("taskbar");
     auto *visualClock=window.findChild<QWidget *>("panelClock");
     auto *visualSearch=window.findChild<QPushButton *>("linwinTaskbarSearch");
@@ -460,9 +463,15 @@ int main(int argc, char **argv)
     if (!require(window.isMinimized(), "Switch to Linux desktop should minimize LinWin without closing it.")) return 1;
     window.show();
     app.processEvents();
+    auto *desktopExit=window.findChild<QAction *>("linwinDesktopClose");
+    if(!require(desktopExit&&desktopExit->text()=="Close LinWin","Desktop context must expose Close LinWin."))return 1;
+    QTimer::singleShot(0,&window,[]{if(auto *box=qobject_cast<QMessageBox *>(QApplication::activeModalWidget()))box->done(QMessageBox::No);});
+    desktopExit->trigger();app.processEvents();
+    if(!require(window.isVisible(),"Canceling desktop exit must keep LinWin open."))return 1;
+    QTimer::singleShot(0,&window,[]{if(auto *box=qobject_cast<QMessageBox *>(QApplication::activeModalWidget()))box->done(QMessageBox::Yes);});
     actions.at(4)->trigger();
     app.processEvents();
-    if (!require(window.isHidden(), "Close LinWin should exit the overlay window.")) return 1;
+    if (!require(window.isHidden(), "Confirmed Close LinWin should exit the overlay window.")) return 1;
 
     MainWindow regularWindow(false, false);
     if (!require(!regularWindow.windowFlags().testFlag(Qt::FramelessWindowHint),

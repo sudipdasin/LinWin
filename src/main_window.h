@@ -78,6 +78,7 @@ private:
     void updateTaskbarLayout();
     void applyComponentVisibility(const QString &component, bool enabled);
     void returnToLinuxDesktop();
+    void requestCloseLinWin();
     bool componentEnabled(const QString &component) const;
 
     QHash<int, QDialog *> toolWindows_;

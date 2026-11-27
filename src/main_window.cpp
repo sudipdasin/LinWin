@@ -212,6 +212,8 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         desktopRow->addWidget(desktopWidgets_);
         desktopLayout->addLayout(desktopRow, 1);
         const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+        auto *desktopExit=new QAction(tr("Close LinWin"),icons);desktopExit->setObjectName("linwinDesktopClose");
+        connect(desktopExit,&QAction::triggered,this,&MainWindow::requestCloseLinWin);
         const auto refreshIcons = [this, icons, desktopPath]() {
             icons->clear();
             const auto addPlace = [icons](const QString &name,const QString &place) {
@@ -288,7 +290,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         refreshShortcut->setContext(Qt::WidgetWithChildrenShortcut);
         connect(refreshShortcut, &QShortcut::activated, this, refreshIcons);
         connect(icons, &QListWidget::customContextMenuRequested, this,
-                [this, desktop, icons, openIcon, refreshIcons, desktopPath](const QPoint &position) {
+                [this, desktop, icons, openIcon, refreshIcons, desktopPath, desktopExit](const QPoint &position) {
             QMenu menu(this);
             if (auto *item = icons->itemAt(position)) {
                 icons->setCurrentItem(item);
@@ -337,6 +339,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             menu.addAction(tr("Settings"), this, &MainWindow::showSettingsHub);
             if (!shellSessionMode_)
                 menu.addAction(tr("Return to Linux desktop"), this, &MainWindow::returnToLinuxDesktop);
+            menu.addSeparator();menu.addAction(desktopExit);
             menu.exec(icons->viewport()->mapToGlobal(position));
         });
         refreshIcons();
@@ -386,18 +389,22 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         if(!shellSessionMode_) returnToLinuxDesktop();
         else QMessageBox::information(this,tr("LinWin"),tr("Use Sign out to return to the login screen."));
     });
-    connect(startMenu_,&AppLauncherWidget::exitRequested,this,[this]{
-        if(QMessageBox::question(this,tr("Close LinWin"),tr("Close LinWin and its open tool windows?"),QMessageBox::Yes|QMessageBox::No,QMessageBox::No)==QMessageBox::Yes) close();
-    });
+    connect(startMenu_,&AppLauncherWidget::exitRequested,this,&MainWindow::requestCloseLinWin);
 
     auto *taskbar = new QFrame(root);
     taskbar->setObjectName(QStringLiteral("taskbar"));
     taskbar->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(taskbar,&QWidget::customContextMenuRequested,this,[this,taskbar](const QPoint &pos){QMenu menu(this);menu.addAction(tr("Taskbar settings"),this,[this]{showPage(4);settingsHub_->showVisualPage("taskbar");});menu.exec(taskbar->mapToGlobal(pos));});
+    connect(taskbar,&QWidget::customContextMenuRequested,this,[this,taskbar](const QPoint &pos){
+        QMenu menu(this);menu.addAction(tr("Task View"),this,&MainWindow::showWindowOverview);
+        menu.addAction(tr("Show desktop / restore tools"),this,&MainWindow::toggleWorkspaceVisibility);
+        auto *tasks=menu.addAction(tr("Task Manager"),this,[this]{showPage(2);});tasks->setEnabled(taskManagerEnabled_);
+        menu.addSeparator();menu.addAction(tr("Taskbar settings"),this,[this]{showPage(4);settingsHub_->showVisualPage("taskbar");});
+        menu.addAction(tr("Close LinWin"),this,&MainWindow::requestCloseLinWin);menu.exec(taskbar->mapToGlobal(pos));
+    });
     taskbar->setFixedHeight(44);
     auto *taskbarLayout = new QHBoxLayout(taskbar);
-    taskbarLayout->setContentsMargins(3, 2, 3, 2);
-    taskbarLayout->setSpacing(2);
+    taskbarLayout->setContentsMargins(5, 2, 5, 2);
+    taskbarLayout->setSpacing(3);
 
     startButton_ = makePanelButton(QStringLiteral("LinWin"), QStringLiteral("startButton"), taskbar);
     startButton_->setToolTip(tr("Open the app menu (Super or Ctrl+Esc)"));
@@ -464,6 +471,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     windowSwitcherStatus_ = new QLabel(tr("Checking open windows…"), windowList);
     windowSwitcherStatus_->setObjectName(QStringLiteral("windowSwitcherStatus"));
     windowButtonsLayout_->addWidget(windowSwitcherStatus_);
+    windowButtonsLayout_->addStretch(1);
     windowScroll->setWidget(windowList);
 
     systemStatus_ = new QLabel(
@@ -491,7 +499,9 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     taskbarSearch->setMinimumWidth(134);
     connect(taskbarSearch,&QPushButton::clicked,this,[this]{if(componentEnabled(QStringLiteral("start-menu"))) {startButton_->setChecked(true);startMenu_->focusSearch();}});
     taskbarLayout->addWidget(taskbarSearch);
-    taskbarLayout->addWidget(homeButton_);
+    auto *taskView=new QPushButton(LinWinVisual::shellIcon(LinWinVisual::Glyph::Snap),QString(),taskbar);
+    taskView->setObjectName("linwinTaskbarTaskView");taskView->setAccessibleName(tr("Task View"));taskView->setToolTip(tr("Task View — switch open windows"));
+    connect(taskView,&QPushButton::clicked,this,&MainWindow::showWindowOverview);taskbarLayout->addWidget(taskView);
     taskbarLayout->addWidget(filesButton_);
     taskbarLayout->addWidget(tasksButton_);
     taskbarLayout->addWidget(clipboardButton_);
@@ -507,6 +517,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     taskbarLayout->addWidget(desktopStatus);
     taskbarLayout->addSpacing(8);
     taskbarLayout->addWidget(clock_);
+    taskbarLayout->addWidget(homeButton_);
     taskbarLayout->addWidget(closeButton_);
     rootLayout->addWidget(taskbar);
     setCentralWidget(root);
@@ -550,8 +561,9 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
             connect(returnDesktopOverflowAction_, &QAction::triggered, this, &MainWindow::returnToLinuxDesktop);
         }
     }
-    connect(closeButton_, &QPushButton::clicked, this, &QWidget::close);
-    connect(closeOverflowAction_, &QAction::triggered, this, &QWidget::close);
+    closeButton_->setCheckable(false);
+    connect(closeButton_, &QPushButton::clicked, this, &MainWindow::requestCloseLinWin);
+    connect(closeOverflowAction_, &QAction::triggered, this, &MainWindow::requestCloseLinWin);
     auto *paletteShortcut=new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+P")),this);
     paletteShortcut->setObjectName(QStringLiteral("linwinCommandPaletteShortcut"));
     paletteShortcut->setContext(Qt::ApplicationShortcut);
@@ -778,7 +790,15 @@ void MainWindow::updateExternalWindows(const QString &output)
             button->setIcon(icon);
             connect(button, &QPushButton::clicked, this, [this, id]() { activateExternalWindow(id); });
             windowButtons_.insert(id, button);
-            windowButtonsLayout_->addWidget(button);
+            windowButtonsLayout_->insertWidget(windowButtonsLayout_->count()-1,button);
+            button->setContextMenuPolicy(Qt::ActionsContextMenu);
+            auto *activate=new QAction(tr("Switch to window"),button);button->addAction(activate);
+            connect(activate,&QAction::triggered,this,[this,id]{activateExternalWindow(id);});
+            auto *closeWindow=new QAction(tr("Close window"),button);button->addAction(closeWindow);
+            connect(closeWindow,&QAction::triggered,this,[this,id]{
+                if(windowButtons_.contains(id)&&QRegularExpression(QStringLiteral("^0x[0-9a-fA-F]+$")).match(id).hasMatch()&&!wmctrlPath_.isEmpty())
+                    QProcess::startDetached(wmctrlPath_,{QStringLiteral("-ic"),id});
+            });
         }
         const bool premium=(themeId_==QStringLiteral("neon") || (themeId_!="minimal" && QSettings().value("visual/compactAllThemes",true).toBool())) && width()>=1450;
     QSettings visual;
@@ -1427,6 +1447,7 @@ void MainWindow::updateTaskbarLayout()
         search->setFixedHeight(premium&&!small?38:30);
     }
 
+    if(auto *view=findChild<QPushButton *>("linwinTaskbarTaskView")){view->setVisible(width()>=1450);view->setIconSize(QSize(premium&&!small?26:20,premium&&!small?26:20));view->setFixedWidth(44);}
     if (startButton_ != nullptr) startButton_->setVisible(startMenuEnabled_);
     if (homeButton_ != nullptr) homeButton_->setVisible(!compact);
     if (filesButton_ != nullptr) filesButton_->setVisible(filesEnabled_);
@@ -1454,6 +1475,11 @@ void MainWindow::updateTaskbarLayout()
     if(clock_)clock_->setVisible(visual.value("visual/taskbarClock",true).toBool());
 }
 
+void MainWindow::requestCloseLinWin()
+{
+    const QString message=shellSessionMode_?tr("End this LinWin session? Save your work first; the login screen may appear."):tr("Close LinWin and its tool windows? Your Linux desktop and other applications will remain open.");
+    if(QMessageBox::question(this,tr("Close LinWin"),message,QMessageBox::Yes|QMessageBox::No,QMessageBox::No)==QMessageBox::Yes)close();
+}
 void MainWindow::returnToLinuxDesktop()
 {
     if (shellSessionMode_) return;

@@ -99,6 +99,9 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
         "#taskbar QScrollBar::add-line:horizontal, #taskbar QScrollBar::sub-line:horizontal { width:0; }"
         "#taskbar #windowSwitcher QPushButton { background:transparent; color:%2; border-radius:6px; border-bottom:2px solid %3; padding:4px; }"
         "#taskbar #windowSwitcher QPushButton:hover, #taskbar #windowSwitcher QPushButton:focus { background:%5; }"
+        "#taskbar #linwinTaskbarTaskView { border-radius:6px; padding:3px; }"
+        "#taskbar #desktopButton { border-left:1px solid %7; border-radius:2px; padding:3px; }"
+        "#taskbar #closeLinWinButton:hover { background:#b52f3c; color:white; border-bottom:0; }"
     ).arg(panel,fg,accent,radius,hover,field,subtle,muted);
     for(const QString &name: {QStringLiteral("linwinCommandPalette"),QStringLiteral("linwinQuickControls"),QStringLiteral("linwinWindowOverview")}) {
         const QString scope=QStringLiteral("#")+name;
