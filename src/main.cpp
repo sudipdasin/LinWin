@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 #include <QIcon>
 #include <QCommandLineParser>
+#include "native_visual_capture.h"
 
 int main(int argc, char *argv[])
 {
@@ -29,7 +30,10 @@ int main(int argc, char *argv[])
     parser.addOption(windowOption);
     const QCommandLineOption benchmarkOption(QStringLiteral("benchmark-native"),QStringLiteral("Run isolated native offscreen benchmark."),QStringLiteral("theme"));
     parser.addOption(benchmarkOption);
+    const QCommandLineOption captureOption(QStringLiteral("capture-native"),QStringLiteral("Capture installed native desktop for isolated build QA."),QStringLiteral("directory"));
+    parser.addOption(captureOption);
     parser.process(app);
+    if(parser.isSet(captureOption))return LinWinCapture::run(app,parser.value(captureOption));
     if(parser.isSet(benchmarkOption)) return LinWinBench::run(app,parser.value(benchmarkOption));
 
     if (parser.isSet(setupOption) || parser.isSet(uninstallOption)) {

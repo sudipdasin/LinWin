@@ -24,6 +24,7 @@
 #include <QPixmap>
 #include <QDialog>
 #include <QMessageBox>
+#include <QAbstractButton>
 #include <QToolButton>
 #include <QShortcut>
 #include <QTimer>
@@ -479,10 +480,10 @@ int main(int argc, char **argv)
     app.processEvents();
     auto *desktopExit=window.findChild<QAction *>("linwinDesktopClose");
     if(!require(desktopExit&&desktopExit->text()=="Close LinWin","Desktop context must expose Close LinWin."))return 1;
-    QTimer::singleShot(0,&window,[]{if(auto *box=qobject_cast<QMessageBox *>(QApplication::activeModalWidget()))box->done(QMessageBox::No);});
+    QTimer::singleShot(0,&window,[]{if(auto *box=qobject_cast<QMessageBox *>(QApplication::activeModalWidget()))if(auto *button=box->button(QMessageBox::No))button->click();});
     desktopExit->trigger();app.processEvents();
     if(!require(window.isVisible(),"Canceling desktop exit must keep LinWin open."))return 1;
-    QTimer::singleShot(0,&window,[]{if(auto *box=qobject_cast<QMessageBox *>(QApplication::activeModalWidget()))box->done(QMessageBox::Yes);});
+    QTimer::singleShot(0,&window,[]{if(auto *box=qobject_cast<QMessageBox *>(QApplication::activeModalWidget()))if(auto *button=box->button(QMessageBox::Yes))button->click();});
     actions.at(4)->trigger();
     app.processEvents();
     if (!require(window.isHidden(), "Confirmed Close LinWin should exit the overlay window.")) return 1;

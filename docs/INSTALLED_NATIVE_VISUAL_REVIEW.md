@@ -1,0 +1,5 @@
+# Installed native visual review gate
+
+Preview 14 compiled and passed 19/20 native suites, but confirmed exit failed. The native test now clicks the actual QMessageBox standard buttons instead of calling done() with a button enum (which does not necessarily set the clicked button). Both cancel and confirm assertions remain mandatory.
+
+Preview 15 adds a disposable-profile capture mode to the actual installed DEB executable, on Xvfb/X11 at 1920x1080 and 1672x941, independent of existing offscreen CTest screenshots. It records panel child bounds, visible pinned-cell sizes and Start bounds; verifies real pixels are captured and publishes PNGs and a SHA-256 manifest. Compact JPEGs from only the isolated builder are transported through Render logs in numbered packets so an assistant with log access can inspect the image, even when direct artifact network retrieval is unavailable. No screenshot from a customer's machine is collected. This is a measurable visual QA gate, not a claim of visual fidelity or autonomous aesthetic judgment. No paid infrastructure, GitHub Actions or CircleCI. The old verified release remains live until all gates pass.
