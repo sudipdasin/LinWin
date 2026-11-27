@@ -95,6 +95,7 @@ int main(int argc, char **argv)
         const QByteArray body="[Desktop Entry]\nType=Application\nName=LinWin Regression "+suffix.toUtf8()+"\nComment=Harmless fixture\nExec=/bin/true\nCategories=Utility;\n";
         if(desktop.write(body)!=body.size())return 1;
     }
+    settings.setValue("launcher/pinnedApplications",QStringList{"linwin-regression-alpha.desktop"});
     MainWindow window(true, false);
     window.show();
     window.resize(1180, 760);
@@ -381,6 +382,7 @@ int main(int argc, char **argv)
     if(!require(menu->width()>=650 && menu->width()<=680 && grid && grid->gridSize().width()>=72
                 && grid->viewport()->width()/grid->gridSize().width()==4,
                 "1920-wide reference Start must preserve its proportional width and four-column grid."))return 1;
+    if(!require(returnDesktop->text().isEmpty()&&!returnDesktop->accessibleName().isEmpty()&&closeLinWin->width()<=34,"Wide taskbar secondary actions must be compact and accessible."))return 1;
     if(!require(grid->iconSize()==QSize(44,44) && grid->gridSize().height()==106 && pinned->isChecked() && !allApps->isChecked(),
                 "Pinned tiles must use large icons and active navigation state."))return 1;
     // Even a theme providing only a tiny 16px bitmap must occupy the intended slot.

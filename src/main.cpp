@@ -12,6 +12,8 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    // Preserve the desktop theme; provide an installed fallback only when Qt has none.
+    if(QIcon::fallbackThemeName().isEmpty())QIcon::setFallbackThemeName(QStringLiteral("Adwaita"));
     QCoreApplication::setApplicationName(QStringLiteral("LinWin"));
     QCoreApplication::setOrganizationName(QStringLiteral("LinWin contributors"));
     QCoreApplication::setApplicationVersion(QString::fromLatin1(LINWIN_BUILD_VERSION));

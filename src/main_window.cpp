@@ -691,12 +691,13 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         || qEnvironmentVariable("XDG_SESSION_TYPE").compare(QStringLiteral("wayland"), Qt::CaseInsensitive) == 0;
     wmctrlPath_ = QStandardPaths::findExecutable(QStringLiteral("wmctrl"));
     if (waylandSession) {
-        windowSwitcherStatus_->setText(tr("Open windows are managed by your Wayland desktop."));
+        windowSwitcherStatus_->setText(tr("Window switching unavailable"));
         windowSwitcherStatus_->setToolTip(tr("Global window listing and activation require a compositor-specific adapter."));
         workspaceButton_->setEnabled(false);
         workspaceButton_->setToolTip(tr("Virtual desktop controls are provided by your Wayland desktop."));
     } else if (wmctrlPath_.isEmpty()) {
-        windowSwitcherStatus_->setText(tr("Install wmctrl to enable X11 app switching."));
+        windowSwitcherStatus_->setText(tr("Window switching unavailable"));
+        windowSwitcherStatus_->setToolTip(tr("Install wmctrl to enable X11 app switching."));
         workspaceButton_->setEnabled(false);
         workspaceButton_->setToolTip(tr("Install wmctrl to enable virtual desktop controls in LinWin."));
     } else {
@@ -706,8 +707,11 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 [this](int code, QProcess::ExitStatus processStatus) {
             if (processStatus == QProcess::NormalExit && code == 0)
                 updateExternalWindows(QString::fromLocal8Bit(windowListProcess_->readAllStandardOutput()));
-            else if (windowSwitcherStatus_ != nullptr)
-                windowSwitcherStatus_->setText(tr("Could not read the X11 window list."));
+            else if (windowSwitcherStatus_ != nullptr) {
+                windowSwitcherStatus_->setText(tr("Window switching unavailable"));
+                windowSwitcherStatus_->setToolTip(tr("Could not read the X11 window list."));
+                windowSwitcherStatus_->setVisible(windowOrder_.isEmpty());
+            }
         });
         windowRefreshTimer_ = new QTimer(this);
         windowRefreshTimer_->setInterval(1500);
@@ -1442,6 +1446,7 @@ void MainWindow::updateTaskbarLayout()
         entry.first->setText(premium?QString():entry.second);
         entry.first->setIconSize(QSize(premium&&!small?30:20,premium&&!small?30:20));
         entry.first->setMinimumWidth(premium?42:0);
+        entry.first->setMaximumWidth(premium?48:QWIDGETSIZE_MAX);
     }
     if(auto *search=findChild<QPushButton *>(QStringLiteral("linwinTaskbarSearch"))) {
         search->setVisible(width()>=1450 && startMenuEnabled_ && visual.value("visual/taskbarSearch",true).toBool());
@@ -1456,7 +1461,16 @@ void MainWindow::updateTaskbarLayout()
     if (tasksButton_ != nullptr) tasksButton_->setVisible(taskManagerEnabled_);
     if (clipboardButton_ != nullptr) clipboardButton_->setVisible(clipboardEnabled_ && !compact);
     if (settingsButton_ != nullptr) settingsButton_->setVisible(!compact);
-    if (signOutButton_ != nullptr) signOutButton_->setVisible(!compact);
+    if (signOutButton_ != nullptr) {
+        signOutButton_->setVisible(!compact);
+        signOutButton_->setText(premium?QString():shellSessionMode_?tr("Sign out"):tr("Linux desktop"));
+        signOutButton_->setAccessibleName(shellSessionMode_?tr("Sign out"):tr("Return to Linux desktop"));
+        signOutButton_->setIcon(QIcon::fromTheme(shellSessionMode_?"system-log-out":"user-desktop",LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop)));
+        signOutButton_->setIconSize(QSize(premium?24:16,premium?24:16));
+        signOutButton_->setMinimumWidth(premium?40:0);
+        signOutButton_->setMaximumWidth(premium?44:QWIDGETSIZE_MAX);
+    }
+    if(closeButton_){closeButton_->setAccessibleName(tr("Close LinWin"));closeButton_->setMinimumWidth(premium?28:0);closeButton_->setMaximumWidth(premium?34:QWIDGETSIZE_MAX);}
     if (overflowButton_ != nullptr) overflowButton_->setVisible(compact);
     if (workspaceButton_ != nullptr) workspaceButton_->setVisible(!compact);
 

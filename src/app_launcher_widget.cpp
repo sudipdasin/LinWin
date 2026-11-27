@@ -549,7 +549,7 @@ void AppLauncherWidget::refreshList()
         pin->setData(Qt::UserRole,id);pin->setToolTip(appName(info)+(appDescription(info).isEmpty()?QString():QStringLiteral("\n")+appDescription(info)));
     }
     emptyPins_->setVisible(pinnedList_->count()==0);
-    pinnedList_->setVisible(pinnedList_->count()!=0);
+    // Keep the empty grid in the layout so the Add apps entry and empty state remain stable.
     filterApplications(searchField_->text());
     updatePinButton();
     if (applications_.isEmpty()) {
