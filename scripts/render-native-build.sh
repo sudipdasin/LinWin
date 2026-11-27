@@ -71,10 +71,12 @@ test "$code" -eq 124
 for res in 1920x1080 1672x941; do
     qa="/tmp/linwin-qa-$res"
     mkdir -p "$qa/config" "$qa/data" "$qa/cache" "$qa/home/Desktop" "/out/installed-visuals/$res"
+    capture_code=0
     timeout 30s xvfb-run -a -s "-screen 0 ${res}x24" env QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 \
         LINWIN_ISOLATED_VISUAL_QA=1 HOME="$qa/home" XDG_CONFIG_HOME="$qa/config" XDG_DATA_HOME="$qa/data" XDG_CACHE_HOME="$qa/cache" \
-        /usr/bin/linwin --capture-native "/out/installed-visuals/$res"
-    cat "/out/installed-visuals/$res/layout.json"
+        /usr/bin/linwin --capture-native "/out/installed-visuals/$res" || capture_code=$?
+    if [ -f "/out/installed-visuals/$res/layout.json" ]; then cat "/out/installed-visuals/$res/layout.json"; fi
+    test "$capture_code" -eq 0
 done
 python3 scripts/emit-native-review.py /out/installed-visuals
 apt-get remove -y linwin

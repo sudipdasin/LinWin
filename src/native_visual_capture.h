@@ -34,7 +34,7 @@ inline int run(QApplication &app,const QString &directory) {
         const auto desktop=window.grab().toImage();
         if(desktop.isNull()||!desktop.save(out.filePath("desktop.png"))){app.exit(4);return;}
         start->click();
-        QTimer::singleShot(250,&window,[&,panel,start,menu]{
+        QTimer::singleShot(250,&window,[&,panel,start,menu,desktop]{
             auto *grid=menu->findChild<QListWidget *>("pinnedApps");
             const auto full=window.grab().toImage(),popup=menu->grab().toImage();
             if(!grid||!menu->isVisible()||!start->isChecked()||full.isNull()||popup.isNull()){app.exit(5);return;}
@@ -65,7 +65,10 @@ inline int run(QApplication &app,const QString &directory) {
             const bool saved=full.save(out.filePath("start.png"))&&popup.save(out.filePath("start-detail.png"))
                 &&desktop.scaled(768,432,Qt::KeepAspectRatio,Qt::SmoothTransformation).save(out.filePath("desktop-review.jpg"),"JPEG",75)
                 &&popup.scaled(600,600,Qt::KeepAspectRatio,Qt::SmoothTransformation).save(out.filePath("start-review.jpg"),"JPEG",84);
-            app.exit(saved&&popupFits&&controls>0&&violations==0&&clippedTiles==0?0:7);
+            const bool passed=saved&&popupFits&&controls>0&&violations==0&&clippedTiles==0;
+            qInfo("Installed capture: saved=%d popupFits=%d controls=%d outOfBounds=%d undersizedTiles=%d",
+                  int(saved),int(popupFits),controls,violations,clippedTiles);
+            app.exit(passed?0:7);
         });
     });
     QTimer::singleShot(20000,&app,[&]{app.exit(8);});
