@@ -289,8 +289,7 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
         auto *refreshShortcut = new QShortcut(QKeySequence(Qt::Key_F5), icons);
         refreshShortcut->setContext(Qt::WidgetWithChildrenShortcut);
         connect(refreshShortcut, &QShortcut::activated, this, refreshIcons);
-        connect(icons, &QListWidget::customContextMenuRequested, this,
-                [this, desktop, icons, openIcon, refreshIcons, desktopPath, desktopExit](const QPoint &position) {
+        const auto desktopMenu=[this, desktop, icons, openIcon, refreshIcons, desktopPath, desktopExit](const QPoint &position) {
             QMenu menu(this);
             if (auto *item = icons->itemAt(position)) {
                 icons->setCurrentItem(item);
@@ -341,7 +340,10 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
                 menu.addAction(tr("Return to Linux desktop"), this, &MainWindow::returnToLinuxDesktop);
             menu.addSeparator();menu.addAction(desktopExit);
             menu.exec(icons->viewport()->mapToGlobal(position));
-        });
+        };
+        connect(icons,&QListWidget::customContextMenuRequested,this,desktopMenu);
+        desktop->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(desktop,&QWidget::customContextMenuRequested,this,[desktop,icons,desktopMenu](const QPoint &pos){desktopMenu(icons->viewport()->mapFromGlobal(desktop->mapToGlobal(pos)));});
         refreshIcons();
         if (!desktopPath.isEmpty() && QDir(desktopPath).exists()) {
             auto *watcher = new QFileSystemWatcher(icons);

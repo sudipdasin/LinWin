@@ -228,7 +228,7 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
         const QString id=item->data(Qt::UserRole).toString();
         QMenu menu(this);menu.addAction(tr("Open"),this,[this]{launchSelectedApplication();});
         const int row=pinnedApplicationIds_.indexOf(id);
-        earlier->setEnabled(row>0);later->setEnabled(row>=0&&row+1<pinnedApplicationIds_.size());
+        earlier->setEnabled(adjacentPin(row,-1)>=0);later->setEnabled(adjacentPin(row,1)>=0);
         menu.addAction(earlier);menu.addAction(later);menu.addSeparator();
         menu.addAction(tr("Unpin from Start"),this,[this,id]{pinnedApplicationIds_.removeAll(id);savePinnedApplications();refreshList();});
         menu.exec(pinnedList_->viewport()->mapToGlobal(pos));
@@ -349,8 +349,11 @@ AppLauncherWidget::AppLauncherWidget(QWidget *parent)
             this, &AppLauncherWidget::launchSelectedApplication);
     connect(pinButton_, &QPushButton::clicked,
             this, &AppLauncherWidget::togglePinnedApplication);
-    connect(applicationList_, &QListWidget::itemActivated,
-            this, [this](QListWidgetItem *) { launchSelectedApplication(); });
+    connect(applicationList_,&QListWidget::itemClicked,this,[this](QListWidgetItem *item){if(item&&!item->isHidden()){applicationList_->setCurrentItem(item);launchSelectedApplication();}});
+    for(const auto key:{Qt::Key_Return,Qt::Key_Enter}){
+        auto *shortcut=new QShortcut(QKeySequence(key),applicationList_);shortcut->setContext(Qt::WidgetShortcut);
+        connect(shortcut,&QShortcut::activated,this,&AppLauncherWidget::launchSelectedApplication);
+    }
     connect(applicationList_, &QListWidget::currentRowChanged,
             this, [this](int) { updatePinButton(); });
     connect(searchField_, &QLineEdit::returnPressed,this,[this]{
@@ -392,13 +395,21 @@ void AppLauncherWidget::resizeEvent(QResizeEvent *event)
     }
 }
 
+int AppLauncherWidget::adjacentPin(int row,int offset) const
+{
+    if(row<0||(offset!=1&&offset!=-1))return -1;
+    for(int next=row+offset;next>=0&&next<pinnedApplicationIds_.size();next+=offset)
+        if(applications_.contains(pinnedApplicationIds_.at(next)))return next;
+    return -1;
+}
+
 void AppLauncherWidget::moveCurrentPin(int offset)
 {
     auto *item=pinnedList_->currentItem();if(!item||item->isHidden()||(offset!=1&&offset!=-1))return;
     const QString id=item->data(Qt::UserRole).toString();
-    const int from=pinnedApplicationIds_.indexOf(id),to=from+offset;
+    const int from=pinnedApplicationIds_.indexOf(id),to=adjacentPin(from,offset);
     if(from<0||to<0||to>=pinnedApplicationIds_.size())return;
-    pinnedApplicationIds_.move(from,to);savePinnedApplications();refreshList();
+    pinnedApplicationIds_.swapItemsAt(from,to);savePinnedApplications();refreshList();
     for(int i=0;i<pinnedList_->count();++i)if(pinnedList_->item(i)->data(Qt::UserRole).toString()==id){pinnedList_->setCurrentRow(i);break;}
 }
 
@@ -532,14 +543,14 @@ void AppLauncherWidget::refreshList()
         auto *info=applications_.value(id,nullptr);
         if(!info)continue;
         auto *pin=new QListWidgetItem(appIcon(info),appName(info),pinnedList_);
-        pin->setData(Qt::UserRole,id);pin->setToolTip(appDescription(info));
+        pin->setData(Qt::UserRole,id);pin->setToolTip(appName(info)+(appDescription(info).isEmpty()?QString():QStringLiteral("\n")+appDescription(info)));
     }
     filterApplications(searchField_->text());
     updatePinButton();
     if (applications_.isEmpty()) {
         statusLabel_->setText(tr("No installed applications were found in the desktop application registry."));
     } else {
-        statusLabel_->setText(tr("%1 applications found. Click a pinned app, or double-click an app in All apps.")
+        statusLabel_->setText(tr("%1 applications found. Click an app to open it. Right-click to manage pins.")
                                   .arg(static_cast<qlonglong>(applications_.size())));
     }
 }

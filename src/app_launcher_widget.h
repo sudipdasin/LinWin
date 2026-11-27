@@ -50,6 +50,7 @@ private:
     void refreshRecentDocuments();
     void savePinnedApplications() const;
     void moveCurrentPin(int offset);
+    int adjacentPin(int row,int offset) const;
     QFrame *rail_=nullptr;
 
     QImage glassBackdrop_;

@@ -118,6 +118,28 @@ inline QString shellStyle(const LinWinTheme::Theme &t) {
         ).arg(scope,panel,fg,field,subtle,radius,accent,hover,muted);
     }
     style+=QStringLiteral("#linwinWindowsSettingsCatalog { background:%1; color:%2; } #linwinWindowsSettingsCatalog QLabel { color:%2; } #linwinSettingsCategory { background:%6; color:%2; border:1px solid %7; border-radius:%4; padding:10px; font-size:14px; } #linwinSettingsCategory:hover,#linwinSettingsCategory:focus { background:%5; border:1px solid %3; }").arg(panel,fg,accent,radius,hover,field,subtle);
+    // Shared appearance for all native personalization pages. Keep the
+    // existing tool-specific styles and the user's desktop background intact.
+    for(const QString &name:{QStringLiteral("linwinBackgroundSettings"),QStringLiteral("linwinVisual_colors"),QStringLiteral("linwinVisual_start"),QStringLiteral("linwinVisual_taskbar"),QStringLiteral("linwinFontLibrary"),QStringLiteral("linwinThemeLibrary"),QStringLiteral("linwinWindowsSettingsCatalog")}){
+        const QString scope="#"+name;
+        style+=QStringLiteral(
+            "%1, %1 QWidget { background:%2; color:%3; }"
+            "%1 QLabel { background:transparent; color:%3; }"
+            "%1 #pageTitle { font-size:26px; font-weight:600; color:%3; }"
+            "%1 QLineEdit, %1 QComboBox, %1 QSpinBox, %1 QListWidget, %1 QTreeWidget { background:%4; color:%3; border:1px solid %5; border-radius:%6; padding:7px; }"
+            "%1 QLineEdit:focus, %1 QComboBox:focus, %1 QSpinBox:focus, %1 QListWidget:focus, %1 QTreeWidget:focus { border-color:%7; }"
+            "%1 QTreeWidget::item:selected, %1 QListWidget::item:selected { background:%8; color:%3; }"
+            "%1 QHeaderView::section { background:%4; color:%3; border:0; border-bottom:1px solid %5; padding:7px; }"
+            "%1 QPushButton { background:%8; color:%3; border:1px solid %5; border-radius:%6; padding:8px 13px; }"
+            "%1 QPushButton:hover, %1 QPushButton:focus { border-color:%7; }"
+            "%1 QCheckBox { spacing:8px; padding:5px; color:%3; }"
+            "%1 QCheckBox:disabled, %1 QPushButton:disabled { color:%9; background:%2; }"
+            "%1 QScrollBar:vertical { background:%2; width:9px; margin:0; }"
+            "%1 QScrollBar::handle:vertical { background:%5; border-radius:4px; min-height:24px; }"
+            "%1 QScrollBar::add-line:vertical, %1 QScrollBar::sub-line:vertical { height:0; }"
+        ).arg(scope,panel,fg,field,subtle,radius,accent,hover,muted);
+    }
+    style+=QStringLiteral("QToolTip { background:%1; color:%2; border:1px solid %3; padding:5px; }").arg(panel,fg,subtle);
     return style;
 }
 }
