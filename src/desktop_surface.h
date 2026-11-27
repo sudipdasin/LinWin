@@ -122,7 +122,7 @@ protected:
             painter.setRenderHint(QPainter::SmoothPixmapTransform);
             painter.drawImage(rect(), wallpaper_);
         }
-        if (width() >= 600 && height() >= 300) {
+        if (width() >= 600 && height() >= 300 && QSettings().value("desktop/showBrand",true).toBool()) {
             const qreal mark = qBound(54.0, width()*0.075, 128.0);
             const qreal x = width()*0.41, y = height()*0.38;
             LinWinVisual::drawLogo(painter, QRectF(x,y,mark,mark));

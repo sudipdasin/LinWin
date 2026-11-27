@@ -39,16 +39,17 @@ inline QIcon logoIcon() {
 inline QString shellStyle(const LinWinTheme::Theme &t) {
     QSettings settings;
     const QString mode=settings.value("visual/shellMode","theme").toString();
-    const bool light=mode=="light"||(mode!="dark"&&t.light);
-    const QString panel=mode=="light"?"#edf2f8":mode=="dark"?"#17222f":qstr(t.panel);
-    const QString fg=mode=="light"?"#172940":mode=="dark"?"#edf2f8":qstr(t.text);
+    const bool contrast=mode=="contrast";
+    const bool light=!contrast&&(mode=="light"||(mode!="dark"&&t.light));
+    const QString panel=contrast?"#000000":mode=="light"?"#edf2f8":mode=="dark"?"#17222f":qstr(t.panel);
+    const QString fg=contrast?"#ffffff":mode=="light"?"#172940":mode=="dark"?"#edf2f8":qstr(t.text);
     const QColor custom(settings.value("visual/accent").toString());
-    const QString accent=custom.isValid()?custom.name():qstr(t.accent);
-    const QString field=light ? QStringLiteral("#ffffff") : QStringLiteral("#122e49");
-    const QString hover=light ? QStringLiteral("#d7e5f6") : QStringLiteral("#214563");
+    const QString accent=contrast?"#ffff00":custom.isValid()?custom.name():qstr(t.accent);
+    const QString field=contrast ? QStringLiteral("#000000") : light ? QStringLiteral("#ffffff") : QStringLiteral("#122e49");
+    const QString hover=contrast ? QStringLiteral("#303030") : light ? QStringLiteral("#d7e5f6") : QStringLiteral("#214563");
     const QString radius=t.effects ? QStringLiteral("9px") : QStringLiteral("0px");
-    const QString subtle=light ? QStringLiteral("#b8c9db") : QStringLiteral("#365575");
-    const QString muted=light ? QStringLiteral("#425773") : QStringLiteral("#b9d3e9");
+    const QString subtle=contrast ? QStringLiteral("#ffffff") : light ? QStringLiteral("#b8c9db") : QStringLiteral("#365575");
+    const QString muted=contrast ? QStringLiteral("#c0c0c0") : light ? QStringLiteral("#425773") : QStringLiteral("#b9d3e9");
     QString style=QStringLiteral(
         "#taskbar, #startMenuPanel { background:%1; color:%2; border:1px solid %7; border-radius:%4; }"
         "#taskbar QWidget, #startMenuPanel QLabel, #linwinStartViews, #linwinStartViews QWidget, #linwinStartRail { background:transparent; color:%2; }"

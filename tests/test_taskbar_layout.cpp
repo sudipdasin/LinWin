@@ -304,6 +304,15 @@ int main(int argc, char **argv)
     if(!require(menu->geometry()==area->rect(),"Full-screen Start must occupy the actual desktop area."))return 1;
     start->click();settings.remove("visual");hub->visualChanged();app.processEvents();
     if(!require(visualPanel->height()==58&&visualClock->isVisible()&&visualSearch->isVisible(),"Restoring visual defaults must recover the original taskbar."))return 1;
+    settings.setValue("visual/shellMode","contrast");hub->visualChanged();app.processEvents();
+    if(!require(window.styleSheet().contains("#ffff00")&&window.styleSheet().contains("#000000"),"High contrast must apply a real shell palette."))return 1;
+    settings.remove("visual/shellMode");
+    auto *placeIcons=window.findChild<QListWidget *>("desktopIcons");
+    if(!require(placeIcons&&placeIcons->count()>=4,"Desktop places must be present."))return 1;
+    settings.setValue("desktop/place/computer",false);hub->visualChanged();app.processEvents();
+    if(!require(placeIcons->item(0)->isHidden()&&!placeIcons->item(1)->isHidden(),"Individual desktop icon visibility must not hide other places."))return 1;
+    settings.remove("desktop/place/computer");hub->visualChanged();app.processEvents();
+    if(!require(!placeIcons->item(0)->isHidden(),"Restoring a place must show it again."))return 1;
     settings.setValue("visual/taskbarPosition","top");hub->visualChanged();app.processEvents();
     if(!require(visualPanel->geometry().top()==0&&area->geometry().top()>=visualPanel->height(),"Top taskbar must move the real panel and reserve desktop space."))return 1;
     start->click();app.processEvents();

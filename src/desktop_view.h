@@ -15,7 +15,12 @@ inline void apply(QListWidget *icons) {
     icons->setIconSize(QSize(side,side));
     icons->setGridSize(QSize(side==32?96:side==64?144:112,side==32?92:side==64?136:110));
     const bool visible=s.value("desktop/showIcons",true).toBool();
-    for(int i=0;i<icons->count();++i)icons->item(i)->setHidden(!visible);
+    for(int i=0;i<icons->count();++i){
+        auto *item=icons->item(i);const QString place=item->data(Qt::UserRole+2).toString();
+        const bool show=visible&&(place.isEmpty()||s.value("desktop/place/"+place,true).toBool());
+        if(!show&&item->isSelected())item->setSelected(false);
+        item->setHidden(!show);
+    }
     icons->doItemsLayout();
 }
 inline QDir::SortFlags sort(QSettings &s) {

@@ -232,6 +232,10 @@ int main(int argc, char **argv)
     auto *themeList=widget.findChild<QListWidget *>("linwinThemeList");auto *themeApply=widget.findChild<QPushButton *>("linwinApplyTheme");
     passed &= expect(themeList&&themeList->isVisible()&&themeList->count()==7&&themeApply,"Theme library must expose seven installed themes.");
     if(themeList&&themeList->count()==7&&themeApply){themeList->setCurrentRow(1);themeApply->click();passed &= expect(settings.value("appearance/theme").toString()=="aero","Theme library must drive the actual theme selector.");}
+    auto *logo=widget.findChild<QCheckBox *>("desktop/showBrand");
+    passed &= expect(logo&&logo->isVisible(),"Themes page must expose branding visibility.");
+    if(logo){logo->setChecked(false);passed &= expect(!settings.value("desktop/showBrand",true).toBool(),"Brand visibility must persist.");}
+    settings.remove("desktop/showBrand");
     settings.remove("visual");
     return passed ? 0 : 1;
 }

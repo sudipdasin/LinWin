@@ -404,7 +404,7 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
     },[this]{showWindowsCatalog();});
     themeLibrary_=new AppearanceLibraryPage(sections_,false,[themes](const QString &id){
         const int index=themes->findData(id);if(index>=0)themes->setCurrentIndex(index);
-    },[this]{showWindowsCatalog();});
+    },[this]{showWindowsCatalog();},[this]{emit visualChanged();});
     sections_->addWidget(fontLibrary_);sections_->addWidget(themeLibrary_);
     windowsCatalog_=new WindowsSettingsCatalogPage(sections_,[this](const QString &route){
         if(route=="colors"||route=="start"||route=="taskbar"){showVisualPage(route);return;}

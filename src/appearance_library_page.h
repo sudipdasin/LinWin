@@ -12,6 +12,7 @@
 #include <QFont>
 #include <QSettings>
 #include <QSignalBlocker>
+#include <QCheckBox>
 #include <functional>
 #include <utility>
 namespace LinWinFont {
@@ -30,7 +31,7 @@ inline QString declaration(const QString &name) {
 }
 class AppearanceLibraryPage final:public QWidget {
 public:
-    explicit AppearanceLibraryPage(QWidget *parent,bool fonts,std::function<void(QString)> apply,std::function<void()> back)
+    explicit AppearanceLibraryPage(QWidget *parent,bool fonts,std::function<void(QString)> apply,std::function<void()> back,std::function<void()> changed={})
         :QWidget(parent),fonts_(fonts),apply_(std::move(apply)){
         setObjectName(fonts?"linwinFontLibrary":"linwinThemeLibrary");
         auto *layout=new QVBoxLayout(this);layout->setContentsMargins(22,18,22,18);layout->setSpacing(10);
@@ -40,6 +41,17 @@ public:
         search_=new QLineEdit(this);search_->setObjectName(fonts?"linwinFontSearch":"linwinThemeSearch");search_->setPlaceholderText(fonts?tr("Search installed fonts"):tr("Find a theme"));search_->setClearButtonEnabled(true);layout->addWidget(search_);
         list_=new QListWidget(this);list_->setObjectName(fonts?"linwinFontList":"linwinThemeList");list_->setIconSize(QSize(64,40));list_->setAccessibleName(fonts?tr("Installed font families"):tr("Available themes"));layout->addWidget(list_,1);
         preview_=new QLabel(this);preview_->setObjectName(fonts?"linwinFontPreview":"linwinThemePreview");preview_->setTextFormat(Qt::PlainText);preview_->setWordWrap(true);preview_->setMinimumHeight(82);layout->addWidget(preview_);
+        if(!fonts_){
+            auto *options=new QLabel(tr("Desktop icon settings"),this);layout->addWidget(options);
+            auto *row=new QHBoxLayout;
+            for(const auto &entry:QList<QPair<QString,QString>>{{"desktop/place/computer",tr("This PC")},{"desktop/place/home",tr("Home")},{"desktop/place/trash",tr("Trash")},{"desktop/place/network",tr("Network")}}){
+                auto *box=new QCheckBox(entry.second,this);box->setObjectName(entry.first);row->addWidget(box);options_.append({entry.first,box});
+                connect(box,&QCheckBox::toggled,this,[key=entry.first,changed](bool value){QSettings().setValue(key,value);if(changed)changed();});
+            }
+            layout->addLayout(row);
+            auto *logo=new QCheckBox(tr("Show LinWin branding on the theme background"),this);logo->setObjectName("desktop/showBrand");layout->addWidget(logo);options_.append({"desktop/showBrand",logo});
+            connect(logo,&QCheckBox::toggled,this,[changed](bool value){QSettings().setValue("desktop/showBrand",value);if(changed)changed();});
+        }
         auto *actions=new QHBoxLayout;
         auto *reset=new QPushButton(fonts?tr("Use system default"):tr("Restore Neon Fluent"),this);actions->addWidget(reset);actions->addStretch();
         applyButton_=new QPushButton(fonts?tr("Apply font"):tr("Apply theme"),this);applyButton_->setObjectName(fonts?"linwinApplyFont":"linwinApplyTheme");actions->addWidget(applyButton_);layout->addLayout(actions);
@@ -51,6 +63,7 @@ public:
     }
     void reload(){
         search_->clear();list_->clear();QSettings s;
+        for(const auto &option:options_){const QSignalBlocker block(option.second);option.second->setChecked(s.value(option.first,true).toBool());}
         const QString selected=fonts_?s.value("visual/fontFamily").toString():s.value("appearance/theme","neon").toString();
         if(fonts_){
             for(const auto &name:QFontDatabase::families())if(LinWinFont::safeFamily(name)){auto *item=new QListWidgetItem(name,list_);item->setData(Qt::UserRole,name);}
@@ -70,5 +83,6 @@ private:
         if(fonts_){preview_->setStyleSheet(LinWinFont::declaration(id)+" font-size:22px;");preview_->setText(tr("The quick brown fox jumps over the lazy dog.\n0123456789 — %1").arg(id));}
         else{const auto &theme=LinWinVisual::theme(id);preview_->setStyleSheet(QStringLiteral("background:%1;color:%2;border:2px solid %3;padding:12px;").arg(LinWinVisual::qstr(theme.panel),LinWinVisual::qstr(theme.text),LinWinVisual::qstr(theme.accent)));preview_->setText(tr("%1\nPreview of the theme palette").arg(item->text()));}
     }
+    QList<QPair<QString,QCheckBox *>> options_;
     bool fonts_;std::function<void(QString)> apply_;QLineEdit *search_=nullptr;QListWidget *list_=nullptr;QLabel *preview_=nullptr;QPushButton *applyButton_=nullptr;
 };

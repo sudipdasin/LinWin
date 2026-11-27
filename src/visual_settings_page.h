@@ -29,7 +29,7 @@ public:
         if(section_=="colors"){
             layout_->addWidget(new QLabel(tr("Choose your shell color mode"),body));
             mode_=new QComboBox(body);mode_->setObjectName("linwinShellColorMode");
-            mode_->addItem(tr("Theme default"),"theme");mode_->addItem(tr("Light"),"light");mode_->addItem(tr("Dark"),"dark");layout_->addWidget(mode_);
+            mode_->addItem(tr("Theme default"),"theme");mode_->addItem(tr("Light"),"light");mode_->addItem(tr("Dark"),"dark");mode_->addItem(tr("High contrast (LinWin shell)"),"contrast");layout_->addWidget(mode_);
             connect(mode_,qOverload<int>(&QComboBox::currentIndexChanged),this,[this]{QSettings().setValue("visual/shellMode",mode_->currentData());change_();});
             accent_=new QPushButton(body);accent_->setObjectName("linwinAccentColor");layout_->addWidget(accent_);
             connect(accent_,&QPushButton::clicked,this,[this]{const QColor initial(QSettings().value("visual/accent","#29dfff").toString());const auto color=QColorDialog::getColor(initial,this,tr("Choose an accent color"));if(color.isValid()){QSettings().setValue("visual/accent",color.name());reload();change_();}});

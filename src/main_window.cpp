@@ -369,7 +369,11 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     connect(settingsHub_, &SettingsHubWidget::textScaleChanged,
             this, &MainWindow::applyTextScale);
     connect(settingsHub_,&SettingsHubWidget::backgroundChanged,this,[this]{if(desktopSurface_)desktopSurface_->reloadBackground();});
-    connect(settingsHub_,&SettingsHubWidget::visualChanged,this,[this]{applyTextScale(settingsHub_->textScalePercent());updateTaskbarLayout();updateShellGeometry();});
+    connect(settingsHub_,&SettingsHubWidget::visualChanged,this,[this]{
+        applyTextScale(settingsHub_->textScalePercent());updateTaskbarLayout();updateShellGeometry();
+        if(auto *icons=findChild<QListWidget *>("desktopIcons"))LinWinDesktopView::apply(icons);
+        if(desktopSurface_)desktopSurface_->update();
+    });
 
     startMenu_ = new AppLauncherWidget(desktopArea_);
     startMenu_->setObjectName(QStringLiteral("startMenuPanel"));
