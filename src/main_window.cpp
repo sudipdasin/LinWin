@@ -2,6 +2,9 @@
 #include "main_window.h"
 #include "appearance_library_page.h"
 #include "shell_layout_policy.h"
+#include "x11_dock.h"
+#include <QScopedValueRollback>
+#include <QShowEvent>
 #include "desktop_status_widget.h"
 #include "place_icons.h"
 #include "pinned_tile_delegate.h"
@@ -527,12 +530,13 @@ MainWindow::MainWindow(bool overlayMode, bool shellSessionMode, QWidget *parent)
     updateTaskbarLayout();
 
     connect(startButton_, &QPushButton::toggled, this, [this](bool visible) {
-        startMenu_->setVisible(visible);
         if (visible) {
             updateShellGeometry();
-            startMenu_->raise();
+            startMenu_->show();startMenu_->raise();
+            updateShellGeometry();
+            if(detachedTaskbar_)startMenu_->activateWindow();
             startMenu_->focusSearch();
-        }
+        }else startMenu_->hide();
     });
     initializeToolTaskbarActions();
     connect(homeButton_, &QPushButton::clicked, this, &MainWindow::toggleWorkspaceVisibility);
@@ -1119,6 +1123,11 @@ void MainWindow::createWorkspace()
                                     {QStringLiteral("-n"), QString::number(workspaces_.size() + 1)});
 }
 
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QMainWindow::showEvent(event);
+    QTimer::singleShot(0,this,[this]{updateTaskbarLayout();updateShellGeometry();});
+}
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
@@ -1128,6 +1137,10 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
+    if(watched==this&&event->type()==QEvent::WindowStateChange&&!dockTransition_)
+        QTimer::singleShot(0,this,[this]{if(isMinimized())restoreEmbeddedTaskbar(false);else{updateTaskbarLayout();updateShellGeometry();}});
+    if(watched==startMenu_&&event->type()==QEvent::Hide&&detachedTaskbar_&&startButton_&&startButton_->isChecked())
+        startButton_->setChecked(false);
     if (event->type()==QEvent::WindowStateChange || event->type()==QEvent::Show || event->type()==QEvent::Hide) {
         for(auto *window:toolWindows_) if(watched==window) {
             QTimer::singleShot(0,this,[this]{syncToolButtons();});
@@ -1138,7 +1151,8 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
         return QMainWindow::eventFilter(watched, event);
 
     auto *widget = qobject_cast<QWidget *>(watched);
-    if (widget == nullptr || (widget != this && !isAncestorOf(widget)))
+    auto *panel=findChild<QFrame *>("taskbar");
+    if (widget == nullptr || (widget != this && !isAncestorOf(widget)&&widget!=startMenu_&&!startMenu_->isAncestorOf(widget)&&(!panel||(widget!=panel&&!panel->isAncestorOf(widget)))))
         return QMainWindow::eventFilter(watched, event);
 
     const bool insideMenu = widget == startMenu_ || startMenu_->isAncestorOf(widget);
@@ -1347,6 +1361,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     for(int index=1;index<=4;++index) rememberToolGeometry(index);
     hiddenWorkspace_.clear();
     hideToolWindows();
+    restoreEmbeddedTaskbar(false);
     QMainWindow::closeEvent(event);
 }
 
@@ -1429,6 +1444,7 @@ void MainWindow::applyTextScale(int percent)
     QString style=baseStyleSheet_;
     style.replace("font-family: 'Sans Serif';",LinWinFont::declaration(LinWinFont::family()));
     setStyleSheet(linwinScaledStyleSheet(style + LinWinVisual::shellStyle(LinWinVisual::theme(themeId_)), percent));
+    if(detachedTaskbar_){if(auto *panel=findChild<QFrame *>("taskbar"))panel->setStyleSheet(styleSheet());startMenu_->setStyleSheet(styleSheet());}
 }
 
 bool MainWindow::componentEnabled(const QString &component) const
@@ -1447,12 +1463,14 @@ void MainWindow::updateTaskbarLayout()
     const bool compactWindows=LinWinLayout::compactWindows(premium,visual.value("visual/windowLabels",false).toBool());
     if(auto *panel=findChild<QFrame *>(QStringLiteral("taskbar"))) {
         panel->setFixedHeight(LinWinLayout::taskbarHeight(premium,small));
-        if(auto *rootLayout=qobject_cast<QVBoxLayout *>(panel->parentWidget()->layout())){
-            const int target=visual.value("visual/taskbarPosition","bottom").toString()=="top"?0:1;
-            if(rootLayout->indexOf(panel)!=target){
-                rootLayout->removeWidget(panel);rootLayout->insertWidget(target,panel);
+        const bool top=visual.value("visual/taskbarPosition","bottom").toString()=="top";
+        if(!dockTransition_)syncDetachedTaskbar(panel,top);
+        if(!detachedTaskbar_){
+            if(auto *rootLayout=qobject_cast<QVBoxLayout *>(centralWidget()->layout())){
+                const int target=top?0:1;
+                if(rootLayout->indexOf(panel)!=target){rootLayout->removeWidget(panel);rootLayout->insertWidget(target,panel);}
+                rootLayout->activate();
             }
-            rootLayout->activate();
         }
     }
     if(windowSwitcher_) windowSwitcher_->setFixedHeight(premium&&!small?48:38);
@@ -1514,6 +1532,80 @@ void MainWindow::updateTaskbarLayout()
     if(clock_)clock_->setVisible(visual.value("visual/taskbarClock",true).toBool());
 }
 
+void MainWindow::restoreEmbeddedTaskbar(bool restoreWindow)
+{
+    if(!detachedTaskbar_)return;
+    QScopedValueRollback<bool> guard(dockTransition_,true);
+    auto *panel=findChild<QFrame *>("taskbar");
+    auto *root=centralWidget();auto *layout=qobject_cast<QVBoxLayout *>(root->layout());
+    if(!panel||!layout)return;
+    if(startButton_)startButton_->setChecked(false);
+    startMenu_->hide();panel->hide();
+    LinWinDock::Connection x11;x11.clear(static_cast<xcb_window_t>(panel->winId()));
+    panel->setAttribute(Qt::WA_X11NetWmWindowTypeDock,false);
+    panel->setParent(root,Qt::Widget);panel->setStyleSheet(QString());
+    startMenu_->setParent(desktopArea_,Qt::Widget);startMenu_->setStyleSheet(QString());startMenu_->hide();
+    if(dockSpacer_){layout->removeWidget(dockSpacer_);delete dockSpacer_;dockSpacer_=nullptr;}
+    detachedTaskbar_=false;panel->setProperty("linwinDetachedDock",false);
+    layout->insertWidget(QSettings().value("visual/taskbarPosition","bottom").toString()=="top"?0:1,panel);
+    panel->show();layout->activate();
+    if(restoreWindow&&isVisible()&&!isMinimized()){
+        if(dockWasFullscreen_)showFullScreen();else setGeometry(dockPreviousGeometry_);
+    }
+    updateShellGeometry();
+}
+void MainWindow::syncDetachedTaskbar(QFrame *panel,bool top)
+{
+    if(dockTransition_||!panel)return;
+    QScopedValueRollback<bool> guard(dockTransition_,true);
+    QSettings prefs;
+    const bool wanted=prefs.value("visual/detachedTaskbar",false).toBool();
+    if(!wanted){restoreEmbeddedTaskbar(true);qApp->setProperty("linwinDockStatus",tr("Embedded taskbar active."));return;}
+    if(!isVisible()||isMinimized())return;
+    auto reject=[&](const QString &why){
+        restoreEmbeddedTaskbar(true);prefs.setValue("visual/detachedTaskbar",false);
+        qApp->setProperty("linwinDockStatus",why);
+        qWarning().noquote()<<why;
+    };
+    if(!overlayMode_||QGuiApplication::platformName()!="xcb"||QGuiApplication::screens().size()!=1||!screen()||screen()->devicePixelRatio()!=1.0){
+        reject(tr("Independent taskbar requires a single unscaled X11 overlay screen."));return;
+    }
+    const QRect full=screen()->geometry(),available=detachedTaskbar_?dockInitialAvailable_:screen()->availableGeometry();
+    LinWinDock::Connection x11;
+    if(!x11.wmPresent()||full.topLeft()!=QPoint(0,0)||!available.isValid()||!full.contains(available)){
+        reject(tr("Independent taskbar requires an EWMH-compatible X11 window manager."));return;
+    }
+    if(detachedTaskbar_&&full!=dockScreen_){reject(tr("Screen geometry changed; embedded taskbar restored."));return;}
+    const int occupied=top?available.top()-full.top():full.bottom()-available.bottom();
+    const auto reservation=LinWinDock::reserve(full.width(),full.height(),panel->height(),top,occupied);
+    if(!reservation.valid){reject(tr("The selected screen edge is already reserved by another panel."));return;}
+    auto *root=centralWidget();auto *layout=qobject_cast<QVBoxLayout *>(root->layout());
+    if(!layout){reject(tr("Independent taskbar layout is unavailable."));return;}
+    if(!detachedTaskbar_){
+        dockScreen_=full;dockInitialAvailable_=available;dockPreviousGeometry_=geometry();dockWasFullscreen_=isFullScreen();
+        startButton_->setChecked(false);
+        layout->removeWidget(panel);
+        dockSpacer_=new QWidget(root);dockSpacer_->setObjectName("linwinDockSpacer");
+        dockSpacer_->setAttribute(Qt::WA_TransparentForMouseEvents);
+        panel->hide();panel->setParent(root,Qt::Window|Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint|Qt::WindowDoesNotAcceptFocus);
+        panel->setAttribute(Qt::WA_X11NetWmWindowTypeDock,true);
+        panel->setWindowTitle(tr("LinWin Taskbar"));
+        panel->setStyleSheet(styleSheet());
+        startMenu_->hide();startMenu_->setParent(desktopArea_,Qt::Popup|Qt::FramelessWindowHint);startMenu_->setStyleSheet(styleSheet());
+        detachedTaskbar_=true;panel->setProperty("linwinDetachedDock",true);
+        if(dockWasFullscreen_){showNormal();setGeometry(full);}
+    }
+    dockSpacer_->setFixedHeight(panel->height());
+    const int target=top?0:1;
+    if(layout->indexOf(dockSpacer_)!=target){layout->removeWidget(dockSpacer_);layout->insertWidget(target,dockSpacer_);}
+    layout->activate();
+    panel->setGeometry(full.left(),top?full.top():full.bottom()-panel->height()+1,full.width(),panel->height());
+    if(!x11.apply(static_cast<xcb_window_t>(panel->winId()),reservation)){reject(tr("Could not set X11 dock reservation. Embedded taskbar restored."));return;}
+    panel->show();panel->raise();
+    // Qt may update native window type when mapping; confirm properties again.
+    if(!x11.apply(static_cast<xcb_window_t>(panel->winId()),reservation)){reject(tr("Could not maintain X11 dock reservation. Embedded taskbar restored."));return;}
+    qApp->setProperty("linwinDockStatus",tr("Independent X11 taskbar active."));
+}
 void MainWindow::requestCloseLinWin()
 {
     const QString message=shellSessionMode_?tr("End this LinWin session? Save your work first; the login screen may appear."):tr("Close LinWin and its tool windows? Your Linux desktop and other applications will remain open.");
@@ -1524,6 +1616,7 @@ void MainWindow::returnToLinuxDesktop()
     if (shellSessionMode_) return;
     hiddenWorkspace_.clear();
     hideToolWindows();
+    restoreEmbeddedTaskbar(false);
     showMinimized();
 }
 
@@ -1568,9 +1661,10 @@ void MainWindow::updateShellGeometry()
     pages_->setGeometry(desktopArea_->rect());
     if (desktopWidgets_) desktopWidgets_->setVisible(useDesktopWidgets(themeId_) && width() >= 1100 && height() >= 640);
     const auto menu=LinWinLayout::start(desktopArea_->width(),desktopArea_->height(),themeId_=="neon",QSettings().value("visual/startFullscreen",false).toBool(),QSettings().value("visual/taskbarPosition","bottom").toString()=="top");
-    startMenu_->setGeometry(menu.x,menu.y,menu.width,menu.height);
+    const QPoint origin=detachedTaskbar_?desktopArea_->mapToGlobal(QPoint(menu.x,menu.y)):QPoint(menu.x,menu.y);
+    startMenu_->setGeometry(origin.x(),origin.y(),menu.width,menu.height);
     if(startMenu_->isVisible() && desktopSurface_ && pages_->currentIndex()==0 && QSettings().value("visual/transparency",true).toBool() && QSettings().value("visual/shellMode","theme").toString()=="theme") {
-        const QPoint origin=desktopSurface_->mapFrom(desktopArea_,startMenu_->pos());
-        startMenu_->setGlassBackdrop(desktopSurface_->glassSample(QRect(origin,startMenu_->size())));
+        const QPoint sampleOrigin=detachedTaskbar_?desktopSurface_->mapFromGlobal(startMenu_->pos()):desktopSurface_->mapFrom(desktopArea_,startMenu_->pos());
+        startMenu_->setGlassBackdrop(desktopSurface_->glassSample(QRect(sampleOrigin,startMenu_->size())));
     } else startMenu_->setGlassBackdrop(QImage());
 }

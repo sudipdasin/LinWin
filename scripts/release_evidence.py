@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from xml.etree import ElementTree
 
-EXPECTED = {'theme-catalog', 'snap-geometry', 'workspace-profiles', 'recent-documents', 'background-preferences', 'shell-layout-policy',
+EXPECTED = {'theme-catalog', 'snap-geometry', 'workspace-profiles', 'recent-documents', 'background-preferences', 'shell-layout-policy', 'x11-dock-policy',
             'neon-landscape', 'terrain-texture', 'pin-suggestions', 'weather-forecast',
             'desktop-status', 'system-metrics', 'task-manager-tabs', 'clipboard-center',
             'settings-hub-search', 'setup-wizard-review', 'file-manager-quick-access',

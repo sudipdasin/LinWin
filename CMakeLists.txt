@@ -16,6 +16,7 @@ find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Network)
 find_package(Qt6 6.4 QUIET COMPONENTS OpenGL)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GIO_UNIX REQUIRED IMPORTED_TARGET gio-unix-2.0)
+pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb)
 
 set(LINWIN_SHELL_SOURCES
     src/main_window.cpp
@@ -41,7 +42,7 @@ set(LINWIN_SHELL_SOURCES
 
 qt_add_executable(linwin src/main.cpp ${LINWIN_SHELL_SOURCES})
 
-target_link_libraries(linwin PRIVATE Qt6::Widgets Qt6::Network PkgConfig::GIO_UNIX)
+target_link_libraries(linwin PRIVATE Qt6::Widgets Qt6::Network PkgConfig::GIO_UNIX PkgConfig::XCB)
 if(TARGET Qt6::OpenGL)
     target_link_libraries(linwin PRIVATE Qt6::OpenGL)
     target_compile_definitions(linwin PRIVATE LINWIN_HAS_OPENGL=1)
@@ -95,6 +96,10 @@ if(BUILD_TESTING)
     add_executable(linwin-shell-layout-tests tests/test_shell_layout_policy.cpp)
     target_include_directories(linwin-shell-layout-tests PRIVATE src)
     add_test(NAME shell-layout-policy COMMAND linwin-shell-layout-tests)
+    add_executable(linwin-x11-dock-tests tests/test_x11_dock.cpp)
+    target_include_directories(linwin-x11-dock-tests PRIVATE src)
+    target_link_libraries(linwin-x11-dock-tests PRIVATE PkgConfig::XCB)
+    add_test(NAME x11-dock-policy COMMAND linwin-x11-dock-tests)
     add_executable(linwin-weather-tests tests/test_weather_forecast.cpp)
     target_include_directories(linwin-weather-tests PRIVATE src)
     target_link_libraries(linwin-weather-tests PRIVATE Qt6::Core)
@@ -166,7 +171,7 @@ if(BUILD_TESTING)
         ${LINWIN_SHELL_SOURCES}
     )
     target_include_directories(linwin-taskbar-layout-tests PRIVATE src)
-    target_link_libraries(linwin-taskbar-layout-tests PRIVATE Qt6::Widgets Qt6::Network PkgConfig::GIO_UNIX)
+    target_link_libraries(linwin-taskbar-layout-tests PRIVATE Qt6::Widgets Qt6::Network PkgConfig::GIO_UNIX PkgConfig::XCB)
     if(TARGET Qt6::OpenGL)
         target_link_libraries(linwin-taskbar-layout-tests PRIVATE Qt6::OpenGL)
         target_compile_definitions(linwin-taskbar-layout-tests PRIVATE LINWIN_HAS_OPENGL=1)

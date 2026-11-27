@@ -29,6 +29,8 @@ class QScrollArea;
 class QTimer;
 class QPushButton;
 class QResizeEvent;
+class QShowEvent;
+class QFrame;
 class QStackedWidget;
 class QWidget;
 
@@ -39,6 +41,7 @@ public:
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -77,6 +80,11 @@ private:
     void applyTextScale(int percent);
     void applyTheme(const QString &id);
     void updateTaskbarLayout();
+    void syncDetachedTaskbar(QFrame *panel,bool top);
+    void restoreEmbeddedTaskbar(bool restoreWindow);
+    QWidget *dockSpacer_=nullptr;
+    bool detachedTaskbar_=false,dockTransition_=false,dockWasFullscreen_=false;
+    QRect dockInitialAvailable_,dockPreviousGeometry_,dockScreen_;
     void applyComponentVisibility(const QString &component, bool enabled);
     void returnToLinuxDesktop();
     void requestCloseLinWin();

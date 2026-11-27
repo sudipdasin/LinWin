@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include <QWidget>
+#include <QApplication>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -51,6 +54,9 @@ public:
             toggle("visual/taskbarSearch",tr("Show search on wide taskbar"),true);
             toggle("visual/taskbarStatus",tr("Show status controls in compact mode"),true);
             toggle("visual/taskbarClock",tr("Show clock"),true);
+            toggle("visual/detachedTaskbar",tr("Independent taskbar (experimental X11 mode)"),false);
+            if(auto *dock=findChild<QCheckBox *>("detachedTaskbar"))dock->setEnabled(QGuiApplication::platformName()=="xcb"&&QGuiApplication::screens().size()==1);
+            dockStatus_=new QLabel(tr("Independent mode reserves screen space only on an unused edge. Existing Linux panels remain unchanged."),body);dockStatus_->setWordWrap(true);layout_->addWidget(dockStatus_);
             disabled(tr("Automatically hide the taskbar"));
             layout_->addWidget(new QLabel(tr("Taskbar location on screen"),body));
             position_=new QComboBox(body);position_->setObjectName("linwinTaskbarPosition");
@@ -68,6 +74,7 @@ public:
     void reload(){
         QSettings s;
         for(const auto &t:toggles_){const QSignalBlocker block(t.box);t.box->setChecked(s.value(t.key,t.initial).toBool());}
+        if(dockStatus_){const auto message=qApp->property("linwinDockStatus").toString();if(!message.isEmpty())dockStatus_->setText(message);}
         if(mode_){const QSignalBlocker block(mode_);mode_->setCurrentIndex(qMax(0,mode_->findData(s.value("visual/shellMode","theme"))));}
         if(position_){const QSignalBlocker block(position_);position_->setCurrentIndex(qMax(0,position_->findData(s.value("visual/taskbarPosition","bottom"))));}
         if(accent_){const QColor color(s.value("visual/accent").toString());accent_->setText(color.isValid()?tr("Accent color: %1").arg(color.name()):tr("Choose custom accent color"));}
@@ -76,8 +83,8 @@ private:
     struct Toggle{QString key;QCheckBox *box;bool initial;};
     void toggle(const QString &key,const QString &label,bool initial){
         auto *box=new QCheckBox(label,this);box->setObjectName(key.mid(7));layout_->addWidget(box);toggles_.append({key,box,initial});
-        connect(box,&QCheckBox::toggled,this,[this,key](bool value){QSettings().setValue(key,value);change_();});
+        connect(box,&QCheckBox::toggled,this,[this,key](bool value){QSettings().setValue(key,value);change_();if(key=="visual/detachedTaskbar")reload();});
     }
     void disabled(const QString &label){auto *box=new QCheckBox(label+tr(" — not implemented"),this);box->setEnabled(false);layout_->addWidget(box);}
-    QString section_;std::function<void()> change_;QVBoxLayout *layout_=nullptr;QList<Toggle> toggles_;QComboBox *mode_=nullptr,*position_=nullptr;QPushButton *accent_=nullptr;
+    QString section_;std::function<void()> change_;QVBoxLayout *layout_=nullptr;QLabel *dockStatus_=nullptr;QList<Toggle> toggles_;QComboBox *mode_=nullptr,*position_=nullptr;QPushButton *accent_=nullptr;
 };
