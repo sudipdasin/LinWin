@@ -10,11 +10,13 @@ from pathlib import Path
 def packets(root):
     records=[]
     audits={}
-    for size in ("1920x1080","1672x941"):
+    for size in ("1920x1080","1672x941","xfwm-1920x1080"):
         folder=root/size
         audit=json.loads((folder/"layout.json").read_text())
-        if (audit["width"],audit["height"])!=tuple(map(int,size.split("x"))) or audit["platform"]!="xcb" or not audit["start_fits"] or audit["taskbar_out_of_bounds"] or audit["undersized_tiles"] or audit["complete_tiles"]<5 or audit["first_row_tiles"]!=4:
+        if (audit["width"],audit["height"])!=tuple(map(int,size.removeprefix("xfwm-").split("x"))) or audit["platform"]!="xcb" or not audit["start_fits"] or audit["taskbar_out_of_bounds"] or audit["undersized_tiles"] or audit["complete_tiles"]<5 or audit["first_row_tiles"]!=4:
             raise ValueError(f"Native installed layout audit failed: {size}")
+        if size.startswith("xfwm-") and not all(audit.get(key) is True for key in ("external_windows_discovered","external_window_activated","external_window_closed")):
+            raise ValueError("Real XFWM external-window actions failed")
         audits[size]=audit
         for name in ("desktop.png","start.png","start-detail.png","desktop-review.jpg","start-review.jpg","taskbar-review.jpg"):
             data=(folder/name).read_bytes()
@@ -26,7 +28,8 @@ def packets(root):
             elif not (data.startswith(b"\xff\xd8") and data.endswith(b"\xff\xd9")):
                 raise ValueError(f"Invalid JPEG: {size}/{name}")
             records.append({"path":f"{size}/{name}","bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()})
-            if size=="1920x1080" and name.endswith("-review.jpg"):
+            if (size=="1920x1080" and name.endswith("-review.jpg")) or (size.startswith("xfwm-") and name=="taskbar-review.jpg"):
+                if size.startswith("xfwm-"): name="xfwm-"+name
                 encoded=base64.b64encode(data).decode("ascii")
                 chunks=[encoded[i:i+3000] for i in range(0,len(encoded),3000)]
                 if len(chunks)>120: raise ValueError("Review image too large")

@@ -788,6 +788,7 @@ void MainWindow::updateExternalWindows(const QString &output)
         if (button == nullptr) {
             button = new QPushButton(windowButtonsLayout_->parentWidget());
             button->setObjectName(QStringLiteral("linwinExternalWindow"));
+            button->setProperty("linwinWindowId",id);
             QIcon icon;
             // Prefer the actual host icon theme and process identity. Fall
             // back to a generic window icon; never guess from private titles.
@@ -800,7 +801,7 @@ void MainWindow::updateExternalWindows(const QString &output)
             button->setContextMenuPolicy(Qt::ActionsContextMenu);
             auto *activate=new QAction(tr("Switch to window"),button);button->addAction(activate);
             connect(activate,&QAction::triggered,this,[this,id]{activateExternalWindow(id);});
-            auto *closeWindow=new QAction(tr("Close window"),button);button->addAction(closeWindow);
+            auto *closeWindow=new QAction(tr("Close window"),button);closeWindow->setObjectName("linwinCloseExternalWindow");button->addAction(closeWindow);
             connect(closeWindow,&QAction::triggered,this,[this,id]{
                 if(windowButtons_.contains(id)&&QRegularExpression(QStringLiteral("^0x[0-9a-fA-F]+$")).match(id).hasMatch()&&!wmctrlPath_.isEmpty())
                     QProcess::startDetached(wmctrlPath_,{QStringLiteral("-ic"),id});
@@ -837,7 +838,7 @@ void MainWindow::updateExternalWindows(const QString &output)
 
 void MainWindow::activateExternalWindow(const QString &id)
 {
-    if (!QRegularExpression(QStringLiteral("^0x[0-9a-fA-F]+$")).match(id).hasMatch()) return;
+    if (!windowButtons_.contains(id)||wmctrlPath_.isEmpty()||!QRegularExpression(QStringLiteral("^0x[0-9a-fA-F]+$")).match(id).hasMatch()) return;
     QProcess::startDetached(wmctrlPath_, {QStringLiteral("-ia"), id});
 }
 
