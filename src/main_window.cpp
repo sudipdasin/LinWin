@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "main_window.h"
+#include "appearance_library_page.h"
 #include "shell_layout_policy.h"
 #include "desktop_status_widget.h"
 #include "place_icons.h"
@@ -1372,7 +1373,9 @@ void MainWindow::applyTheme(const QString &id)
 void MainWindow::applyTextScale(int percent)
 {
     if (percent < 85 || percent > 150 || baseStyleSheet_.isEmpty()) return;
-    setStyleSheet(linwinScaledStyleSheet(baseStyleSheet_ + LinWinVisual::shellStyle(LinWinVisual::theme(themeId_)), percent));
+    QString style=baseStyleSheet_;
+    style.replace("font-family: 'Sans Serif';",LinWinFont::declaration(LinWinFont::family()));
+    setStyleSheet(linwinScaledStyleSheet(style + LinWinVisual::shellStyle(LinWinVisual::theme(themeId_)), percent));
 }
 
 bool MainWindow::componentEnabled(const QString &component) const

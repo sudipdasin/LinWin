@@ -17,6 +17,7 @@
 #include <QTableWidget>
 #include <QGuiApplication>
 #include <QTreeWidget>
+#include <QListWidget>
 #include <QToolButton>
 #include "windows10_settings_catalog.h"
 #include <QTemporaryDir>
@@ -223,6 +224,14 @@ int main(int argc, char **argv)
     passed &= expect(visualChanges==4&&settings.value("visual/shellMode").toString()=="dark"&&!settings.value("visual/transparency").toBool()&&settings.value("visual/startFullscreen").toBool()&&settings.value("visual/smallTaskbar").toBool(),"Visual controls persist and emit live-change events.");
     widget.showVisualPage("colors");
     passed &= expect(colorMode&&colorMode->currentData().toString()=="dark","Reopened visual page restores preferences.");
+    widget.showVisualPage("fonts");application.processEvents();
+    auto *fonts=widget.findChild<QListWidget *>("linwinFontList");auto *fontApply=widget.findChild<QPushButton *>("linwinApplyFont");
+    passed &= expect(fonts&&fonts->isVisible()&&fonts->count()>0&&fontApply,"Installed fonts must be discoverable.");
+    if(fonts&&fonts->count()&&fontApply){fonts->setCurrentRow(0);fontApply->click();passed &= expect(settings.value("visual/fontFamily").toString()==fonts->item(0)->text(),"Applying an installed font must persist its real family.");}
+    widget.showVisualPage("themes");application.processEvents();
+    auto *themeList=widget.findChild<QListWidget *>("linwinThemeList");auto *themeApply=widget.findChild<QPushButton *>("linwinApplyTheme");
+    passed &= expect(themeList&&themeList->isVisible()&&themeList->count()==7&&themeApply,"Theme library must expose seven installed themes.");
+    if(themeList&&themeList->count()==7&&themeApply){themeList->setCurrentRow(1);themeApply->click();passed &= expect(settings.value("appearance/theme").toString()=="aero","Theme library must drive the actual theme selector.");}
     settings.remove("visual");
     return passed ? 0 : 1;
 }

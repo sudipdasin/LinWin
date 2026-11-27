@@ -6,6 +6,7 @@
 #include "background_settings_page.h"
 #include "windows_settings_catalog_page.h"
 #include "visual_settings_page.h"
+#include "appearance_library_page.h"
 #include <QStackedWidget>
 #include <QComboBox>
 #include "text_scale.h"
@@ -394,9 +395,21 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
         sections_->addWidget(page);return page;
     };
     colors_=makeVisual("colors");startAppearance_=makeVisual("start");taskbarAppearance_=makeVisual("taskbar");
+    fontLibrary_=new AppearanceLibraryPage(sections_,true,[this](const QString &family){
+        QSettings settings;
+        if(family.isEmpty())settings.remove("visual/fontFamily");
+        else if(LinWinFont::safeFamily(family)&&QFontDatabase::families().contains(family))settings.setValue("visual/fontFamily",family);
+        else return;
+        emit visualChanged();
+    },[this]{showWindowsCatalog();});
+    themeLibrary_=new AppearanceLibraryPage(sections_,false,[themes](const QString &id){
+        const int index=themes->findData(id);if(index>=0)themes->setCurrentIndex(index);
+    },[this]{showWindowsCatalog();});
+    sections_->addWidget(fontLibrary_);sections_->addWidget(themeLibrary_);
     windowsCatalog_=new WindowsSettingsCatalogPage(sections_,[this](const QString &route){
         if(route=="colors"||route=="start"||route=="taskbar"){showVisualPage(route);return;}
         if(route=="background"){showBackground();return;}
+        if(route=="fonts"||route=="themes"){showVisualPage(route);return;}
         focusSearch();
         if(route=="themes"){if(auto *themes=findChild<QComboBox *>("linwinThemeSelector"))themes->setFocus();}
         else if(route=="text"){textScaleSlider_->setFocus();}
@@ -408,6 +421,7 @@ SettingsHubWidget::SettingsHubWidget(QWidget *parent)
 
 void SettingsHubWidget::showVisualPage(const QString &route)
 {
+    if(route=="fonts"||route=="themes"){auto *library=route=="fonts"?fontLibrary_:themeLibrary_;library->reload();sections_->setCurrentWidget(library);return;}
     auto *page=route=="colors"?colors_:route=="start"?startAppearance_:route=="taskbar"?taskbarAppearance_:nullptr;
     if(!page)return;
     page->reload();sections_->setCurrentWidget(page);

@@ -43,7 +43,7 @@ inline constexpr std::array<Entry,113> catalog{{
     {"Personalization","Colors",Priority::Visual,"colors"},
     {"Personalization","Lock screen",Priority::Visual,""},
     {"Personalization","Themes",Priority::Visual,"themes"},
-    {"Personalization","Fonts",Priority::Visual,""},
+    {"Personalization","Fonts",Priority::Visual,"fonts"},
     {"Personalization","Start",Priority::Visual,"start"},
     {"Personalization","Taskbar",Priority::Visual,"taskbar"},
     {"Apps","Apps & features",Priority::Ease,""},

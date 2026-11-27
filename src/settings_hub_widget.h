@@ -19,6 +19,7 @@ class QStackedWidget;
 class BackgroundSettingsPage;
 class WindowsSettingsCatalogPage;
 class VisualSettingsPage;
+class AppearanceLibraryPage;
 
 class SettingsHubWidget final : public QWidget {
     Q_OBJECT
@@ -59,6 +60,7 @@ private:
     QStackedWidget *sections_=nullptr;
     BackgroundSettingsPage *backgroundPage_=nullptr;
     WindowsSettingsCatalogPage *windowsCatalog_=nullptr;
+    AppearanceLibraryPage *fontLibrary_=nullptr,*themeLibrary_=nullptr;
     VisualSettingsPage *colors_=nullptr,*startAppearance_=nullptr,*taskbarAppearance_=nullptr;
     QLineEdit *search_ = nullptr;
     QLabel *resultStatus_ = nullptr;
