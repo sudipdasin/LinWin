@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include "main_window.h"
+#include "settings_hub_widget.h"
+#include "x11_dock.h"
 #include <QApplication>
 #include <QDir>
 #include <QFile>
@@ -66,6 +68,44 @@ inline bool verifyWindowActions(MainWindow &window,QJsonObject &report){
     });
     report["external_window_closed"]=closed;return closed;
 }
+inline bool workareaHeight(int expected){
+    const QString raw=command("xprop",{"-root","_NET_WORKAREA"});
+    const int eq=raw.indexOf('=');if(eq<0)return false;
+    const auto values=raw.mid(eq+1).split(',',Qt::SkipEmptyParts);
+    bool ok=false;return values.size()>=4&&values.at(3).trimmed().toInt(&ok)==expected&&ok;
+}
+inline bool verifyDock(MainWindow &window,QFrame *panel,QJsonObject &report,const QRect &screen){
+    const bool detached=panel->isWindow()&&panel->isVisible()&&panel->property("linwinDetachedDock").toBool();
+    report["independent_dock"]=detached;if(!detached)return false;
+    const auto dockId=static_cast<xcb_window_t>(panel->winId());
+    LinWinDock::Connection connection;
+    std::array<uint32_t,12> strut{};
+    const bool reserved=until([&]{return connection.read(dockId,"_NET_WM_STRUT_PARTIAL",XCB_ATOM_CARDINAL,strut.data(),12)&&strut[3]==static_cast<uint32_t>(panel->height())&&workareaHeight(screen.height()-panel->height());});
+    report["workarea_reserved"]=reserved;if(!reserved)return false;
+    auto *a=externalButton(window,"LinWin QA Window A");if(!a)return false;
+    const QString id=a->property("linwinWindowId").toString();
+    command("wmctrl",{"-ir",id,"-b","add,maximized_vert,maximized_horz"});
+    a->click();
+    const bool usable=until([&]{
+        const QString state=command("xprop",{"-id",id,"_NET_WM_STATE"});
+        if(!state.contains("_NET_WM_STATE_MAXIMIZED_VERT")||!state.contains("_NET_WM_STATE_MAXIMIZED_HORZ"))return false;
+        const QString info=command("xwininfo",{"-id",id});
+        const auto y=QRegularExpression("Absolute upper-left Y:\\s*(-?\\d+)").match(info);
+        const auto height=QRegularExpression("Height:\\s*(\\d+)").match(info);
+        const auto extents=command("xprop",{"-id",id,"_NET_FRAME_EXTENTS"}).section('=',1).split(',');
+        if(!y.hasMatch()||!height.hasMatch()||extents.size()!=4)return false;
+        bool ok=false;const int bottom=extents.last().trimmed().toInt(&ok);
+        if(!ok||y.captured(1).toInt()+height.captured(1).toInt()+bottom>panel->geometry().top()+2)return false;
+        const QString stack=command("xprop",{"-root","_NET_CLIENT_LIST_STACKING"});
+        auto matches=QRegularExpression("0x[0-9a-fA-F]+").globalMatch(stack);
+        int index=0,appIndex=-1,dockIndex=-1;
+        bool parsed=false;const auto appId=id.toULongLong(&parsed,16);if(!parsed)return false;
+        while(matches.hasNext()){const auto value=matches.next().captured().toULongLong(nullptr,16);if(value==appId)appIndex=index;if(value==dockId)dockIndex=index;++index;}
+        return panel->isVisible()&&appIndex>=0&&dockIndex>appIndex;
+    });
+    report["maximized_window_respects_dock"]=usable;
+    return usable;
+}
 inline int run(QApplication &app,const QString &directory) {
     // Never collect a normal user's desktop, apps or documents.
     if(qEnvironmentVariable("LINWIN_ISOLATED_VISUAL_QA")!="1"||!qEnvironmentVariable("XDG_CONFIG_HOME").startsWith("/tmp/linwin-qa-")
@@ -80,6 +120,9 @@ inline int run(QApplication &app,const QString &directory) {
     if(!screen||!screen->geometry().isValid()){qCritical("No valid X11 screen.");return 2;}
     const QRect screenGeometry=screen->geometry();
     const bool windowActions=qEnvironmentVariable("LINWIN_QA_WINDOW_ACTIONS")=="1";
+    const bool dockMode=qEnvironmentVariable("LINWIN_QA_DOCK")=="1";
+    prefs.setValue("visual/detachedTaskbar",dockMode);
+    prefs.setValue("visual/taskbarPosition","bottom");
     MainWindow window(true,false);
     window.setGeometry(screenGeometry);window.show();
     qInfo("Capture requested screen: %dx%d",screenGeometry.width(),screenGeometry.height());
@@ -93,12 +136,14 @@ inline int run(QApplication &app,const QString &directory) {
         auto *menu=window.findChild<QWidget *>("startMenuPanel");
         if(!panel||!start||!menu||!start->isVisible()){app.exit(3);return;}
         if(windowActions&&!until([&]{return externalButton(window,"LinWin QA Window A")&&externalButton(window,"LinWin QA Window B");})){qCritical("Real QA windows not discovered.");app.exit(10);return;}
-        const auto desktop=window.grab().toImage();
+        QJsonObject dockReport;
+        if(dockMode&&!verifyDock(window,panel,dockReport,screenGeometry)){qCritical("Independent dock acceptance failed.");QFile failed(out.filePath("layout.json"));if(failed.open(QIODevice::WriteOnly))failed.write(QJsonDocument(dockReport).toJson());app.exit(11);return;}
+        const auto desktop=dockMode?screen->grabWindow(0).toImage():window.grab().toImage();
         if(desktop.isNull()||!desktop.save(out.filePath("desktop.png"))){app.exit(4);return;}
         start->click();
-        QTimer::singleShot(250,&window,[&,panel,start,menu,desktop]{
+        QTimer::singleShot(250,&window,[&,panel,start,menu,desktop,dockReport]{
             auto *grid=menu->findChild<QListWidget *>("pinnedApps");
-            const auto full=window.grab().toImage(),popup=menu->grab().toImage();
+            const auto full=dockMode?screen->grabWindow(0).toImage():window.grab().toImage(),popup=menu->grab().toImage();
             if(!grid||!menu->isVisible()||!start->isChecked()||full.isNull()||popup.isNull()){app.exit(5);return;}
             int violations=0,controls=0;
             QJsonArray bounds;
@@ -122,7 +167,7 @@ inline int run(QApplication &app,const QString &directory) {
                 }
                 if(r.width()<grid->gridSize().width()-6||r.height()<grid->gridSize().height()-6)++clippedTiles;
             }
-            const bool popupFits=window.rect().contains(QRect(menu->mapTo(&window,QPoint()),menu->size()));
+            const bool popupFits=window.rect().contains(QRect(window.mapFromGlobal(menu->mapToGlobal(QPoint())),menu->size()));
             QJsonObject report{{"width",full.width()},{"height",full.height()},{"platform",QApplication::platformName()},
                 {"start_width",popup.width()},{"start_height",popup.height()},{"taskbar_controls",controls},
                 {"taskbar_out_of_bounds",violations},{"visible_tiles",visibleTiles},{"complete_tiles",completeTiles},{"first_row_tiles",firstRowTiles},{"tile_bounds",tileBounds},{"registered_pins",grid->count()},{"undersized_tiles",clippedTiles},
@@ -132,8 +177,16 @@ inline int run(QApplication &app,const QString &directory) {
                 &&desktop.scaled(768,432,Qt::KeepAspectRatio,Qt::SmoothTransformation).save(out.filePath("desktop-review.jpg"),"JPEG",75)
                 &&popup.scaled(720,720,Qt::KeepAspectRatio,Qt::SmoothTransformation).save(out.filePath("start-review.jpg"),"JPEG",85)
                 &&panel->grab().toImage().scaledToWidth(1440,Qt::SmoothTransformation).save(out.filePath("taskbar-review.jpg"),"JPEG",88);
+            for(auto it=dockReport.begin();it!=dockReport.end();++it)report[it.key()]=it.value();
             bool actionPass=true;
-            if(windowActions){start->click();actionPass=verifyWindowActions(window,report);}
+            if(windowActions){start->setChecked(false);actionPass=verifyWindowActions(window,report);}
+            if(dockMode){
+                QSettings().setValue("visual/detachedTaskbar",false);
+                auto *hub=window.findChild<SettingsHubWidget *>();
+                if(hub)hub->visualChanged();
+                const bool restored=hub&&until([&]{return !panel->isWindow()&&!panel->property("linwinDetachedDock").toBool()&&workareaHeight(screenGeometry.height());});
+                report["dock_restored_and_workarea_released"]=restored;actionPass=actionPass&&restored;
+            }
             QFile file(out.filePath("layout.json"));if(!file.open(QIODevice::WriteOnly)){app.exit(6);return;}
             file.write(QJsonDocument(report).toJson());file.close();
             const bool passed=saved&&popupFits&&controls>0&&violations==0&&clippedTiles==0&&completeTiles>=5&&firstRowTiles==4&&actionPass;
@@ -142,7 +195,7 @@ inline int run(QApplication &app,const QString &directory) {
             app.exit(passed?0:7);
         });
     });
-    QTimer::singleShot(35000,&app,[&]{app.exit(8);});
+    QTimer::singleShot(dockMode?55000:35000,&app,[&]{app.exit(8);});
     return app.exec();
 }
 }

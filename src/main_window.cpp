@@ -5,6 +5,7 @@
 #include "x11_dock.h"
 #include <QScopedValueRollback>
 #include <QShowEvent>
+#include <QDebug>
 #include "desktop_status_widget.h"
 #include "place_icons.h"
 #include "pinned_tile_delegate.h"
@@ -820,6 +821,7 @@ void MainWindow::updateExternalWindows(const QString &output)
             // back to a generic window icon; never guess from private titles.
             if(!processName.isEmpty()) icon=QIcon::fromTheme(processName);
             if(icon.isNull()) icon=LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop);
+            button->setProperty("linwinProcessIcon",processName);
             button->setIcon(icon);
             connect(button, &QPushButton::clicked, this, [this, id]() { activateExternalWindow(id); });
             windowButtons_.insert(id, button);
@@ -841,6 +843,25 @@ void MainWindow::updateExternalWindows(const QString &output)
         button->setMinimumWidth(compactWindows?42:0);
         button->setMaximumWidth(compactWindows?48:180);
         button->setIconSize(QSize(premium&&!small?26:16,premium&&!small?26:16));
+        // Evaluate visibility against the actual shell palette. Dark themed
+        // application icons can otherwise disappear on a dark taskbar.
+        const QString name=button->property("linwinProcessIcon").toString();
+        const QString mode=visual.value("visual/shellMode","theme").toString();
+        const auto &theme=LinWinVisual::theme(themeId_);
+        const QColor background=mode=="light"?QColor("#edf2f8"):mode=="dark"?QColor("#17222f"):mode=="contrast"?QColor("#000000"):QColor(LinWinVisual::qstr(theme.panel));
+        const QString iconKey=QStringLiteral("%1:%2").arg(name,background.name());
+        if(button->property("linwinIconKey").toString()!=iconKey){
+            QIcon candidate=QIcon::fromTheme(name);
+            const QImage pixels=candidate.pixmap(32,32).toImage().convertToFormat(QImage::Format_ARGB32);
+            int opaque=0,contrasting=0;
+            for(int y=0;y<pixels.height();++y)for(int x=0;x<pixels.width();++x){
+                const QColor color=pixels.pixelColor(x,y);if(color.alpha()<120)continue;
+                ++opaque;
+                if(qMax(qAbs(color.red()-background.red()),qMax(qAbs(color.green()-background.green()),qAbs(color.blue()-background.blue())))>=100)++contrasting;
+            }
+            if(opaque==0||contrasting*8<opaque)candidate=LinWinVisual::shellIcon(LinWinVisual::Glyph::Desktop);
+            button->setIcon(candidate);button->setProperty("linwinIconKey",iconKey);
+        }
         button->setToolTip(title);
         button->setAccessibleName(title);
     }

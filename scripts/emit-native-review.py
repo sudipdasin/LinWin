@@ -10,13 +10,15 @@ from pathlib import Path
 def packets(root):
     records=[]
     audits={}
-    for size in ("1920x1080","1672x941","xfwm-1920x1080"):
+    for size in ("1920x1080","1672x941","xfwm-1920x1080","dock-1920x1080"):
         folder=root/size
         audit=json.loads((folder/"layout.json").read_text())
-        if (audit["width"],audit["height"])!=tuple(map(int,size.removeprefix("xfwm-").split("x"))) or audit["platform"]!="xcb" or not audit["start_fits"] or audit["taskbar_out_of_bounds"] or audit["undersized_tiles"] or audit["complete_tiles"]<5 or audit["first_row_tiles"]!=4:
+        if (audit["width"],audit["height"])!=tuple(map(int,size.removeprefix("xfwm-").removeprefix("dock-").split("x"))) or audit["platform"]!="xcb" or not audit["start_fits"] or audit["taskbar_out_of_bounds"] or audit["undersized_tiles"] or audit["complete_tiles"]<5 or audit["first_row_tiles"]!=4:
             raise ValueError(f"Native installed layout audit failed: {size}")
-        if size.startswith("xfwm-") and not all(audit.get(key) is True for key in ("external_windows_discovered","external_window_activated","external_window_closed","active_window_indicated")):
+        if size.startswith(("xfwm-","dock-")) and not all(audit.get(key) is True for key in ("external_windows_discovered","external_window_activated","external_window_closed","active_window_indicated")):
             raise ValueError("Real XFWM external-window actions failed")
+        if size.startswith("dock-") and not all(audit.get(key) is True for key in ("independent_dock","workarea_reserved","maximized_window_respects_dock","dock_restored_and_workarea_released")):
+            raise ValueError("Independent dock work-area gate failed")
         audits[size]=audit
         for name in ("desktop.png","start.png","start-detail.png","desktop-review.jpg","start-review.jpg","taskbar-review.jpg"):
             data=(folder/name).read_bytes()
@@ -28,8 +30,8 @@ def packets(root):
             elif not (data.startswith(b"\xff\xd8") and data.endswith(b"\xff\xd9")):
                 raise ValueError(f"Invalid JPEG: {size}/{name}")
             records.append({"path":f"{size}/{name}","bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()})
-            if (size=="1920x1080" and name.endswith("-review.jpg")) or (size.startswith("xfwm-") and name=="taskbar-review.jpg"):
-                if size.startswith("xfwm-"): name="xfwm-"+name
+            if (size=="1920x1080" and name.endswith("-review.jpg")) or (size.startswith("xfwm-") and name=="taskbar-review.jpg") or (size.startswith("dock-") and name in ("desktop-review.jpg","taskbar-review.jpg")):
+                if size.startswith(("xfwm-","dock-")): name=size.split("-",1)[0]+"-"+name
                 encoded=base64.b64encode(data).decode("ascii")
                 chunks=[encoded[i:i+3000] for i in range(0,len(encoded),3000)]
                 if len(chunks)>120: raise ValueError("Review image too large")
@@ -37,7 +39,7 @@ def packets(root):
                     print(f"LINWIN_REVIEW {name} {i+1}/{len(chunks)} {chunk}",flush=True)
                 print(f"LINWIN_REVIEW_SHA256 {name} {hashlib.sha256(data).hexdigest()}",flush=True)
     (root/"manifest.json").write_text(json.dumps({"captures":records,"audits":audits,"human_visual_acceptance":False},indent=2)+"\n")
-    print("PASS: installed executable X11 capture and widget bounds audit at both resolutions",flush=True)
+    print("PASS: installed executable X11 captures, XFWM window actions and independent dock acceptance",flush=True)
 
 if __name__=="__main__":
     packets(Path(sys.argv[1]))
